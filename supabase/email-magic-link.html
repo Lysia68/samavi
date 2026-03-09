@@ -5,119 +5,98 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Votre lien de connexion ZenClass</title>
 </head>
-<body style="margin:0;padding:0;background:#F4EFE8;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;">
-
-  <table width="100%" cellpadding="0" cellspacing="0" style="background:#F4EFE8;padding:40px 16px;">
+<body style="margin:0;padding:0;background:#F4EFE8;font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#F4EFE8;padding:40px 20px;">
     <tr>
       <td align="center">
-        <table width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;">
+        <table width="100%" cellpadding="0" cellspacing="0" style="max-width:480px;">
 
           <!-- HEADER -->
           <tr>
             <td align="center" style="padding-bottom:28px;">
               <table cellpadding="0" cellspacing="0">
                 <tr>
-                  <td style="
-                    width:56px;height:56px;border-radius:16px;
-                    background:linear-gradient(135deg,#B07848,#D4A574);
-                    text-align:center;line-height:56px;font-size:26px;
-                    display:block;
-                  ">🧘</td>
-                </tr>
-                <tr>
-                  <td align="center" style="padding-top:12px;">
-                    <span style="font-size:22px;font-weight:800;color:#2A1F14;letter-spacing:-0.5px;">
-                      Zen<span style="color:#B07848;">Class</span>
-                    </span>
+                  <td align="center" style="width:64px;height:64px;border-radius:18px;background:linear-gradient(145deg,#C4956A,#8A5530);box-shadow:0 8px 24px rgba(140,88,56,.3);padding:0;">
+                    <svg width="34" height="34" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <ellipse cx="32" cy="38" rx="7" ry="9" fill="white" fill-opacity="0.95"/>
+                      <path d="M32 10 C28 18, 26 26, 32 32 C38 26, 36 18, 32 10Z" fill="white" fill-opacity="0.95"/>
+                      <path d="M10 30 C16 24, 24 24, 28 32 C20 34, 13 32, 10 30Z" fill="white" fill-opacity="0.85"/>
+                      <path d="M54 30 C48 24, 40 24, 36 32 C44 34, 51 32, 54 30Z" fill="white" fill-opacity="0.85"/>
+                      <path d="M4 42 C10 32, 20 30, 26 36 C18 42, 8 44, 4 42Z" fill="white" fill-opacity="0.7"/>
+                      <path d="M60 42 C54 32, 44 30, 38 36 C46 42, 56 44, 60 42Z" fill="white" fill-opacity="0.7"/>
+                      <path d="M32 54 L32 62" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-opacity="0.6"/>
+                    </svg>
                   </td>
                 </tr>
               </table>
+              <div style="font-size:26px;font-weight:800;color:#2A1F14;letter-spacing:-0.6px;line-height:1;margin-top:16px;">
+                Zen<span style="color:#A06838;">Class</span>
+              </div>
+              <div style="font-size:12px;color:#8C7B6C;margin-top:5px;letter-spacing:0.3px;">
+                Gestion de studio &middot; Yoga &amp; Bien-être
+              </div>
             </td>
           </tr>
 
           <!-- CARD -->
           <tr>
-            <td style="
-              background:#ffffff;
-              border:1px solid #DDD5C8;
-              border-radius:18px;
-              padding:36px 36px 32px;
-            ">
+            <td style="background:#FFFFFF;border-radius:20px;border:1px solid #DDD5C8;box-shadow:0 4px 24px rgba(42,31,20,.06);">
+              <!-- Top accent bar -->
+              <div style="height:4px;background:linear-gradient(90deg,#C4956A,#A06838,#8A5530);border-radius:20px 20px 0 0;"></div>
 
-              <!-- Title -->
-              <p style="font-size:22px;font-weight:800;color:#2A1F14;margin:0 0 10px;letter-spacing:-0.4px;">
-                Votre lien de connexion 🔐
-              </p>
-              <p style="font-size:14px;color:#5C4A38;line-height:1.7;margin:0 0 28px;">
-                Bonjour,<br/>
-                Cliquez sur le bouton ci-dessous pour accéder à votre espace ZenClass.
-                Ce lien est valable <strong>1 heure</strong> et à usage unique.
-              </p>
-
-              <!-- CTA Button -->
-              <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:28px;">
+              <table width="100%" cellpadding="0" cellspacing="0">
                 <tr>
-                  <td align="center">
-                    <a href="{{ .ConfirmationURL }}"
-                      style="
-                        display:inline-block;
-                        background:#B07848;
-                        color:#ffffff;
-                        text-decoration:none;
-                        font-size:15px;
-                        font-weight:700;
-                        padding:14px 36px;
-                        border-radius:12px;
-                        letter-spacing:-0.2px;
-                      ">
-                      Accéder à mon studio →
-                    </a>
+                  <td style="padding:36px 36px 28px;">
+                    <p style="font-size:15px;font-weight:700;color:#2A1F14;margin:0 0 8px;letter-spacing:-0.2px;">
+                      Bonjour 👋
+                    </p>
+                    <p style="font-size:14px;color:#5C4A38;margin:0 0 28px;line-height:1.7;">
+                      Vous avez demandé un lien de connexion à votre espace <strong>ZenClass</strong>.<br/>
+                      Cliquez sur le bouton ci-dessous &mdash; il est valable <strong>1 heure</strong>.
+                    </p>
+
+                    <!-- CTA Button -->
+                    <table cellpadding="0" cellspacing="0" style="margin:0 0 28px;">
+                      <tr>
+                        <td align="center" style="border-radius:12px;background:linear-gradient(145deg,#B88050,#9A6030);box-shadow:0 4px 16px rgba(140,88,56,.35);">
+                          <a href="{{ .ConfirmationURL }}"
+                             style="display:inline-block;padding:15px 36px;font-size:15px;font-weight:700;color:#ffffff;text-decoration:none;letter-spacing:-0.2px;border-radius:12px;">
+                            ✦&nbsp;&nbsp;Accéder à mon espace
+                          </a>
+                        </td>
+                      </tr>
+                    </table>
+
+                    <hr style="border:none;border-top:1px solid #EAE4DA;margin:0 0 24px;"/>
+
+                    <p style="font-size:12px;color:#8C7B6C;margin:0 0 8px;line-height:1.6;">
+                      Si le bouton ne fonctionne pas, copiez ce lien :
+                    </p>
+                    <p style="font-size:11px;color:#A06838;margin:0;word-break:break-all;background:#F5EBE0;padding:10px 14px;border-radius:8px;border:1px solid #DFC0A0;">
+                      {{ .ConfirmationURL }}
+                    </p>
                   </td>
                 </tr>
-              </table>
 
-              <!-- Divider -->
-              <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:20px;">
+                <!-- Security notice -->
                 <tr>
-                  <td style="border-top:1px solid #EAE4DA;"></td>
-                </tr>
-              </table>
-
-              <!-- Fallback link -->
-              <p style="font-size:12px;color:#8C7B6C;line-height:1.7;margin:0;">
-                Si le bouton ne fonctionne pas, copiez ce lien dans votre navigateur :<br/>
-                <a href="{{ .ConfirmationURL }}"
-                  style="color:#B07848;word-break:break-all;font-size:11px;">
-                  {{ .ConfirmationURL }}
-                </a>
-              </p>
-
-              <!-- Security notice -->
-              <table width="100%" cellpadding="0" cellspacing="0" style="margin-top:20px;">
-                <tr>
-                  <td style="
-                    background:#FBF8F4;border:1px solid #EAE4DA;
-                    border-radius:10px;padding:12px 16px;
-                  ">
-                    <p style="font-size:12px;color:#8C7B6C;margin:0;line-height:1.6;">
-                      🔒 <strong>Sécurité</strong> — Si vous n'avez pas demandé ce lien,
-                      ignorez cet email. Votre compte reste protégé.
+                  <td style="background:#FBF8F4;border-top:1px solid #EAE4DA;padding:16px 36px;border-radius:0 0 20px 20px;">
+                    <p style="font-size:11px;color:#B0A090;margin:0;line-height:1.7;">
+                      🔒 <strong>Sécurité</strong> &mdash; Si vous n'avez pas demandé ce lien, ignorez cet email.<br/>
+                      Ce lien est à usage unique et expire dans 1 heure.
                     </p>
                   </td>
                 </tr>
               </table>
-
             </td>
           </tr>
 
           <!-- FOOTER -->
           <tr>
-            <td align="center" style="padding-top:24px;">
-              <p style="font-size:12px;color:#B0A090;margin:0;line-height:1.8;">
-                ZenClass · Gestion de studio yoga &amp; bien-être<br/>
-                <a href="{{ .SiteURL }}" style="color:#B07848;text-decoration:none;">zenclass.fr</a>
-                &nbsp;·&nbsp;
-                <a href="{{ .SiteURL }}/settings" style="color:#B0A090;text-decoration:none;">Paramètres</a>
+            <td align="center" style="padding:24px 0 0;">
+              <p style="font-size:11px;color:#B0A090;margin:0;line-height:1.8;">
+                &copy; 2026 ZenClass &middot; Tous droits réservés<br/>
+                <a href="https://zenclass.fr" style="color:#A06838;text-decoration:none;">zenclass.fr</a>
               </p>
             </td>
           </tr>
@@ -126,6 +105,5 @@
       </td>
     </tr>
   </table>
-
 </body>
 </html>
