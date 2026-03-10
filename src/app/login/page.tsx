@@ -225,6 +225,14 @@ export default function LoginPage() {
       if(m) supabase.from("studios").select("name").eq("slug",m[1]).single()
         .then(({data})=>{ if(data) setStudioName(data.name) })
     }
+    // Afficher message si redirect depuis callback avec erreur
+    const params = new URLSearchParams(window.location.search)
+    const errParam = params.get("error")
+    if(errParam === "lien_expire") {
+      setError("Ce lien de connexion a expiré ou a déjà été utilisé. Entrez votre email pour recevoir un nouveau lien.")
+    } else if(errParam) {
+      setError("Erreur de connexion. Veuillez réessayer.")
+    }
   },[])
 
   const toSlug = (s:string) =>

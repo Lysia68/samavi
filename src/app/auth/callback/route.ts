@@ -13,26 +13,58 @@ export async function GET(request: NextRequest) {
   const tenantSlug  = tenantMatch ? tenantMatch[1] : null
   const isTenant    = !!tenantSlug && !isApp
 
-  const tokenHash = searchParams.get("token_hash")
-  const type = searchParams.get("type")
+  const tokenHash  = searchParams.get("token_hash")
+  const type       = searchParams.get("type")
+  // Implicit flow : Supabase peut passer access_token en query param
+  const accessToken  = searchParams.get("access_token")
+  const refreshToken = searchParams.get("refresh_token")
 
-  if (!code && !tokenHash) return NextResponse.redirect(new URL("/", request.url))
+  if (!code && !tokenHash && !accessToken) return NextResponse.redirect(new URL("/", request.url))
 
   // anon client pour échanger le code/token → session cookie
   const supabase = await createServerSupabase()
   let data: any, error: any
 
-  if (tokenHash) {
+  if (accessToken) {
+    // Flux implicit : access_token passé en query param (pas de PKCE)
+    const res = await supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken || "" })
+    data = res.data; error = res.error
+    if (error) console.error("setSession error:", JSON.stringify(error))
+  } else if (tokenHash) {
     // Flux email confirmation (token_hash)
     const res = await supabase.auth.verifyOtp({ token_hash: tokenHash, type: (type as any) || "signup" })
     data = res.data; error = res.error
-  } else {
-    // Flux magic link (code PKCE)
-    const res = await supabase.auth.exchangeCodeForSession(code!)
+  } else if (code) {
+    // Flux magic link PKCE
+    const res = await supabase.auth.exchangeCodeForSession(code)
     data = res.data; error = res.error
+    if (error) {
+      console.error("exchangeCodeForSession error:", JSON.stringify(error), "| code length:", code.length, "| hostname:", hostname)
+    }
   }
 
-  if (error || !data.user) return NextResponse.redirect(new URL("/?error=auth", request.url))
+  if (error || !data?.user) {
+    const reason = error?.message || "no_user"
+    console.error("auth callback failed:", reason, "| code:", !!code, "| tokenHash:", !!tokenHash)
+    
+    // Si erreur PKCE (code verifier manquant), rediriger vers login avec message
+    if (reason.includes("code") || reason.includes("verif") || reason.includes("pkce")) {
+      const loginUrl = new URL("/login", "https://fydelys.fr")
+      loginUrl.searchParams.set("error", "lien_expire")
+      return NextResponse.redirect(loginUrl)
+    }
+    
+    // Dernier recours : vérifier si l'user est déjà connecté (code déjà utilisé)
+    const { data: { user: existingUser } } = await supabase.auth.getUser()
+    if (existingUser) {
+      data = { user: existingUser }
+      error = null
+    } else {
+      const loginUrl = new URL("/login", "https://fydelys.fr")
+      loginUrl.searchParams.set("error", reason.slice(0, 100))
+      return NextResponse.redirect(loginUrl)
+    }
+  }
 
   // service_role pour toutes les opérations DB (bypass RLS sans policy SELECT)
   if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
