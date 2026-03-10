@@ -174,7 +174,7 @@ const NAV = [
   {key:"settings",      label:"Paramètres"},
 ];
 
-function Sidebar({ active, onNav }) {
+function Sidebar({ active, onNav, studioName = "Mon studio", planName = "Essentiel", membersCount = 0, userName = "", userRole = "Admin" }) {
   return (
     <aside style={{ width:220, background:C.surface, borderRight:`1.5px solid ${C.border}`, minHeight:"100vh", display:"flex", flexDirection:"column", flexShrink:0 }}>
       <div style={{ padding:"24px 20px 18px" }}>
@@ -184,8 +184,8 @@ function Sidebar({ active, onNav }) {
       <div style={{ margin:"0 12px 12px", padding:"10px 12px", background:C.accentLight, borderRadius:10, border:`1.5px solid ${C.border}`, display:"flex", alignItems:"center", gap:10 }}>
         <div style={{ width:34, height:34, borderRadius:8, background:C.accentBg, border:`1.5px solid #DFC0A0`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}><IcoYoga s={18} c={C.accent}/></div>
         <div>
-          <div style={{ fontSize:15, fontWeight:700, color:C.text }}>Yogalate Paris</div>
-          <div style={{ fontSize:12, color:C.textSoft }}>Plan Pro · 124 membres</div>
+          <div style={{ fontSize:15, fontWeight:700, color:C.text }}>{studioName || "Mon studio"}</div>
+          <div style={{ fontSize:12, color:C.textSoft }}>{planName ? planName.charAt(0).toUpperCase()+planName.slice(1) : "Essentiel"} · {membersCount} membre{membersCount!==1?"s":""}</div>
         </div>
       </div>
       <nav style={{ flex:1 }}>
@@ -200,10 +200,12 @@ function Sidebar({ active, onNav }) {
         ))}
       </nav>
       <div style={{ padding:"14px 20px", borderTop:`1.5px solid ${C.border}`, display:"flex", alignItems:"center", gap:10 }}>
-        <div style={{ width:32, height:32, borderRadius:"50%", background:C.accentBg, border:`1.5px solid #DFC0A0`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:13, fontWeight:700, color:C.accent, flexShrink:0 }}>ML</div>
+        <div style={{ width:32, height:32, borderRadius:"50%", background:C.accentBg, border:`1.5px solid #DFC0A0`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:13, fontWeight:700, color:C.accent, flexShrink:0 }}>
+          {userName ? userName.split(" ").map(n=>n[0]).join("").toUpperCase().slice(0,2) : "?"}
+        </div>
         <div>
-          <div style={{ fontSize:14, fontWeight:600, color:C.text }}>Marie Laurent</div>
-          <div style={{ fontSize:12, color:C.textMuted }}>Admin</div>
+          <div style={{ fontSize:14, fontWeight:600, color:C.text }}>{userName || "Utilisateur"}</div>
+          <div style={{ fontSize:12, color:C.textMuted }}>{userRole === "admin" ? "Admin" : userRole === "coach" ? "Coach" : userRole === "adherent" ? "Adhérent" : "Admin"}</div>
         </div>
       </div>
     </aside>
@@ -246,7 +248,7 @@ function IcoLogOut({s,c}) {
   );
 }
 
-function TopBar({ title, isMobile, onSignOut, isSuperAdmin }) {
+function TopBar({ title, isMobile, onSignOut, isSuperAdmin, studioName = "" }) {
   const [confirmLogout, setConfirmLogout] = useState(false);
   return (
     <>
@@ -256,7 +258,7 @@ function TopBar({ title, isMobile, onSignOut, isSuperAdmin }) {
           {isMobile ? <>Fyde<span style={{ color:C.accent }}>lys</span></> : title}
         </div>
         <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-          {!isMobile && <Pill color={C.textSoft} bg={C.bg}>Yogalate Paris</Pill>}
+          {!isMobile && studioName && <Pill color={C.textSoft} bg={C.bg}>{studioName}</Pill>}
           {isSuperAdmin && (
             <a href="https://fydelys.fr/dashboard"
               style={{ fontSize:11, padding:"5px 12px", borderRadius:8, border:`1px solid ${C.border}`, background:C.bg, color:C.textSoft, textDecoration:"none", fontWeight:600, display:"flex", alignItems:"center", gap:5, whiteSpace:"nowrap" }}>
@@ -264,8 +266,8 @@ function TopBar({ title, isMobile, onSignOut, isSuperAdmin }) {
             </a>
           )}
           <div style={{ display:"flex", alignItems:"center", gap:7, padding:"4px 10px 4px 5px", background:C.bg, border:`1px solid ${C.border}`, borderRadius:20 }}>
-            <div style={{ width:24, height:24, borderRadius:"50%", background:C.accentBg, border:`1px solid #DFC0A0`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:10, fontWeight:700, color:C.accent, flexShrink:0 }}>ML</div>
-            <span style={{ fontSize:13, fontWeight:600, color:C.text, whiteSpace:"nowrap" }}>Marie Laurent</span>
+            <div style={{ width:24, height:24, borderRadius:"50%", background:C.accentBg, border:`1px solid #DFC0A0`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:10, fontWeight:700, color:C.accent, flexShrink:0 }}>{studioName?studioName.charAt(0).toUpperCase():"?"}</div>
+            <span style={{ fontSize:13, fontWeight:600, color:C.text, whiteSpace:"nowrap" }}>{studioName || "Mon studio"}</span>
           </div>
           <button
             title="Se déconnecter"
@@ -1192,6 +1194,7 @@ function RoleBadge({ role }) {
 }
 
 function Settings({ isMobile }) {
+  const { studioName, userName, userEmail, planName, membersCount, userRole } = React.useContext(AppCtx);
   const p = isMobile?12:28;
   const [currentRole, setCurrentRole] = useState("superadmin");
   const [tab, setTab] = useState("studio");
@@ -1485,7 +1488,7 @@ function Settings({ isMobile }) {
   const TabStudio = () => (
     <div>
       {[
-        { title:"Informations du studio", fields:[["Nom du studio","Yogalate Paris"],["Adresse","12 rue de la Paix, 75001 Paris"],["Téléphone","01 42 00 00 00"],["Email contact","contact@yogalate.fr"],["Site web","yogalate.fr"]] },
+        { title:"Informations du studio", fields:[["Nom du studio", studioName||""],["Adresse",""],["Téléphone",""],["Email contact",""],["Site web",""]] },
         { title:"Paramètres de réservation", fields:[["Délai d'annulation (h)","12"],["Ouverture réservations (j avant)","7"],["Liste d'attente max","10"],["Confirmation automatique","Oui"]] },
         { title:"Notifications", fields:[["Email confirmation réservation","Activé"],["SMS rappel J-1","Activé"],["Alerte impayé","Activé"],["Rapport hebdomadaire","Activé"]] },
       ].map(sec=>(
@@ -1595,15 +1598,15 @@ function Settings({ isMobile }) {
     <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
       <Card>
         <div style={{ display:"flex", alignItems:"center", gap:14, marginBottom:18 }}>
-          <div style={{ width:56, height:56, borderRadius:14, background:C.accentBg, border:`2px solid #DFC0A0`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:18, fontWeight:800, color:C.accent }}>ML</div>
+          <div style={{ width:56, height:56, borderRadius:14, background:C.accentBg, border:`2px solid #DFC0A0`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:18, fontWeight:800, color:C.accent }}>{userName?userName.split(" ").map(n=>n[0]).join("").toUpperCase().slice(0,2):"?"}</div>
           <div>
-            <div style={{ fontSize:17, fontWeight:800, color:C.text }}>Marie Laurent</div>
-            <div style={{ fontSize:13, color:C.textSoft, marginTop:2 }}>marie.l@yogalate.fr</div>
+            <div style={{ fontSize:17, fontWeight:800, color:C.text }}>{userName||"Utilisateur"}</div>
+            <div style={{ fontSize:13, color:C.textSoft, marginTop:2 }}>{userEmail||""}</div>
             <div style={{ marginTop:5 }}><RoleBadge role={currentRole}/></div>
           </div>
         </div>
         <div style={{ display:"grid", gridTemplateColumns:isMobile?"1fr":"1fr 1fr", gap:12 }}>
-          {[["Prénom","Marie"],["Nom","Laurent"],["Email","marie.l@yogalate.fr"],["Téléphone","06 12 34 56 78"]].map(([lbl,val])=>(
+          {[["Prénom",userName.split(" ")[0]||""],["Nom",userName.split(" ").slice(1).join(" ")||""],["Email",userEmail||""],["Téléphone",""]].map(([lbl,val])=>(
             <div key={lbl}><FieldLabel>{lbl}</FieldLabel>
               <input defaultValue={val} style={{ width:"100%", padding:"9px 12px", border:`1.5px solid ${C.border}`, borderRadius:8, fontSize:14, outline:"none", boxSizing:"border-box", color:C.text, background:C.surfaceWarm }}
                 onFocus={e=>e.target.style.borderColor=C.accent} onBlur={e=>e.target.style.borderColor=C.border}/>
@@ -3140,7 +3143,7 @@ function AdherentView({ onSwitch, isMobile }) {
 // ══════════════════════════════════════════════════════════════════════════════
 // ROOT — switch automatique par rôle
 // ══════════════════════════════════════════════════════════════════════════════
-export default function App({ initialRole = "admin", studioSlug = "", coachName = "", coachDisciplines = [], billingStatus = "trialing", trialEndsAt = null, onSignOut = null }) {
+export default function App({ initialRole = "admin", studioSlug = "", studioName = "", planName = "", membersCount = 0, userName = "", userRole = "", coachName = "", coachDisciplines = [], billingStatus = "trialing", trialEndsAt = null, onSignOut = null }) {
   const [role, setRole] = useState(initialRole); // "superadmin" | "admin" | "coach" | "adherent"
   const [page, setPage] = useState("planning");
   const width = useWidth();
@@ -3158,7 +3161,9 @@ export default function App({ initialRole = "admin", studioSlug = "", coachName 
   if (role === "adherent")   return <AdherentView   onSwitch={setRole} isMobile={isMobile}/>;
   // admin avec is_coach → vue admin normale (ils ont accès à tout)
   const Page = PAGES[page] || Dashboard;
+  const appCtxValue = { studioName, userName, planName, membersCount, userRole, userEmail: "" };
   return (
+    <AppCtx.Provider value={appCtxValue}>
     <div style={{ display:"flex", minHeight:"100vh", background:C.bg }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
@@ -3170,9 +3175,9 @@ export default function App({ initialRole = "admin", studioSlug = "", coachName 
         ::-webkit-scrollbar-thumb { background:#D0C4B8; border-radius:3px; }
         ::-webkit-scrollbar-track { background:transparent; }
       `}</style>
-      {!isMobile && <Sidebar active={page} onNav={setPage}/>}
+      {!isMobile && <Sidebar active={page} onNav={setPage} studioName={studioName} planName={planName} membersCount={membersCount} userName={userName} userRole={userRole}/>}
       <div style={{ flex:1, display:"flex", flexDirection:"column", minWidth:0, paddingBottom:isMobile?60:0 }}>
-        <TopBar title={PAGE_TITLES[page]} isMobile={isMobile} onSignOut={onSignOut} isSuperAdmin={initialRole==="superadmin"}/>
+        <TopBar title={PAGE_TITLES[page]} isMobile={isMobile} onSignOut={onSignOut} isSuperAdmin={initialRole==="superadmin"} studioName={studioName}/>
         {/* Bannière trial expiration */}
         {showTrialBanner && (
           <div style={{ background:trialDaysLeft<=3?"#F5EAE6":"#FDF4E3", borderBottom:`1px solid ${trialDaysLeft<=3?"#F5C2B5":"rgba(196,146,42,.25)"}`, padding:"10px 20px", display:"flex", alignItems:"center", justifyContent:"space-between", gap:12, flexWrap:"wrap" }}>
@@ -3206,5 +3211,6 @@ export default function App({ initialRole = "admin", studioSlug = "", coachName 
       </div>
       {isMobile && <BottomNav active={page} onNav={setPage}/>}
     </div>
+    </AppCtx.Provider>
   );
 }

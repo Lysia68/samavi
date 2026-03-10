@@ -16,6 +16,11 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const [coachDisciplines, setCoachDisciplines] = useState<any[]>([])
   const [billingStatus, setBillingStatus]       = useState<string>("trialing")
   const [trialEndsAt, setTrialEndsAt]           = useState<string | null>(null)
+  const [studioName, setStudioName]             = useState<string>("")
+  const [planName, setPlanName]                 = useState<string>("")
+  const [membersCount, setMembersCount]         = useState<number>(0)
+  const [userName, setUserName]                 = useState<string>("")
+  const [userRole, setUserRole]                 = useState<string>("")
 
   useEffect(() => {
     // Tout accès à window EST dans useEffect — jamais au niveau module/rendu
@@ -69,17 +74,31 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           window.location.href = "https://fydelys.fr/dashboard"
           return
         }
-        // Charger le billing status pour les admins
-        if (role === "admin" && profile?.studio_id) {
+        // Nom de l'utilisateur
+        const fullName = `${profile?.first_name || ""} ${profile?.last_name || ""}`.trim()
+        setUserName(fullName)
+        setUserRole(role)
+
+        // Charger les données studio pour admin/coach/adhérent
+        if (profile?.studio_id) {
           const { data: studioData } = await supabase
             .from("studios")
-            .select("billing_status, trial_ends_at")
+            .select("name, billing_status, trial_ends_at, plan_slug")
             .eq("id", profile.studio_id)
             .single()
           if (studioData) {
+            setStudioName(studioData.name || "")
             setBillingStatus(studioData.billing_status || "trialing")
             setTrialEndsAt(studioData.trial_ends_at || null)
+            setPlanName(studioData.plan_slug || "Essentiel")
           }
+          // Nombre de membres actifs
+          const { count } = await supabase
+            .from("members")
+            .select("id", { count: "exact", head: true })
+            .eq("studio_id", profile.studio_id)
+            .eq("status", "actif")
+          setMembersCount(count || 0)
         }
         setInitialRole(role)
       } else {
@@ -105,6 +124,11 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     <FydelysV4
       initialRole={initialRole}
       studioSlug={studioSlug}
+      studioName={studioName}
+      planName={planName}
+      membersCount={membersCount}
+      userName={userName}
+      userRole={userRole}
       coachName={coachName}
       coachDisciplines={coachDisciplines}
       billingStatus={billingStatus}
