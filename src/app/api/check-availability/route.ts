@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { createServiceSupabase } from "@/lib/supabase-server"
+import { createClient } from "@supabase/supabase-js"
 
 export const dynamic = "force-dynamic"
 
@@ -8,27 +8,38 @@ export async function GET(request: NextRequest) {
   const slug  = searchParams.get("slug")
   const email = searchParams.get("email")
 
-  const db = createServiceSupabase()
   const result: { slugTaken?: boolean; emailTaken?: boolean } = {}
 
-  if (slug) {
-    const { data } = await db
-      .from("studios").select("id").eq("slug", slug).single()
-    result.slugTaken = !!data
-  }
+  try {
+    const url  = process.env.NEXT_PUBLIC_SUPABASE_URL!
+    const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 
-  if (email) {
-    // Utilise une RPC SQL pour chercher dans auth.users sans passer par le SDK admin
-    // (évite les problèmes de typage de listUsers/getUserByEmail selon la version)
-    const { data, error } = await db.rpc("email_exists_in_auth", { p_email: email })
-    if (error) {
-      // Fallback : cast explicite pour getUserByEmail
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const res = await (db.auth.admin as any).getUserByEmail(email as string)
-      result.emailTaken = !!res?.data?.user
-    } else {
-      result.emailTaken = !!data
+    // Slug : anon key suffit (studios est lisible publiquement via RLS ou pas de RLS)
+    const anon = createClient(url, anonKey)
+    if (slug) {
+      const { data } = await anon.from("studios").select("id").eq("slug", slug).maybeSingle()
+      result.slugTaken = !!data
     }
+
+    // Email : RPC email_exists_in_auth (nécessite service_role)
+    if (email) {
+      if (serviceKey) {
+        const admin = createClient(url, serviceKey, {
+          auth: { autoRefreshToken: false, persistSession: false }
+        })
+        const { data } = await admin.rpc("email_exists_in_auth", { p_email: email })
+        result.emailTaken = data === true
+      } else {
+        // Fallback sans service_role : vérifier dans pending_registrations seulement
+        const { data } = await anon
+          .from("pending_registrations").select("email").eq("email", email).maybeSingle()
+        result.emailTaken = !!data
+      }
+    }
+  } catch (err) {
+    console.error("check-availability:", err)
+    // On retourne un résultat vide plutôt que 500 — la vérification finale au submit bloquera
   }
 
   return NextResponse.json(result)
