@@ -1837,7 +1837,23 @@ const PAGES = { dashboard:Dashboard, planning:Planning, members:Members, subscri
 // SUPER ADMIN VIEW
 // ══════════════════════════════════════════════════════════════════════════════
 
-// Départ sans aucun tenant mock — liste vide
+// Palette beige/marron Super Admin
+const SA_C = {
+  bg:"#F4EFE8", surface:"#FFFFFF", surfaceWarm:"#FBF8F4",
+  border:"#DDD5C8", borderSoft:"#EAE4DA",
+  text:"#2A1F14", textMid:"#5C4A38", textSoft:"#8C7B6C", textMuted:"#B0A090",
+  accent:"#A06838", accentDark:"#8C5E38", accentBg:"#F5EBE0", accentLight:"#FBF6EE",
+  ok:"#4E8A58", okBg:"#E6F2E8", warn:"#A85030", warnBg:"#F5EAE6",
+  info:"#3A6E90", infoBg:"#E6EFF5", gold:"#C4922A", goldBg:"#FDF4E3",
+};
+const saInp = (f=false,err=false) => ({
+  width:"100%", padding:"9px 12px",
+  border:`1.5px solid ${err?"#F87171":f?"#A06838":"#DDD5C8"}`,
+  borderRadius:9, fontSize:13, outline:"none",
+  color:"#2A1F14", background:"#FDFAF7",
+  boxSizing:"border-box",
+  boxShadow: f?"0 0 0 3px rgba(160,104,56,.07)":"none"
+});
 const TENANTS_INIT = [];
 
 function SuperAdminView({ onSwitch, isMobile }) {
@@ -1868,11 +1884,7 @@ function SuperAdminView({ onSwitch, isMobile }) {
   const validateSlug = (s) => /^[a-z0-9]+(-[a-z0-9]+)*$/.test(s);
 
   // ── Shared styles ─────────────────────────────────────────────────────────────
-  const SA = {
-    background:"rgba(255,255,255,.06)", border:"1px solid rgba(255,255,255,.12)",
-    borderRadius:8, color:"#fff", fontSize:13, outline:"none",
-    padding:"9px 12px", width:"100%", boxSizing:"border-box"
-  };
+  const SA = saInp();
 
   // ── Form Modal (New + Edit) ───────────────────────────────────────────────────
   function TenantFormModal({ editing }) {
@@ -1945,21 +1957,21 @@ function SuperAdminView({ onSwitch, isMobile }) {
 
     const FieldSA = ({label, k, placeholder, type="text", required}) => (
       <div>
-        <label style={{ fontSize:11, fontWeight:700, color:"rgba(255,255,255,.5)", textTransform:"uppercase", letterSpacing:.8, display:"block", marginBottom:5 }}>
+        <label style={{ fontSize:11, fontWeight:700, color:"#8C7B6C", textTransform:"uppercase", letterSpacing:.8, display:"block", marginBottom:5 }}>
           {label}{required&&<span style={{color:"#F87171"}}> *</span>}
         </label>
         <input type={type} value={f[k]} onChange={e=>upd(k,e.target.value)} placeholder={placeholder}
-          style={{...SA, borderColor:errors[k]?"#F87171":"rgba(255,255,255,.12)"}}/>
+          style={saInp(false,!!errors[k])}/>
         {errors[k]&&<div style={{fontSize:11,color:"#F87171",marginTop:3}}>{errors[k]}</div>}
       </div>
     );
     const SelectSA = ({label, k, opts, required}) => (
       <div>
-        <label style={{ fontSize:11, fontWeight:700, color:"rgba(255,255,255,.5)", textTransform:"uppercase", letterSpacing:.8, display:"block", marginBottom:5 }}>
+        <label style={{ fontSize:11, fontWeight:700, color:"#8C7B6C", textTransform:"uppercase", letterSpacing:.8, display:"block", marginBottom:5 }}>
           {label}{required&&<span style={{color:"#F87171"}}> *</span>}
         </label>
-        <select value={f[k]} onChange={e=>upd(k,e.target.value)} style={{...SA, appearance:"none"}}>
-          {opts.map(o=><option key={o.v} value={o.v} style={{background:"#1a1030"}}>{o.l}</option>)}
+        <select value={f[k]} onChange={e=>upd(k,e.target.value)} style={{...saInp(), appearance:"none"}}>
+          {opts.map(o=><option key={o.v} value={o.v} style={{background:"#FDFAF7"}}>{o.l}</option>)}
         </select>
       </div>
     );
@@ -1967,20 +1979,20 @@ function SuperAdminView({ onSwitch, isMobile }) {
     const STEPS = ["Studio", "Contact", "Confirmation"];
     return (
       <div onClick={e=>e.target===e.currentTarget&&setModal(null)}
-        style={{position:"fixed",inset:0,background:"rgba(0,0,0,.7)",zIndex:800,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
-        <div style={{background:"#1A1035",border:"1px solid rgba(167,139,250,.2)",borderRadius:20,padding:32,width:"100%",maxWidth:520,boxShadow:"0 32px 64px rgba(0,0,0,.5)",maxHeight:"90vh",overflowY:"auto"}}>
+        style={{position:"fixed",inset:0,background:"rgba(42,31,20,.5)",zIndex:800,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
+        <div style={{background:"#FFFFFF",border:"1px solid rgba(167,139,250,.2)",borderRadius:20,padding:32,width:"100%",maxWidth:520,boxShadow:"0 32px 64px rgba(0,0,0,.5)",maxHeight:"90vh",overflowY:"auto"}}>
 
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:24}}>
             <div>
-              <div style={{fontSize:20,fontWeight:800,color:"#fff",letterSpacing:-0.5}}>{editing?"Modifier le tenant":"Nouveau tenant"}</div>
-              <div style={{fontSize:12,color:"#A78BFA",marginTop:2}}>Étape {step} / 3 — {STEPS[step-1]}</div>
+              <div style={{fontSize:20,fontWeight:800,color:"#2A1F14",letterSpacing:-0.5}}>{editing?"Modifier le tenant":"Nouveau tenant"}</div>
+              <div style={{fontSize:12,color:"#8C7B6C",marginTop:2}}>Étape {step} / 3 — {STEPS[step-1]}</div>
             </div>
-            <button onClick={()=>setModal(null)} style={{background:"rgba(255,255,255,.08)",border:"1px solid rgba(255,255,255,.15)",borderRadius:8,width:32,height:32,cursor:"pointer",color:"rgba(255,255,255,.6)",fontSize:16,display:"flex",alignItems:"center",justifyContent:"center"}}>✕</button>
+            <button onClick={()=>setModal(null)} style={{background:"#F4EFE8",border:"1px solid #DDD5C8",borderRadius:8,width:32,height:32,cursor:"pointer",color:"#8C7B6C",fontSize:16,display:"flex",alignItems:"center",justifyContent:"center"}}>✕</button>
           </div>
 
           <div style={{display:"flex",gap:6,marginBottom:28}}>
             {STEPS.map((s,i)=>(
-              <div key={s} style={{flex:1,height:3,borderRadius:2,background:i+1<=step?"#7C3AED":"rgba(255,255,255,.1)"}}/>
+              <div key={s} style={{flex:1,height:3,borderRadius:2,background:i+1<=step?"#A06838":"#EAE4DA"}}/>
             ))}
           </div>
 
@@ -1988,16 +2000,16 @@ function SuperAdminView({ onSwitch, isMobile }) {
             <div style={{display:"flex",flexDirection:"column",gap:16}}>
               <FieldSA label="Nom du studio / centre" k="name" placeholder="Ex: Yoga Flow Paris" required/>
               <div>
-                <label style={{fontSize:11,fontWeight:700,color:"rgba(255,255,255,.5)",textTransform:"uppercase",letterSpacing:.8,display:"block",marginBottom:5}}>
-                  Sous-domaine <span style={{color:"rgba(255,255,255,.3)"}}>(lettres, chiffres, tirets)</span> <span style={{color:"#F87171"}}>*</span>
+                <label style={{fontSize:11,fontWeight:700,color:"#8C7B6C",textTransform:"uppercase",letterSpacing:.8,display:"block",marginBottom:5}}>
+                  Sous-domaine <span style={{color:"#B0A090"}}>(lettres, chiffres, tirets)</span> <span style={{color:"#F87171"}}>*</span>
                 </label>
-                <div style={{display:"flex",alignItems:"center",background:"rgba(255,255,255,.04)",border:`1px solid ${errors.slug?"#F87171":"rgba(255,255,255,.1)"}`,borderRadius:8,overflow:"hidden"}}>
-                  <span style={{padding:"9px 12px",color:"rgba(255,255,255,.3)",fontSize:13,borderRight:"1px solid rgba(255,255,255,.1)",whiteSpace:"nowrap"}}>fydelys.fr/</span>
+                <div style={{display:"flex",alignItems:"center",background:"#FAFAF8",border:`1.5px solid ${errors.slug?"#F87171":"#DDD5C8"}`,borderRadius:9,overflow:"hidden"}}>
+                  <span style={{padding:"9px 12px",color:"#8C7B6C",fontSize:13,borderRight:"1px solid #DDD5C8",whiteSpace:"nowrap"}}>fydelys.fr/</span>
                   <input value={f.slug} onChange={e=>upd("slug",e.target.value)} placeholder="yoga-flow-paris"
-                    style={{...SA,border:"none",background:"transparent",flex:1}}/>
+                    style={{...saInp(),border:"none",background:"transparent",flex:1}}/>
                 </div>
                 {errors.slug&&<div style={{fontSize:11,color:"#F87171",marginTop:3}}>{errors.slug}</div>}
-                <div style={{fontSize:11,color:"rgba(255,255,255,.3)",marginTop:4}}>✓ Autorisé : <code style={{color:"#A78BFA"}}>yoga-paris</code> · <code style={{color:"#A78BFA"}}>studio2</code> &nbsp; ✗ Interdit : points, espaces, majuscules, accents</div>
+                <div style={{fontSize:11,color:"#B0A090",marginTop:4}}>✓ Autorisé : <code style={{color:"#A06838"}}>yoga-paris</code> · <code style={{color:"#A06838"}}>studio2</code> &nbsp; ✗ Interdit : points, espaces, majuscules, accents</div>
               </div>
               <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
                 <FieldSA label="Ville" k="city" placeholder="Paris, Lyon…" required/>
@@ -2017,7 +2029,7 @@ function SuperAdminView({ onSwitch, isMobile }) {
 
           {step===2&&(
             <div style={{display:"flex",flexDirection:"column",gap:16}}>
-              <div style={{padding:"12px 16px",background:"rgba(167,139,250,.08)",borderRadius:10,border:"1px solid rgba(167,139,250,.15)",fontSize:13,color:"#C4B5FD"}}>
+              <div style={{padding:"12px 16px",background:"rgba(167,139,250,.08)",borderRadius:10,border:"1px solid rgba(167,139,250,.15)",fontSize:13,color:"#8C5E38"}}>
                 👤 Informations du gérant / responsable du studio
               </div>
               <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
@@ -2028,19 +2040,19 @@ function SuperAdminView({ onSwitch, isMobile }) {
               <FieldSA label="Téléphone" k="phone" type="tel" placeholder="+33 6 12 34 56 78" required/>
               {/* Toggle coach */}
               <div onClick={()=>upd("isCoach",!f.isCoach)}
-                style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"12px 14px",background:f.isCoach?"rgba(167,139,250,.12)":"rgba(255,255,255,.04)",border:`1px solid ${f.isCoach?"rgba(167,139,250,.35)":"rgba(255,255,255,.1)"}`,borderRadius:10,cursor:"pointer",userSelect:"none"}}>
+                style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"12px 14px",background:f.isCoach?"#F5EBE0":"#FAFAF8",border:`1px solid ${f.isCoach?"rgba(160,104,56,.3)":"#DDD5C8"}`,borderRadius:10,cursor:"pointer",userSelect:"none"}}>
                 <div>
-                  <div style={{fontSize:13,fontWeight:700,color:f.isCoach?"#C4B5FD":"rgba(255,255,255,.7)"}}>🎯 Aussi coach / intervenant</div>
-                  <div style={{fontSize:11,color:"rgba(255,255,255,.3)",marginTop:2}}>Le gérant donne également des cours dans son studio</div>
+                  <div style={{fontSize:13,fontWeight:700,color:f.isCoach?"#8C5E38":"#8C7B6C"}}>🎯 Aussi coach / intervenant</div>
+                  <div style={{fontSize:11,color:"#B0A090",marginTop:2}}>Le gérant donne également des cours dans son studio</div>
                 </div>
-                <div style={{width:40,height:22,borderRadius:11,background:f.isCoach?"#7C3AED":"rgba(255,255,255,.15)",position:"relative",flexShrink:0,transition:"background .2s"}}>
+                <div style={{width:40,height:22,borderRadius:11,background:f.isCoach?"#A06838":"rgba(160,104,56,.15)",position:"relative",flexShrink:0,transition:"background .2s"}}>
                   <div style={{position:"absolute",top:3,left:f.isCoach?20:3,width:16,height:16,borderRadius:"50%",background:"#fff",transition:"left .2s"}}/>
                 </div>
               </div>
               <div>
-                <label style={{fontSize:11,fontWeight:700,color:"rgba(255,255,255,.5)",textTransform:"uppercase",letterSpacing:.8,display:"block",marginBottom:5}}>Notes internes</label>
+                <label style={{fontSize:11,fontWeight:700,color:"#8C7B6C",textTransform:"uppercase",letterSpacing:.8,display:"block",marginBottom:5}}>Notes internes</label>
                 <textarea value={f.notes} onChange={e=>upd("notes",e.target.value)} placeholder="Informations complémentaires, source du lead…" rows={3}
-                  style={{...SA,resize:"vertical"}}/>
+                  style={{...saInp(),resize:"vertical"}}/>
               </div>
             </div>
           )}
@@ -2060,14 +2072,14 @@ function SuperAdminView({ onSwitch, isMobile }) {
                   ["Téléphone",    f.phone],
                   ["Rôle gérant",  f.isCoach ? "Admin + Coach" : "Admin uniquement"],
                 ].map(([k,v])=>(
-                  <div key={k} style={{display:"flex",justifyContent:"space-between",padding:"6px 0",borderBottom:"1px solid rgba(255,255,255,.05)",fontSize:13}}>
-                    <span style={{color:"rgba(255,255,255,.4)"}}>{k}</span>
-                    <span style={{color:"#fff",fontWeight:600}}>{v}</span>
+                  <div key={k} style={{display:"flex",justifyContent:"space-between",padding:"6px 0",borderBottom:"1px solid #EDE6DC",fontSize:13}}>
+                    <span style={{color:"#8C7B6C"}}>{k}</span>
+                    <span style={{color:"#2A1F14",fontWeight:600}}>{v}</span>
                   </div>
                 ))}
               </div>
               {!editing&&(
-                <div style={{padding:"12px 16px",background:"rgba(251,191,36,.08)",borderRadius:10,border:"1px solid rgba(251,191,36,.2)",fontSize:12,color:"#FCD34D",lineHeight:1.6}}>
+                <div style={{padding:"12px 16px",background:"#FBF6EE",borderRadius:10,border:"1px solid rgba(160,104,56,.2)",fontSize:12,color:"#8C7B6C",lineHeight:1.6}}>
                   🌱 <strong>Seed automatique :</strong> disciplines, abonnements et 1 séance de démo seront créés dans Supabase pour ce studio.
                 </div>
               )}
@@ -2076,16 +2088,16 @@ function SuperAdminView({ onSwitch, isMobile }) {
 
           <div style={{display:"flex",gap:10,marginTop:24}}>
             {step>1&&(
-              <button onClick={()=>setStep(s=>s-1)} style={{flex:1,padding:"11px",background:"transparent",border:"1px solid rgba(255,255,255,.2)",borderRadius:10,color:"rgba(255,255,255,.7)",fontSize:14,fontWeight:600,cursor:"pointer"}}>← Retour</button>
+              <button onClick={()=>setStep(s=>s-1)} style={{flex:1,padding:"11px",background:"transparent",border:"1px solid #DDD5C8",borderRadius:10,color:"#8C7B6C",fontSize:14,fontWeight:600,cursor:"pointer"}}>← Retour</button>
             )}
             {step<3?(
-              <button onClick={nextStep} style={{flex:2,padding:"11px",background:"linear-gradient(135deg,#7C3AED,#5B21B6)",border:"none",borderRadius:10,color:"#fff",fontSize:14,fontWeight:700,cursor:"pointer"}}>Continuer →</button>
+              <button onClick={nextStep} style={{flex:2,padding:"11px",background:"linear-gradient(145deg,#B88050,#9A6030)",border:"none",borderRadius:10,color:"#fff",fontSize:14,fontWeight:700,cursor:"pointer"}}>Continuer →</button>
             ):(
               <button onClick={save} style={{flex:2,padding:"11px",background:editing?"linear-gradient(135deg,#2563EB,#1D4ED8)":"linear-gradient(135deg,#059669,#047857)",border:"none",borderRadius:10,color:"#fff",fontSize:14,fontWeight:700,cursor:"pointer"}}>
                 {editing?"💾 Enregistrer":"🚀 Créer le tenant"}
               </button>
             )}
-            {step===1&&<button onClick={()=>setModal(null)} style={{flex:1,padding:"11px",background:"transparent",border:"1px solid rgba(255,255,255,.15)",borderRadius:10,color:"rgba(255,255,255,.5)",fontSize:14,cursor:"pointer"}}>Annuler</button>}
+            {step===1&&<button onClick={()=>setModal(null)} style={{flex:1,padding:"11px",background:"transparent",border:"1px solid #DDD5C8",borderRadius:10,color:"#B0A090",fontSize:14,cursor:"pointer"}}>Annuler</button>}
           </div>
         </div>
       </div>
@@ -2096,15 +2108,15 @@ function SuperAdminView({ onSwitch, isMobile }) {
   function DeleteModal({ tenant }) {
     return (
       <div onClick={e=>e.target===e.currentTarget&&setModal(null)}
-        style={{position:"fixed",inset:0,background:"rgba(0,0,0,.7)",zIndex:800,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
-        <div style={{background:"#1A1035",border:"1px solid rgba(248,113,113,.3)",borderRadius:20,padding:32,width:"100%",maxWidth:420,boxShadow:"0 32px 64px rgba(0,0,0,.5)"}}>
+        style={{position:"fixed",inset:0,background:"rgba(42,31,20,.5)",zIndex:800,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
+        <div style={{background:"#FFFFFF",border:"1px solid rgba(248,113,113,.3)",borderRadius:20,padding:32,width:"100%",maxWidth:420,boxShadow:"0 32px 64px rgba(0,0,0,.5)"}}>
           <div style={{fontSize:32,textAlign:"center",marginBottom:16}}>🗑</div>
-          <div style={{fontSize:18,fontWeight:800,color:"#fff",textAlign:"center",marginBottom:8}}>Supprimer ce tenant ?</div>
-          <div style={{fontSize:14,color:"rgba(255,255,255,.5)",textAlign:"center",marginBottom:24,lineHeight:1.6}}>
+          <div style={{fontSize:18,fontWeight:800,color:"#2A1F14",textAlign:"center",marginBottom:8}}>Supprimer ce tenant ?</div>
+          <div style={{fontSize:14,color:"#8C7B6C",textAlign:"center",marginBottom:24,lineHeight:1.6}}>
             <strong style={{color:"#F87171"}}>{tenant.name}</strong> et toutes ses données (membres, séances, paiements) seront supprimées définitivement.
           </div>
           <div style={{display:"flex",gap:10}}>
-            <button onClick={()=>setModal(null)} style={{flex:1,padding:"11px",background:"transparent",border:"1px solid rgba(255,255,255,.2)",borderRadius:10,color:"rgba(255,255,255,.7)",fontSize:14,fontWeight:600,cursor:"pointer"}}>Annuler</button>
+            <button onClick={()=>setModal(null)} style={{flex:1,padding:"11px",background:"transparent",border:"1px solid #DDD5C8",borderRadius:10,color:"#8C7B6C",fontSize:14,fontWeight:600,cursor:"pointer"}}>Annuler</button>
             <button onClick={()=>{ setTenants(prev=>prev.filter(t=>t.id!==tenant.id)); setModal(null); showToast(`"${tenant.name}" supprimé`,false); }}
               style={{flex:1,padding:"11px",background:"linear-gradient(135deg,#DC2626,#B91C1C)",border:"none",borderRadius:10,color:"#fff",fontSize:14,fontWeight:700,cursor:"pointer"}}>
               Supprimer définitivement
@@ -2116,12 +2128,12 @@ function SuperAdminView({ onSwitch, isMobile }) {
   }
 
   return (
-    <div style={{minHeight:"100vh",background:"#0F0A1E"}}>
+    <div style={{minHeight:"100vh",background:"#F4EFE8"}}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
         * { box-sizing:border-box; font-family:-apple-system,'Inter',sans-serif; }
         body { margin:0; }
-        ::-webkit-scrollbar { width:5px; } ::-webkit-scrollbar-thumb { background:#4A3870; border-radius:3px; }
+        ::-webkit-scrollbar { width:5px; } ::-webkit-scrollbar-thumb { background:#C4A87A; border-radius:3px; }
       `}</style>
 
       {toast&&(
@@ -2134,22 +2146,22 @@ function SuperAdminView({ onSwitch, isMobile }) {
       {modal?.type==="delete" && <DeleteModal tenant={modal.tenant}/>}
 
       {/* TopBar */}
-      <div style={{borderBottom:"1px solid rgba(255,255,255,.08)",padding:`14px ${p}px`,display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:10}}>
+      <div style={{borderBottom:"1px solid #F4EFE8",padding:`14px ${p}px`,display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:10}}>
         <div style={{display:"flex",alignItems:"center",gap:12}}>
-          <div style={{width:36,height:36,borderRadius:10,background:"#7C3AED",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0}}>⚜️</div>
+          <div style={{width:36,height:36,borderRadius:10,background:"#F5EBE0",border:"1.5px solid #DDD5C8",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0}}>⚜️</div>
           <div>
-            <div style={{fontSize:16,fontWeight:800,color:"#fff",letterSpacing:-0.3}}>Fyde<span style={{color:"#A78BFA"}}>lys</span></div>
-            <div style={{fontSize:11,color:"#A78BFA",textTransform:"uppercase",letterSpacing:1,fontWeight:600}}>Super Admin</div>
+            <div style={{fontSize:16,fontWeight:800,color:"#2A1F14",letterSpacing:-0.3}}>Fyde<span style={{color:"#A06838"}}>lys</span></div>
+            <div style={{fontSize:11,color:"#8C7B6C",textTransform:"uppercase",letterSpacing:1,fontWeight:600}}>Super Admin</div>
           </div>
         </div>
-        <div style={{fontSize:12,color:"rgba(255,255,255,.4)"}}>Plateforme · {tenants.length} tenant{tenants.length!==1?"s":""}</div>
+        <div style={{fontSize:12,color:"#B0A090"}}>Plateforme · {tenants.length} tenant{tenants.length!==1?"s":""}</div>
       </div>
 
       <div style={{padding:`${p}px`}}>
         {/* KPIs */}
         <div style={{display:"grid",gridTemplateColumns:`repeat(${isMobile?2:4},1fr)`,gap:isMobile?10:16,marginBottom:24}}>
           {[
-            {l:"Tenants actifs", v:actifCount, sub:`/ ${tenants.length} total`,        c:"#A78BFA", bg:"rgba(167,139,250,.1)", icon:"🏢"},
+            {l:"Tenants actifs", v:actifCount, sub:`/ ${tenants.length} total`,        c:"#A06838", bg:"rgba(167,139,250,.1)", icon:"🏢"},
             {l:"Total membres",  v:totalMem,   sub:"tous studios",                     c:"#34D399", bg:"rgba(52,211,153,.1)",  icon:"👥"},
             {l:"CA mensuel",     v:totalRev>0?`${(totalRev/1000).toFixed(1)}k €`:"—", sub:"tenants actifs", c:"#FBBF24", bg:"rgba(251,191,36,.1)", icon:"💰"},
             {l:"Suspendus",      v:suspCount,  sub:suspCount?"action requise":"aucun", c:"#F87171", bg:"rgba(248,113,113,.1)", icon:"⚠"},
@@ -2157,65 +2169,65 @@ function SuperAdminView({ onSwitch, isMobile }) {
             <div key={k.l} style={{background:k.bg,borderRadius:14,padding:isMobile?"14px 12px":"20px",border:`1px solid ${k.c}20`}}>
               <div style={{fontSize:22,marginBottom:6}}>{k.icon}</div>
               <div style={{fontSize:isMobile?22:30,fontWeight:800,color:k.c,lineHeight:1}}>{k.v}</div>
-              <div style={{fontSize:11,color:"rgba(255,255,255,.5)",marginTop:4}}>{k.l}</div>
-              <div style={{fontSize:10,color:"rgba(255,255,255,.3)"}}>{k.sub}</div>
+              <div style={{fontSize:11,color:"#8C7B6C",marginTop:4}}>{k.l}</div>
+              <div style={{fontSize:10,color:"#B0A090"}}>{k.sub}</div>
             </div>
           ))}
         </div>
 
         {/* Table */}
-        <div style={{background:"rgba(255,255,255,.04)",borderRadius:14,border:"1px solid rgba(255,255,255,.08)",overflow:"hidden"}}>
-          <div style={{padding:"14px 18px",borderBottom:"1px solid rgba(255,255,255,.06)",display:"flex",gap:10,flexWrap:"wrap",alignItems:"center"}}>
+        <div style={{background:"#FAFAF8",borderRadius:14,border:"1px solid #DDD5C8",overflow:"hidden"}}>
+          <div style={{padding:"14px 18px",borderBottom:"1px solid #EAE4DA",display:"flex",gap:10,flexWrap:"wrap",alignItems:"center"}}>
             <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="🔍 Rechercher…"
-              style={{flex:1,minWidth:160,padding:"8px 14px",background:"rgba(255,255,255,.07)",border:"1px solid rgba(255,255,255,.12)",borderRadius:8,color:"#fff",fontSize:13,outline:"none",boxSizing:"border-box"}}/>
+              style={{flex:1,minWidth:160,padding:"8px 14px",background:"#FDFAF7",border:"1px solid #DDD5C8",borderRadius:8,color:"#2A1F14",fontSize:13,outline:"none",boxSizing:"border-box"}}/>
             <div style={{display:"flex",gap:6}}>
               {["tous","actif","suspendu"].map(f=>(
-                <button key={f} onClick={()=>setFilter(f)} style={{fontSize:12,padding:"5px 12px",borderRadius:16,border:`1px solid ${filter===f?"#7C3AED":"rgba(255,255,255,.15)"}`,background:filter===f?"#7C3AED":"transparent",color:filter===f?"#fff":"rgba(255,255,255,.6)",fontWeight:600,cursor:"pointer"}}>
+                <button key={f} onClick={()=>setFilter(f)} style={{fontSize:12,padding:"5px 12px",borderRadius:16,border:`1px solid ${filter===f?"#A06838":"#DDD5C8"}`,background:filter===f?"#A06838":"transparent",color:filter===f?"#fff":"#8C7B6C",fontWeight:600,cursor:"pointer"}}>
                   {f.charAt(0).toUpperCase()+f.slice(1)}
                 </button>
               ))}
             </div>
-            <button onClick={()=>setModal({type:"new"})} style={{fontSize:13,padding:"7px 16px",borderRadius:8,border:"none",background:"#7C3AED",color:"#fff",fontWeight:700,cursor:"pointer"}}>＋ Nouveau tenant</button>
+            <button onClick={()=>setModal({type:"new"})} style={{fontSize:13,padding:"7px 16px",borderRadius:8,border:"none",background:"#A06838",color:"#fff",fontWeight:700,cursor:"pointer"}}>＋ Nouveau tenant</button>
           </div>
 
           {/* Empty state */}
           {tenants.length===0&&(
             <div style={{padding:"56px 24px",textAlign:"center"}}>
               <div style={{fontSize:40,marginBottom:12}}>🏢</div>
-              <div style={{fontSize:16,fontWeight:700,color:"rgba(255,255,255,.6)",marginBottom:6}}>Aucun tenant pour l'instant</div>
-              <div style={{fontSize:13,color:"rgba(255,255,255,.3)",marginBottom:20}}>Créez votre premier studio client</div>
-              <button onClick={()=>setModal({type:"new"})} style={{padding:"10px 24px",background:"#7C3AED",border:"none",borderRadius:10,color:"#fff",fontSize:14,fontWeight:700,cursor:"pointer"}}>＋ Créer le premier tenant</button>
+              <div style={{fontSize:16,fontWeight:700,color:"#5C4A38",marginBottom:6}}>Aucun tenant pour l'instant</div>
+              <div style={{fontSize:13,color:"#B0A090",marginBottom:20}}>Créez votre premier studio client</div>
+              <button onClick={()=>setModal({type:"new"})} style={{padding:"10px 24px",background:"#A06838",border:"none",borderRadius:10,color:"#fff",fontSize:14,fontWeight:700,cursor:"pointer"}}>＋ Créer le premier tenant</button>
             </div>
           )}
 
           {/* Rows */}
           {filtered.map(t=>(
-            <div key={t.id} style={{padding:"13px 18px",borderBottom:"1px solid rgba(255,255,255,.05)",display:"flex",alignItems:"center",gap:14,flexWrap:isMobile?"wrap":"nowrap"}}
-              onMouseEnter={e=>e.currentTarget.style.background="rgba(255,255,255,.03)"}
+            <div key={t.id} style={{padding:"13px 18px",borderBottom:"1px solid #EAE4DA",display:"flex",alignItems:"center",gap:14,flexWrap:isMobile?"wrap":"nowrap"}}
+              onMouseEnter={e=>e.currentTarget.style.background="#FBF8F4"}
               onMouseLeave={e=>e.currentTarget.style.background=""}>
-              <div style={{width:34,height:34,borderRadius:8,background:"rgba(124,58,237,.2)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,flexShrink:0}}>🏛</div>
+              <div style={{width:34,height:34,borderRadius:8,background:"#F5EBE0",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,flexShrink:0}}>🏛</div>
               <div style={{flex:1,minWidth:100}}>
-                <div style={{fontSize:14,fontWeight:700,color:"#fff"}}>{t.name}</div>
-                <div style={{fontSize:11,color:"rgba(255,255,255,.4)"}}>{t.city} · {t.slug}.fydelys.fr · depuis {t.since}</div>
-                {t.contact&&<div style={{fontSize:11,color:"rgba(167,139,250,.6)"}}>{t.contact} · {t.email}</div>}
+                <div style={{fontSize:14,fontWeight:700,color:"#2A1F14"}}>{t.name}</div>
+                <div style={{fontSize:11,color:"#8C7B6C"}}>{t.city} · {t.slug}.fydelys.fr · depuis {t.since}</div>
+                {t.contact&&<div style={{fontSize:11,color:"#A06838"}}>{t.contact} · {t.email}</div>}
               </div>
               {!isMobile&&<>
                 <div style={{textAlign:"center",minWidth:56}}>
                   <div style={{fontSize:15,fontWeight:800,color:"#34D399"}}>{t.members}</div>
-                  <div style={{fontSize:10,color:"rgba(255,255,255,.4)"}}>membres</div>
+                  <div style={{fontSize:10,color:"#B0A090"}}>membres</div>
                 </div>
                 <div style={{textAlign:"center",minWidth:70}}>
                   <div style={{fontSize:15,fontWeight:800,color:"#FBBF24"}}>{(t.revenue||0).toLocaleString()} €</div>
-                  <div style={{fontSize:10,color:"rgba(255,255,255,.4)"}}>/mois</div>
+                  <div style={{fontSize:10,color:"#B0A090"}}>/mois</div>
                 </div>
               </>}
               <div style={{display:"flex",gap:6,alignItems:"center",flexShrink:0}}>
-                <span style={{fontSize:11,fontWeight:700,padding:"3px 9px",borderRadius:10,background:t.plan==="Pro"?"rgba(124,58,237,.3)":t.plan==="Business"?"rgba(251,191,36,.2)":"rgba(255,255,255,.08)",color:t.plan==="Pro"?"#C4B5FD":t.plan==="Business"?"#FCD34D":"rgba(255,255,255,.5)"}}>{t.plan}</span>
+                <span style={{fontSize:11,fontWeight:700,padding:"3px 9px",borderRadius:10,background:t.plan==="Pro"?"rgba(160,104,56,.2)":t.plan==="Business"?"rgba(251,191,36,.2)":"#F4EFE8",color:t.plan==="Pro"?"#8C5E38":t.plan==="Business"?"#FCD34D":"#8C7B6C"}}>{t.plan}</span>
                 <span style={{fontSize:11,fontWeight:700,padding:"3px 9px",borderRadius:10,background:t.status==="actif"?"rgba(52,211,153,.15)":"rgba(248,113,113,.15)",color:t.status==="actif"?"#34D399":"#F87171"}}>{t.status==="actif"?"Actif":"Suspendu"}</span>
               </div>
               <div style={{display:"flex",gap:6,flexShrink:0}}>
                 <button onClick={()=>setModal({type:"edit",tenant:t})}
-                  style={{fontSize:11,padding:"4px 10px",borderRadius:6,border:"1px solid rgba(167,139,250,.3)",background:"rgba(167,139,250,.1)",color:"#C4B5FD",cursor:"pointer",fontWeight:600}}>✏ Modifier</button>
+                  style={{fontSize:11,padding:"4px 10px",borderRadius:6,border:"1px solid rgba(167,139,250,.3)",background:"rgba(167,139,250,.1)",color:"#8C5E38",cursor:"pointer",fontWeight:600}}>✏ Modifier</button>
                 {t.status==="actif"
                   ? <button onClick={()=>{ setTenants(p=>p.map(x=>x.id===t.id?{...x,status:"suspendu"}:x)); showToast(`"${t.name}" suspendu`,false); }}
                       style={{fontSize:11,padding:"4px 10px",borderRadius:6,border:"1px solid rgba(248,113,113,.3)",background:"rgba(248,113,113,.1)",color:"#F87171",cursor:"pointer",fontWeight:600}}>Suspendre</button>
@@ -2229,22 +2241,22 @@ function SuperAdminView({ onSwitch, isMobile }) {
           ))}
 
           {filtered.length===0&&tenants.length>0&&(
-            <div style={{padding:"32px",textAlign:"center",color:"rgba(255,255,255,.3)",fontSize:13}}>Aucun résultat pour « {search} »</div>
+            <div style={{padding:"32px",textAlign:"center",color:"#B0A090",fontSize:13}}>Aucun résultat pour « {search} »</div>
           )}
         </div>
 
         {/* Stats bar */}
         {tenants.length>0&&(
-          <div style={{marginTop:16,padding:"14px 18px",background:"rgba(255,255,255,.03)",borderRadius:12,border:"1px solid rgba(255,255,255,.06)",display:"grid",gridTemplateColumns:isMobile?"1fr 1fr":"repeat(4,1fr)",gap:14}}>
+          <div style={{marginTop:16,padding:"14px 18px",background:"#FFFFFF",borderRadius:12,border:"1px solid #DDD5C8",display:"grid",gridTemplateColumns:isMobile?"1fr 1fr":"repeat(4,1fr)",gap:14}}>
             {[
-              {l:"Taux occupation moyen", v:"—",  c:"#A78BFA"},
+              {l:"Taux occupation moyen", v:"—",  c:"#A06838"},
               {l:"Séances / semaine",     v:"—",  c:"#34D399"},
               {l:"Taux renouvellement",   v:"—",  c:"#FBBF24"},
               {l:"Tickets support",       v:"0",  c:"#F87171"},
             ].map(s=>(
               <div key={s.l}>
                 <div style={{fontSize:20,fontWeight:800,color:s.c}}>{s.v}</div>
-                <div style={{fontSize:11,color:"rgba(255,255,255,.4)",marginTop:2}}>{s.l}</div>
+                <div style={{fontSize:11,color:"#8C7B6C",marginTop:2}}>{s.l}</div>
               </div>
             ))}
           </div>
