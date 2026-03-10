@@ -1,5 +1,6 @@
 "use client"
 export const dynamic = "force-dynamic"
+import * as React from "react"
 import { useState, useEffect } from "react"
 import { createClient } from "@/lib/supabase"
 
@@ -155,6 +156,44 @@ function DisciplinesModal({ studioType, onClose, onSave }: {
 
 type Ctx = "superadmin" | "tenant-login"
 
+// FR / SR définis HORS de LoginPage pour éviter la perte de focus
+type FRProps = { label:string; k:string; placeholder?:string; type?:string; required?:boolean; value:string; onChange:(k:string,v:string)=>void; error?:string }
+function FR({ label, k, placeholder, type="text", required=false, value, onChange, error }:FRProps) {
+  const [lf,setLf] = useState(false)
+  const inp=(f=false,err=false)=>({
+    width:"100%",padding:"11px 14px",border:`1.5px solid ${err?"#F87171":f?"rgba(160,104,56,.6)":"#DDD5C8"}`,
+    borderRadius:10,fontSize:14,outline:"none",color:"#2A1F14",background:"#FDFAF7",
+    boxSizing:"border-box" as const,boxShadow:f?"0 0 0 3px rgba(160,104,56,.07)":"none"
+  })
+  const lbl={fontSize:11,fontWeight:700,color:"#8C7B6C",textTransform:"uppercase" as const,letterSpacing:.8,display:"block",marginBottom:5}
+  return (
+    <div>
+      <label style={lbl}>{label}{required&&<span style={{color:"#F87171"}}> *</span>}</label>
+      <input type={type} value={value} onChange={e=>onChange(k,e.target.value)}
+        onFocus={()=>setLf(true)} onBlur={()=>setLf(false)} placeholder={placeholder} style={inp(lf,!!error)}/>
+      {error&&<div style={{fontSize:11,color:"#F87171",marginTop:3}}>{error}</div>}
+    </div>
+  )
+}
+type SRProps = { label:string; k:string; opts:{v:string;l:string}[]; value:string; onChange:(k:string,v:string)=>void }
+function SR({ label, k, opts, value, onChange }:SRProps) {
+  const inp=()=>({
+    width:"100%",padding:"11px 14px",border:"1.5px solid #DDD5C8",
+    borderRadius:10,fontSize:14,outline:"none",color:"#2A1F14",background:"#FDFAF7",
+    boxSizing:"border-box" as const
+  })
+  const lbl={fontSize:11,fontWeight:700,color:"#8C7B6C",textTransform:"uppercase" as const,letterSpacing:.8,display:"block",marginBottom:5}
+  return (
+    <div>
+      <label style={lbl}>{label}</label>
+      <select value={value} onChange={e=>onChange(k,e.target.value)}
+        style={{...inp(),appearance:"none" as const}}>
+        {opts.map((o)=><option key={o.v} value={o.v}>{o.l}</option>)}
+      </select>
+    </div>
+  )
+}
+
 export default function LoginPage() {
   const [ctx, setCtx]           = useState<Ctx>("tenant-login")
   const [studioName, setStudioName] = useState("")
@@ -268,26 +307,7 @@ export default function LoginPage() {
     borderRadius:12,fontSize:15,fontWeight:700,cursor:"pointer",letterSpacing:-0.2
   })
 
-  const FR=({label,k,placeholder,type="text",required=false}:any)=>{
-    const [lf,setLf]=useState(false)
-    return (
-      <div>
-        <label style={lbl}>{label}{required&&<span style={{color:"#F87171"}}> *</span>}</label>
-        <input type={type} value={(reg as any)[k]} onChange={e=>updReg(k,e.target.value)}
-          onFocus={()=>setLf(true)} onBlur={()=>setLf(false)} placeholder={placeholder} style={inp(lf,!!regErrors[k])}/>
-        {regErrors[k]&&<div style={{fontSize:11,color:"#F87171",marginTop:3}}>{regErrors[k]}</div>}
-      </div>
-    )
-  }
-  const SR=({label,k,opts}:any)=>(
-    <div>
-      <label style={lbl}>{label}</label>
-      <select value={(reg as any)[k]} onChange={e=>updReg(k,e.target.value)}
-        style={{...inp(),appearance:"none" as const}}>
-        {opts.map((o:any)=><option key={o.v} value={o.v}>{o.l}</option>)}
-      </select>
-    </div>
-  )
+
 
   const totalSlots = reg.disciplines.reduce((n,d)=>n+d.slots.length,0)
 
@@ -377,7 +397,7 @@ export default function LoginPage() {
               {/* Étape 1 */}
               {regStep===1 && (
                 <div style={{display:"flex",flexDirection:"column",gap:14}}>
-                  <FR label="Nom du studio / centre" k="studioName" placeholder="Ex: Yoga Flow Paris" required/>
+                  <FR label="Nom du studio / centre" k="studioName" placeholder="Ex: Yoga Flow Paris" required value={reg.studioName} onChange={updReg} error={regErrors.studioName}/>
 
                   {/* Slug — format input.fydelys.fr */}
                   <div>
@@ -394,10 +414,10 @@ export default function LoginPage() {
                   </div>
 
                   <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
-                    <FR label="Ville" k="city" placeholder="Paris" required/>
-                    <FR label="Adresse" k="address" placeholder="12 rue de la Paix"/>
+                    <FR label="Ville" k="city" placeholder="Paris" required value={reg.city} onChange={updReg} error={regErrors.city}/>
+                    <FR label="Adresse" k="address" placeholder="12 rue de la Paix" value={reg.address} onChange={updReg}/>
                   </div>
-                  <SR label="Type de pratique" k="type" opts={[
+                  <SR label="Type de pratique" k="type" value={reg.type} onChange={updReg} opts={[
                     {v:"Yoga",l:"🧘 Yoga"},{v:"Pilates",l:"⚡ Pilates"},{v:"Danse",l:"💃 Danse"},
                     {v:"Fitness",l:"🏋 Fitness"},{v:"Méditation",l:"☯ Méditation"},{v:"Multi",l:"🌀 Multi"}
                   ]}/>
@@ -414,11 +434,11 @@ export default function LoginPage() {
                     👤 Vos coordonnées (gérant du studio)
                   </div>
                   <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
-                    <FR label="Prénom" k="firstName" placeholder="Marie" required/>
-                    <FR label="Nom" k="lastName" placeholder="Laurent" required/>
+                    <FR label="Prénom" k="firstName" placeholder="Marie" required value={reg.firstName} onChange={updReg} error={regErrors.firstName}/>
+                    <FR label="Nom" k="lastName" placeholder="Laurent" required value={reg.lastName} onChange={updReg} error={regErrors.lastName}/>
                   </div>
-                  <FR label="Email professionnel" k="email" type="email" placeholder="marie@studio.fr" required/>
-                  <FR label="Téléphone" k="phone" type="tel" placeholder="+33 6 12 34 56 78" required/>
+                  <FR label="Email professionnel" k="email" type="email" placeholder="marie@studio.fr" required value={reg.email} onChange={updReg} error={regErrors.email}/>
+                  <FR label="Téléphone" k="phone" type="tel" placeholder="+33 6 12 34 56 78" required value={reg.phone} onChange={updReg} error={regErrors.phone}/>
                   <div onClick={()=>updReg("isCoach",!reg.isCoach)}
                     style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"12px 14px",
                       background:reg.isCoach?"#F5EBE0":"#FAFAF8",border:`1px solid ${reg.isCoach?"rgba(160,104,56,.3)":"#DDD5C8"}`,
