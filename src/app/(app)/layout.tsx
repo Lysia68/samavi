@@ -23,16 +23,38 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const [userRole, setUserRole]                 = useState<string>("")
 
   useEffect(() => {
-    // Tout accès à window EST dans useEffect — jamais au niveau module/rendu
+    const run = async () => {
     const hostname    = window.location.hostname
     const isAppHost   = hostname === "fydelys.fr" || hostname === "localhost" || hostname === "localhost:3000"
     const tenantMatch = hostname.match(/^([a-z0-9-]+)\.fydelys\.fr/)
     const slug        = tenantMatch ? tenantMatch[1] : ""
-
     setStudioSlug(slug)
 
-    supabase.auth.getUser().then(async ({ data: { user } }) => {
-      if (!user) { router.push("/"); return }
+    // Essayer d'abord getSession (cookie local), puis getUser (réseau) en fallback
+    let user: any = null
+    const { data: { session } } = await supabase.auth.getSession()
+    if (session?.user) {
+      user = session.user
+    } else {
+      // Fallback : getUser fait un appel réseau — plus fiable si cookie mal lu
+      const { data: { user: u } } = await supabase.auth.getUser()
+      user = u
+    }
+
+    if (!user) {
+      const cookieNames = document.cookie.split(";").map(c=>c.trim().split("=")[0]).filter(c=>c.includes("sb-")||c.includes("supabase")).join(",")
+      console.error("NO_SESSION | hostname:", hostname, "| auth cookies:", cookieNames || "AUCUN")
+      // Petit délai pour laisser le temps au cookie de s'établir
+      await new Promise(r => setTimeout(r, 500))
+      const { data: { session: s2 } } = await supabase.auth.getSession()
+      if (!s2?.user) {
+        window.location.href = "/"
+        return
+      }
+      user = s2.user
+    }
+
+    ;(async () => {
 
       const { data: profile } = await supabase
         .from("profiles")
@@ -104,7 +126,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       } else {
         setInitialRole(role)
       }
-    })
+    })()
+    }
+    run()
   }, [])
 
   // Loading — pas de window ici, on utilise le state isApp

@@ -273,9 +273,8 @@ export default function LandingPage() {
         <div className="nav-links">
           <a href="#fonctionnalites" className="nav-link">Fonctionnalités</a>
           <a href="#tarifs" className="nav-link">Tarifs</a>
-          <a href="/login" className="nav-link nav-link-conn">Connexion</a>
-          <a href="/login" style={{padding:"8px 14px",borderRadius:"8px",fontSize:14,fontWeight:600,color:"var(--mid)",textDecoration:"none",border:"1.5px solid var(--border)",background:"rgba(255,255,255,.55)"}} className="nav-cta-ghost">Connexion</a>
-          <a href="/login?tab=register" className="nav-cta">Créer mon studio</a>
+          <a href="/login" className="nav-cta-ghost">Connexion</a>
+          <a href="/login" className="nav-cta">Créer mon studio</a>
         </div>
       </nav>
 
