@@ -28,3 +28,5 @@ export async function GET(request: NextRequest) {
 
   return NextResponse.json(result)
 }
+
+>>>>>>> 644e36d223c3e059bbbf93ea2931dd0010623886
