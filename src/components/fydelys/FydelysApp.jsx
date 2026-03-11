@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase";
 import { AppCtx } from "./context";
 import { C, useWidth } from "./theme";
-import { DISCIPLINES } from "./demoData";
+import { DISCIPLINES, MY_COACH_NAME } from "./demoData";
 import { Sidebar, BottomNav, TopBar } from "./layout";
 import { Dashboard } from "./Dashboard";
 import { Planning } from "./Planning";
@@ -15,8 +15,6 @@ import { AidePage } from "./Aide";
 import { SuperAdminView } from "./SuperAdmin";
 import { CoachView } from "./CoachView";
 import { AdherentView } from "./AdherentView";
-
-const MY_COACH_NAME = "Sophie Laurent";
 
 const PAGE_TITLES = {
   dashboard:"Tableau de bord", planning:"Planning", members:"Adhérents",

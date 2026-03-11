@@ -2,9 +2,9 @@ import React, { useState, useEffect, useContext } from "react";
 import { createClient } from "@/lib/supabase";
 import { AppCtx } from "./context";
 import { C } from "./theme";
-import { FYDELYS_PLANS, DISCIPLINES } from "./demoData";
+import { FYDELYS_PLANS, DISCIPLINES, ROLES_DEF, TENANTS_INIT, TENANTS_DATA, USERS_DATA } from "./demoData";
 import { IcoUser, IcoUsers, IcoSettings, IcoCheck, IcoX, IcoMail, IcoLogOut, IcoCalendar, IcoAlert, IcoEuro, IcoHome, IcoLayers, IcoTag, IcoUserPlus, IcoYoga } from "./icons";
-import { Card, SectionHead, Button, Field, Tag, Pill, EmptyState } from "./ui";
+import { Card, SectionHead, Button, Field, FieldLabel, Tag, Pill, EmptyState } from "./ui";
 
 function RoleBadge({ role }) {
   const r = ROLES_DEF[role] || ROLES_DEF.adherent;
@@ -954,9 +954,7 @@ const saInp = (f=false,err=false) => ({
   boxSizing:"border-box",
   boxShadow: f?"0 0 0 3px rgba(160,104,56,.07)":"none"
 });
-const TENANTS_INIT = [];
 
-// FieldSA / SelectSA définis HORS de SuperAdminView pour éviter la perte de focus
-// (React recrée les composants internes à chaque render sinon)
+// FieldSA / SelectSA définis HORS de SuperAdminView
 
 export { Settings, InviteCoachModal, RoleBadge };

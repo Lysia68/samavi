@@ -200,9 +200,58 @@ const FYDELYS_PLANS = [
 const PAYMENTS = PAYMENTS_DEMO;
 
 
+const ROLES_DEF = {
+  superadmin: { label:"Super Admin", color:"#7C3AED", bg:"#F3EEFF", desc:"Accès complet à tous les tenants, configuration plateforme, facturation" },
+  admin:      { label:"Admin",       color:"#B07848", bg:"#F5EBE0", desc:"Gestion complète du studio : membres, planning, paiements, paramètres" },
+  staff:      { label:"Staff",       color:"#3A6E90", bg:"#E6EFF5", desc:"Accès planning et membres, pas d'accès aux paramètres ni paiements" },
+  adherent:   { label:"Adhérent",    color:"#4E8A58", bg:"#E6F2E8", desc:"Accès à son espace personnel, réservations et historique de séances" },
+};
+
 export {
   DISC_IDS, MEMBERS_DEMO, SESSIONS_DEMO, BOOKINGS_DEMO,
   SUBSCRIPTIONS_DEMO, PAYMENTS_DEMO,
   MEMBERS, DISCIPLINES, SESSIONS_INIT, BOOKINGS_INIT, SUBSCRIPTIONS_INIT,
-  FYDELYS_PLANS, PAYMENTS,
+  FYDELYS_PLANS, PAYMENTS, ROLES_DEF,
 };
+
+// ── Nav configs ───────────────────────────────────────────────────────────────
+// (defined here to be shared between CoachView, SuperAdmin, AdherentView)
+// Note: icon references are strings here; actual Ico components resolved in each file
+
+const COACH_NAV_KEYS = [
+  { key:"planning",  label:"Mes cours"    },
+  { key:"students",  label:"Mes inscrits" },
+  { key:"profile",   label:"Mon profil"   },
+];
+
+const ADH_NAV_KEYS = [
+  { key:"planning",  label:"Planning"    },
+  { key:"account",   label:"Mon compte"  },
+  { key:"history",   label:"Historique"  },
+  { key:"payment",   label:"Paiement"    },
+];
+
+const MY_COACH_NAME = "Sophie Laurent";
+
+const TENANTS_INIT = [];
+
+const TENANTS_DATA = [
+  { id:"t1", name:"Yogalate Paris",    plan:"Pro",      members:124, revenue:"6 240 €", status:"actif",    city:"Paris 1er",   since:"Jan 2025" },
+  { id:"t2", name:"Zen Studio Lyon",   plan:"Essentiel",members:48,  revenue:"1 890 €", status:"actif",    city:"Lyon 2e",     since:"Mar 2025" },
+  { id:"t3", name:"Flow Bordeaux",     plan:"Pro",      members:87,  revenue:"4 120 €", status:"actif",    city:"Bordeaux",    since:"Fév 2025" },
+  { id:"t4", name:"Pilates Nice",      plan:"Essentiel",members:31,  revenue:"980 €",   status:"suspendu", city:"Nice",        since:"Avr 2025" },
+  { id:"t5", name:"Ashtanga Nantes",   plan:"Pro",      members:105, revenue:"5 100 €", status:"actif",    city:"Nantes",      since:"Nov 2024" },
+];
+
+const USERS_DATA = [
+  { id:"u1", fn:"Marie",   ln:"Laurent",  email:"marie.l@yogalate.fr",  role:"admin",    tenant:"t1", status:"actif",    lastLogin:"Aujourd'hui" },
+  { id:"u2", fn:"Thomas",  ln:"Blanc",    email:"thomas.b@yogalate.fr", role:"staff",    tenant:"t1", status:"actif",    lastLogin:"Hier" },
+  { id:"u3", fn:"Sophie",  ln:"Leroux",   email:"sophie@yogalate.fr",   role:"adherent", tenant:"t1", status:"actif",    lastLogin:"Il y a 3j" },
+  { id:"u4", fn:"Claire",  ln:"Martin",   email:"claire@yogalate.fr",   role:"adherent", tenant:"t1", status:"actif",    lastLogin:"Aujourd'hui" },
+  { id:"u5", fn:"Paul",    ln:"Dubois",   email:"paul@zenstudio.fr",    role:"admin",    tenant:"t2", status:"actif",    lastLogin:"Il y a 2j" },
+  { id:"u6", fn:"Julie",   ln:"Bernard",  email:"julie@zenstudio.fr",   role:"staff",    tenant:"t2", status:"actif",    lastLogin:"Il y a 5j" },
+  { id:"u7", fn:"Antoine", ln:"Girard",   email:"ant@flow.fr",          role:"admin",    tenant:"t3", status:"actif",    lastLogin:"Hier" },
+  { id:"u8", fn:"Nadia",   ln:"Blanco",   email:"nadia@flow.fr",        role:"adherent", tenant:"t3", status:"suspendu", lastLogin:"Il y a 14j" },
+];
+
+export { COACH_NAV_KEYS, ADH_NAV_KEYS, MY_COACH_NAME, TENANTS_INIT, TENANTS_DATA, USERS_DATA };

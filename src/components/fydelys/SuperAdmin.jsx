@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase";
 import { C } from "./theme";
 import { IcoUsers, IcoUser, IcoSettings, IcoX, IcoCheck, IcoCalendar } from "./icons";
-import { SESSIONS_INIT, FYDELYS_PLANS } from "./demoData";
+import { SESSIONS_INIT, FYDELYS_PLANS, MY_COACH_NAME, TENANTS_INIT, TENANTS_DATA, USERS_DATA, ROLES_DEF } from "./demoData";
 import { Card, SectionHead, Button, Tag, Pill, EmptyState, ConfirmModal } from "./ui";
 
 const saInp = (f=false,err=false) => ({
@@ -13,7 +13,6 @@ const saInp = (f=false,err=false) => ({
   boxSizing:"border-box",
   boxShadow: f?"0 0 0 3px rgba(160,104,56,.07)":"none"
 });
-const TENANTS_INIT = [];
 
 // FieldSA / SelectSA définis HORS de SuperAdminView pour éviter la perte de focus
 // (React recrée les composants internes à chaque render sinon)
@@ -483,15 +482,6 @@ function SuperAdminView({ onSwitch, isMobile, onSignOut }) {
 // ══════════════════════════════════════════════════════════════════════════════
 // COACH VIEW — uniquement ses cours, inscrits, profil
 // ══════════════════════════════════════════════════════════════════════════════
-const COACH_NAV = [
-  { key:"planning",  label:"Mes cours",     icon:IcoCalendar  },
-  { key:"students",  label:"Mes inscrits",  icon:IcoUsers     },
-  { key:"profile",   label:"Mon profil",    icon:IcoUser      },
-];
-
-// Données mock — le coach voit uniquement ses propres séances
-const MY_COACH_NAME = "Sophie Laurent"; // sera remplacé par le profil réel
-const MY_SESSIONS = SESSIONS_INIT.filter(s => s.teacher === MY_COACH_NAME);
 
 
 export { SuperAdminView };

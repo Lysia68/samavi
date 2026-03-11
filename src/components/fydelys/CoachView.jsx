@@ -2,13 +2,15 @@ import React, { useState, useEffect, useContext } from "react";
 import { createClient } from "@/lib/supabase";
 import { AppCtx } from "./context";
 import { C } from "./theme";
-import { SESSIONS_INIT, BOOKINGS_INIT, DISCIPLINES } from "./demoData";
+import { SESSIONS_INIT, BOOKINGS_INIT, DISCIPLINES, MY_COACH_NAME, COACH_NAV_KEYS, ADH_NAV_KEYS } from "./demoData";
 import { IcoCalendar, IcoUsers, IcoUser, IcoChevron, IcoBarChart, IcoCreditCard } from "./icons";
 import { Card, SectionHead, Button, Tag, Pill, EmptyState, DemoBanner } from "./ui";
 import { PlanningAccordion } from "./accordion";
 
-const MY_COACH_NAME = "Sophie Laurent"; // sera remplacé par le profil réel
 const MY_SESSIONS = SESSIONS_INIT.filter(s => s.teacher === MY_COACH_NAME);
+const COACH_NAV = COACH_NAV_KEYS.map((n,i) => ({ ...n, icon:[IcoCalendar,IcoUsers,IcoUser][i] }));
+const ADH_NAV = ADH_NAV_KEYS.map((n,i) => ({ ...n, icon:[IcoCalendar,IcoUsers,IcoBarChart,IcoCreditCard][i] }));
+const ADH_MOBILE_NAV = ADH_NAV;
 
 
 function CoachView({ onSwitch, isMobile, coachName = MY_COACH_NAME, coachDisciplines = [] }) {
@@ -403,13 +405,6 @@ function CoachView({ onSwitch, isMobile, coachName = MY_COACH_NAME, coachDiscipl
 // ══════════════════════════════════════════════════════════════════════════════
 // ADHÉRENT VIEW  — reprend exactement les styles C.* du v3
 // ══════════════════════════════════════════════════════════════════════════════
-const ADH_NAV = [
-  { key:"planning",  label:"Planning",    icon:IcoCalendar },
-  { key:"account",   label:"Mon compte",  icon:IcoUsers    },
-  { key:"history",   label:"Historique",  icon:IcoBarChart },
-  { key:"payment",   label:"Paiement",    icon:IcoCreditCard },
-];
-const ADH_MOBILE_NAV = ADH_NAV;
 
 
 export { CoachView };
