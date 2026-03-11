@@ -1266,6 +1266,7 @@ function Planning({ isMobile }) {
         </div>
       ))}
     </div>
+    </div>
   );
 }
 
@@ -1641,6 +1642,8 @@ function Subscriptions({ isMobile }) {
             )}
           </Card>
         ))}
+      </div>
+      </div>
       </div>
     </div>
   );
