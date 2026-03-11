@@ -2177,7 +2177,7 @@ function DisciplinesPage({ isMobile }) {
                   style={{width:26,height:26,borderRadius:7,border:`1px solid ${C.border}`,background:C.surface,color:"#F87171",cursor:"pointer",fontSize:13,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>✕</button>
               </div>
               {/* Ligne 2 : Jour / Heure / Durée */}
-              <div style={{display:"grid", gridTemplateColumns:"1.3fr 0.55fr 1.1fr", gap:8}}>
+              <div style={{display:"grid", gridTemplateColumns:"1.5fr 0.65fr 1.13fr", gap:8}}>
                 <div>
                   <div style={{fontSize:10,fontWeight:700,color:C.textMuted,textTransform:"uppercase",letterSpacing:.6,marginBottom:4}}>Jour</div>
                   <DaySelect value={slot.day} onChange={v=>upSlot(disc.id,si,"day",v)}/>
