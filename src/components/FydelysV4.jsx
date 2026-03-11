@@ -849,6 +849,7 @@ function Planning({ isMobile }) {
   const [recSlots, setRecSlots] = useState([]); // créneaux sélectionnés [{day,time,duration,disciplineId}]
   const [recPreview, setRecPreview] = useState([]); // dates générées prévisualisées
   const [recFilterDisc, setRecFilterDisc] = useState(null); // filtre discipline étape 1
+  const [isDemoData, setIsDemoData] = useState(false);
   const p = isMobile?12:28;
 
   // Utilitaire : convertir "Lun/Mar/…" → numéro JS getDay()
@@ -883,7 +884,7 @@ function Planning({ isMobile }) {
           status: s.status || "scheduled", booked: 0, waitlist: 0,
         })));
         // Données démo si base vide
-        else if (!error && (!data || data.length === 0)) setSessions(SESSIONS_DEMO);
+        else if (!error && (!data || data.length === 0)) { setSessions(SESSIONS_DEMO); setIsDemoData(true); }
         setDbLoading(false);
       });
   }, [studioId]);
