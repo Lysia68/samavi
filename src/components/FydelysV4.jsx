@@ -618,7 +618,7 @@ function Dashboard({ isMobile }) {
             {todaySessions.length === 0
               ? <div style={{padding:"28px",textAlign:"center",color:C.textMuted,fontSize:14}}>Aucune séance programmée aujourd'hui</div>
               : todaySessions.map(s=>(
-                <DashboardSessionCard key={s.id} sess={s} expandedId={expandedId} bookings={bookings} onToggle={handleToggle} onChangeStatus={handleChangeStatus}/>
+                <DashboardSessionCard key={s.id} sess={s} expandedId={expandedId} bookings={bookings} onToggle={handleToggle} onChangeStatus={handleChangeStatus} isDemo={true}/>
               ))}
           </Card>
           <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
@@ -796,18 +796,18 @@ function PlanningSessionCard({ sess, expandedId, bookings, discs, onToggle, onCh
 }
 
 // ── DASHBOARD SESSION CARD (réutilise PlanningAccordion) ─────────────────────
-function DashboardSessionCard({ sess, expandedId, bookings, onToggle, onChangeStatus }) {
+function DashboardSessionCard({ sess, expandedId, bookings, onToggle, onChangeStatus, isDemo }) {
   const disc  = DISCIPLINES.find(d=>d.id===sess.disciplineId)||DISCIPLINES[0];
   const bl    = bookings[sess.id]||[];
   const booked= bl.length ? bl.filter(b=>b.st==="confirmed").length : sess.booked;
   const wait  = bl.length ? bl.filter(b=>b.st==="waitlist").length  : sess.waitlist;
   const pct   = booked/sess.spots;
-  const isExp = expandedId===sess.id;
+  const isExp = !isDemo && expandedId===sess.id;
   return (
     <div style={{ borderBottom:`1px solid ${C.borderSoft}` }}>
-      <div onClick={()=>onToggle(sess.id)}
-        style={{ display:"flex", alignItems:"center", gap:10, padding:"12px 16px", cursor:"pointer", background:isExp?C.accentBg:C.surface, transition:"background .15s" }}
-        onMouseEnter={e=>{ if(!isExp) e.currentTarget.style.background=C.surfaceWarm; }}
+      <div onClick={isDemo ? undefined : ()=>onToggle(sess.id)}
+        style={{ display:"flex", alignItems:"center", gap:10, padding:"12px 16px", cursor:isDemo?"default":"pointer", background:isExp?C.accentBg:C.surface, transition:"background .15s" }}
+        onMouseEnter={e=>{ if(!isExp && !isDemo) e.currentTarget.style.background=C.surfaceWarm; }}
         onMouseLeave={e=>{ if(!isExp) e.currentTarget.style.background=C.surface; }}>
         <div style={{ fontSize:14, fontWeight:700, color:C.accent, width:36, flexShrink:0 }}>{sess.time}</div>
         <div style={{ width:3, height:28, background:disc.color, borderRadius:2, flexShrink:0 }}/>
@@ -2055,33 +2055,10 @@ function DaySelect({ value, onChange }) {
   return (
     <div style={{ position:"relative", width:"100%" }}>
       <select value={value} onChange={e => onChange(e.target.value)}
-        style={{
-          width:"100%",
-          padding:"9px 28px 9px 10px",
-          borderRadius:9,
-          border:`1.5px solid ${C.border}`,
-          fontSize:13,
-          color:C.text,
-          background:C.surfaceWarm,
-          outline:"none",
-          appearance:"none",
-          WebkitAppearance:"none",
-          cursor:"pointer",
-          fontWeight:600,
-          minWidth:0,
-          boxSizing:"border-box"
-        }}>
+        style={{ width:"100%", padding:"9px 24px 9px 8px", borderRadius:9, border:`1.5px solid ${C.border}`, fontSize:12, color:C.text, background:C.surfaceWarm, outline:"none", appearance:"none", WebkitAppearance:"none", cursor:"pointer", fontWeight:600, minWidth:0, boxSizing:"border-box" }}>
         {DAYS_FULL.map(d => <option key={d.short} value={d.short}>{d.label}</option>)}
       </select>
-      <span style={{ 
-        position:"absolute", 
-        right:10, 
-        top:"50%", 
-        transform:"translateY(-50%)", 
-        pointerEvents:"none", 
-        fontSize:10, 
-        color:C.textMuted 
-      }}>▼</span>
+      <span style={{ position:"absolute", right:8, top:"50%", transform:"translateY(-50%)", pointerEvents:"none", fontSize:10, color:C.textMuted }}>▼</span>
     </div>
   );
 }
@@ -2159,85 +2136,82 @@ function DisciplinesPage({ isMobile }) {
   const rmSlot  = (id,si) => setDiscs(prev=>prev.map(d=>d.id===id?{...d,slots:d.slots.filter((_,j)=>j!==si)}:d));
   const upSlot  = (id,si,field,val) => setDiscs(prev=>prev.map(d=>d.id===id?{...d,slots:d.slots.map((s,j)=>j===si?{...s,[field]:val}:s)}:d));
 
-
-
-const ScheduleModal = ({ disc: discProp }) => {
-  // Lire la discipline LIVE depuis le state pour voir les slots ajoutés en temps réel
-  const disc = discs.find(d=>d.id===discProp.id) || discProp;
-  return (
-  <div onClick={e=>e.target===e.currentTarget&&setEditDisc(null)}
-    style={{position:"fixed",inset:0,background:"rgba(42,31,20,.45)",zIndex:600,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
-    <div style={{background:C.surface,borderRadius:16,width:"100%",maxWidth:520,boxShadow:"0 24px 60px rgba(0,0,0,.18)",overflow:"hidden"}}>
-      <div style={{padding:"18px 22px",borderBottom:`1px solid ${C.border}`,display:"flex",alignItems:"center",justifyContent:"space-between",background:disc.color+"10"}}>
-        <div style={{display:"flex",alignItems:"center",gap:10}}>
-          <div style={{width:38,height:38,borderRadius:10,background:disc.color+"20",border:`1.5px solid ${disc.color}40`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:20}}>
-            {(() => { const Ico = DISC_ICONS[disc.id]; return Ico ? <Ico s={20} c={disc.color}/> : <span>{disc.icon||"🏃"}</span>; })()}
+  const ScheduleModal = ({ disc: discProp }) => {
+    // Lire la discipline LIVE depuis le state pour voir les slots ajoutés en temps réel
+    const disc = discs.find(d=>d.id===discProp.id) || discProp;
+    return (
+    <div onClick={e=>e.target===e.currentTarget&&setEditDisc(null)}
+      style={{position:"fixed",inset:0,background:"rgba(42,31,20,.45)",zIndex:600,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
+      <div style={{background:C.surface,borderRadius:16,width:"100%",maxWidth:480,boxShadow:"0 24px 60px rgba(0,0,0,.18)",overflow:"hidden"}}>
+        <div style={{padding:"18px 22px",borderBottom:`1px solid ${C.border}`,display:"flex",alignItems:"center",justifyContent:"space-between",background:disc.color+"10"}}>
+          <div style={{display:"flex",alignItems:"center",gap:10}}>
+            <div style={{width:38,height:38,borderRadius:10,background:disc.color+"20",border:`1.5px solid ${disc.color}40`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:20}}>
+              {(() => { const Ico = DISC_ICONS[disc.id]; return Ico ? <Ico s={20} c={disc.color}/> : null; })()}
+            </div>
+            <div>
+              <div style={{fontSize:15,fontWeight:800,color:C.text}}>{disc.name}</div>
+              <div style={{fontSize:12,color:C.textMuted}}>{disc.slots?.length||0} créneau{disc.slots?.length!==1?"x":""}</div>
+            </div>
           </div>
-          <div>
-            <div style={{fontSize:15,fontWeight:800,color:C.text}}>{disc.name}</div>
-            <div style={{fontSize:12,color:C.textMuted}}>{disc.slots?.length||0} créneau{disc.slots?.length!==1?"x":""}</div>
-          </div>
+          <button onClick={()=>setEditDisc(null)} style={{background:"none",border:`1.5px solid ${C.border}`,borderRadius:8,padding:"5px 9px",cursor:"pointer",fontSize:14,color:C.textSoft}}>✕</button>
         </div>
-        <button onClick={()=>setEditDisc(null)} style={{background:"none",border:`1.5px solid ${C.border}`,borderRadius:8,padding:"5px 9px",cursor:"pointer",fontSize:14,color:C.textSoft}}>✕</button>
-      </div>
 
-      <div style={{padding:"18px 22px",maxHeight:"55vh",overflowY:"auto"}}>
-        {(!disc.slots||disc.slots.length===0) ? (
-          <div style={{textAlign:"center",padding:"24px 0",color:C.textMuted,fontSize:13}}>
-            Aucun créneau — cliquez sur "Ajouter" pour commencer
-          </div>
-        ) : disc.slots.map((slot,si)=>(
-          <div key={si} style={{
-            marginBottom:10, padding:"12px 14px", borderRadius:12,
-            background:C.surfaceWarm, border:`1px solid ${C.border}`
-          }}>
-            {/* Ligne 1 : Numéro créneau + supprimer */}
-            <div style={{display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:10}}>
-              <span style={{fontSize:12,fontWeight:700,color:C.accent,textTransform:"uppercase",letterSpacing:.6}}>
-                Créneau {si+1}
-              </span>
-              <button onClick={()=>rmSlot(disc.id,si)}
-                style={{width:28,height:28,borderRadius:8,border:`1px solid ${C.border}`,background:C.surface,color:"#F87171",cursor:"pointer",fontSize:14,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>✕</button>
+        <div style={{padding:"18px 22px",maxHeight:"55vh",overflowY:"auto"}}>
+          {(!disc.slots||disc.slots.length===0) ? (
+            <div style={{textAlign:"center",padding:"24px 0",color:C.textMuted,fontSize:13}}>
+              Aucun créneau — cliquez sur "Ajouter" pour commencer
             </div>
-            
-            {/* Ligne 2 : Jour / Heure / Durée — COLONNES ÉGALES */}
-            <div style={{display:"grid", gridTemplateColumns:"1.2fr 0.6fr 1.1fr", gap:10}}>
-              <div>
-                <div style={{fontSize:10,fontWeight:700,color:C.textMuted,textTransform:"uppercase",letterSpacing:.6,marginBottom:5}}>Jour</div>
-                <DaySelect value={slot.day} onChange={v=>upSlot(disc.id,si,"day",v)}/>
+          ) : disc.slots.map((slot,si)=>(
+            <div key={si} style={{
+              marginBottom:8, padding:"10px 12px", borderRadius:10,
+              background:C.surfaceWarm, border:`1px solid ${C.border}`
+            }}>
+              {/* Ligne 1 : Jour + numéro + supprimer */}
+              <div style={{display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:8}}>
+                <div style={{display:"flex", alignItems:"center", gap:8}}>
+                  <span style={{fontSize:11,fontWeight:700,color:C.textMuted,textTransform:"uppercase",letterSpacing:.6}}>
+                    Créneau {si+1}
+                  </span>
+                </div>
+                <button onClick={()=>rmSlot(disc.id,si)}
+                  style={{width:26,height:26,borderRadius:7,border:`1px solid ${C.border}`,background:C.surface,color:"#F87171",cursor:"pointer",fontSize:13,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>✕</button>
               </div>
-              <div>
-                <div style={{fontSize:10,fontWeight:700,color:C.textMuted,textTransform:"uppercase",letterSpacing:.6,marginBottom:5}}>Heure</div>
-                <TimePicker value={slot.time} onChange={v=>upSlot(disc.id,si,"time",v)}/>
-              </div>
-              <div>
-                <div style={{fontSize:10,fontWeight:700,color:C.textMuted,textTransform:"uppercase",letterSpacing:.6,marginBottom:5}}>Durée</div>
-                <DurationPicker value={slot.duration||60} onChange={v=>upSlot(disc.id,si,"duration",v)}/>
+              {/* Ligne 2 : Jour / Heure / Durée */}
+              <div style={{display:"grid", gridTemplateColumns:"1.3fr 0.85fr 1.1fr", gap:8}}>
+                <div>
+                  <div style={{fontSize:10,fontWeight:700,color:C.textMuted,textTransform:"uppercase",letterSpacing:.6,marginBottom:4}}>Jour</div>
+                  <DaySelect value={slot.day} onChange={v=>upSlot(disc.id,si,"day",v)}/>
+                </div>
+                <div>
+                  <div style={{fontSize:10,fontWeight:700,color:C.textMuted,textTransform:"uppercase",letterSpacing:.6,marginBottom:4}}>Heure</div>
+                  <TimePicker value={slot.time} onChange={v=>upSlot(disc.id,si,"time",v)}/>
+                </div>
+                <div>
+                  <div style={{fontSize:10,fontWeight:700,color:C.textMuted,textTransform:"uppercase",letterSpacing:.6,marginBottom:4}}>Durée</div>
+                  <DurationPicker value={slot.duration||60} onChange={v=>upSlot(disc.id,si,"duration",v)}/>
+                </div>
               </div>
             </div>
-          </div>
-        ))}
-        <button onClick={()=>addSlot(disc.id)}
-          style={{width:"100%",padding:"10px",borderRadius:10,border:"1.5px dashed #C4A87A",background:C.accentLight,color:C.accent,fontSize:13,fontWeight:600,cursor:"pointer",marginTop:8}}>
-          + Ajouter un créneau
-        </button>
-      </div>
+          ))}
+          <button onClick={()=>addSlot(disc.id)}
+            style={{width:"100%",padding:"9px",borderRadius:9,border:"1.5px dashed #C4A87A",background:C.accentLight,color:C.accent,fontSize:13,fontWeight:600,cursor:"pointer",marginTop:8}}>
+            + Ajouter un créneau
+          </button>
+        </div>
 
-      <div style={{padding:"14px 22px",borderTop:`1px solid ${C.border}`,display:"flex",justifyContent:"flex-end",gap:10}}>
-        <Button variant="ghost" onClick={()=>setEditDisc(null)}>Fermer</Button>
-        <Button variant="primary" onClick={async ()=>{
-          const d = discs.find(x=>x.id===editDisc.id);
-          await dbSaveSlots(editDisc.id, d?.slots||[]);
-          showToast("Horaires enregistrés !");
-          setEditDisc(null);
-        }}>Enregistrer</Button>
+        <div style={{padding:"14px 22px",borderTop:`1px solid ${C.border}`,display:"flex",justifyContent:"flex-end",gap:10}}>
+          <Button variant="ghost" onClick={()=>setEditDisc(null)}>Fermer</Button>
+          <Button variant="primary" onClick={async ()=>{
+            const d = discs.find(x=>x.id===editDisc.id);
+            await dbSaveSlots(editDisc.id, d?.slots||[]);
+            showToast("Horaires enregistrés !");
+            setEditDisc(null);
+          }}>Enregistrer</Button>
+        </div>
       </div>
     </div>
-  </div>
-  );
-};
-
-        
+    );
+  };
 
   return (
     <div style={{ padding:p }}>
