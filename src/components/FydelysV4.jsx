@@ -804,6 +804,7 @@ function Planning({ isMobile }) {
     setNS({ disciplineId:null, teacher:"", date:"", time:"09:00", duration:60, spots:12, level:"Tous niveaux", room:"Studio A" });
     try {
       const sb = createClient();
+      console.log("INSERT session — studioId:", studioId, "disciplineId:", sess.disciplineId, "date:", sess.date);
       const { data, error } = await sb.from("sessions").insert({
         studio_id: studioId, discipline_id: sess.disciplineId || null,
         teacher: sess.teacher || "", room: sess.room || "Studio A", level: sess.level || "Tous niveaux",
@@ -811,8 +812,11 @@ function Planning({ isMobile }) {
         duration_min: parseInt(sess.duration) || 60, spots: parseInt(sess.spots) || 12,
         status: "scheduled",
       }).select("id").single();
-      if (error) { console.error("insert session", error); setSessions(prev=>prev.filter(s=>s.id!==tempId)); }
-      else if (data?.id) setSessions(prev => prev.map(s => s.id===tempId ? {...s, id:data.id} : s));
+      if (error) {
+        console.error("insert session ERROR — code:", error.code, "msg:", error.message, "hint:", error.hint);
+        setSessions(prev=>prev.filter(s=>s.id!==tempId));
+        alert("❌ Erreur Supabase:\n" + error.message + "\nCode: " + error.code + (error.hint ? "\nHint: " + error.hint : ""));
+      } else if (data?.id) setSessions(prev => prev.map(s => s.id===tempId ? {...s, id:data.id} : s));
     } catch(e) { console.error("insert session", e); setSessions(prev=>prev.filter(s=>s.id!==tempId)); }
   };
 
@@ -1731,42 +1735,17 @@ function DatePicker({ value, onChange, label, minDate }) {
 const DURATIONS = [30, 45, 60, 75, 90, 105, 120];
 function DurationPicker({ value, onChange }) {
   const [open, setOpen] = useState(false);
-  const [inputVal, setInputVal] = useState(String(value || 60));
   const ref = React.useRef(null);
-  const listRef = React.useRef(null);
-
-  React.useEffect(() => { setInputVal(String(value || 60)); }, [value]);
+  const triggerRef = React.useRef(null);
+  const [dropUp, setDropUp] = React.useState(false);
 
   React.useEffect(() => {
     if (!open) return;
-    const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
+    const h = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    document.addEventListener("mousedown", h);
+    return () => document.removeEventListener("mousedown", h);
   }, [open]);
 
-  React.useEffect(() => {
-    if (open && listRef.current) {
-      const active = listRef.current.querySelector('[data-active="true"]');
-      if (active) active.scrollIntoView({ block:"center" });
-    }
-  }, [open]);
-
-  const commit = (v) => {
-    const n = parseInt(v);
-    if (n >= 5 && n <= 240) { setInputVal(String(n)); onChange(n); }
-    else setInputVal(String(value || 60));
-    setOpen(false);
-  };
-
-  const step = (dir) => {
-    const cur = parseInt(inputVal) || (value || 60);
-    const next = Math.max(5, Math.min(240, cur + dir * 15));
-    setInputVal(String(next)); onChange(next);
-  };
-
-  // Position dropdown
-  const triggerRef = React.useRef(null);
-  const [dropUp, setDropUp] = React.useState(false);
   React.useEffect(() => {
     if (open && triggerRef.current) {
       const r = triggerRef.current.getBoundingClientRect();
@@ -1774,44 +1753,36 @@ function DurationPicker({ value, onChange }) {
     }
   }, [open]);
 
+  const step = (dir) => {
+    const cur = value || 60;
+    onChange(Math.max(15, Math.min(240, cur + dir * 15)));
+  };
+
   const label = (n) => n < 60 ? `${n}mn` : n === 60 ? `1h` : n % 60 === 0 ? `${n/60}h` : `${Math.floor(n/60)}h${String(n%60).padStart(2,"0")}`;
+  const cur = value || 60;
 
   return (
-    <div ref={ref} style={{ position:"relative", width:"100%" }}>
-      <div ref={triggerRef} style={{ display:"flex", alignItems:"center", border:`1.5px solid ${open ? C.accent : C.border}`, borderRadius:9, background:C.surfaceWarm, overflow:"hidden", transition:"border-color .15s" }}>
+    <div ref={ref} style={{ position:"relative" }}>
+      <div ref={triggerRef} style={{ display:"flex", alignItems:"center", height:38, border:`1.5px solid ${open?C.accent:C.border}`, borderRadius:9, background:C.surfaceWarm, overflow:"hidden", transition:"border-color .15s" }}>
         <button onMouseDown={e=>{e.preventDefault();step(-1);}} tabIndex={-1}
-          style={{ background:"none", border:"none", borderRight:`1px solid ${C.border}`, padding:"0 6px", height:38, cursor:"pointer", color:C.textMuted, fontSize:13, flexShrink:0 }}>
-          ▼
-        </button>
-        <input
-          value={inputVal}
-          onChange={e=>setInputVal(e.target.value)}
-          onBlur={e=>commit(e.target.value)}
-          onKeyDown={e=>{ if(e.key==="Enter") e.target.blur(); if(e.key==="ArrowUp"){e.preventDefault();step(1);} if(e.key==="ArrowDown"){e.preventDefault();step(-1);} }}
-          style={{ width:0, flex:1, minWidth:28, border:"none", outline:"none", background:"transparent", padding:"0 2px", fontSize:13, color:C.text, fontWeight:700, textAlign:"center", height:38 }}
-        />
-        <button onMouseDown={e=>{e.preventDefault();step(1);}} tabIndex={-1}
-          style={{ background:"none", border:"none", borderLeft:`1px solid ${C.border}`, padding:"0 6px", height:38, cursor:"pointer", color:C.textMuted, fontSize:13, flexShrink:0 }}>
-          ▲
-        </button>
+          style={{ background:"none", border:"none", borderRight:`1px solid ${C.border}`, padding:"0 7px", height:"100%", cursor:"pointer", color:C.textMuted, fontSize:12, flexShrink:0 }}>▼</button>
         <button onMouseDown={e=>{e.preventDefault();setOpen(o=>!o);}} tabIndex={-1}
-          style={{ background:"none", border:"none", borderLeft:`1px solid ${C.border}`, padding:"0 7px", height:38, cursor:"pointer", color:open?C.accent:C.textMuted, fontSize:10, flexShrink:0 }}>
-          ☰
+          style={{ flex:1, background:"none", border:"none", height:"100%", cursor:"pointer", fontSize:13, color:C.text, fontWeight:700, textAlign:"center", padding:"0 2px", minWidth:0, overflow:"hidden", whiteSpace:"nowrap" }}>
+          {label(cur)}
         </button>
+        <button onMouseDown={e=>{e.preventDefault();step(1);}} tabIndex={-1}
+          style={{ background:"none", border:"none", borderLeft:`1px solid ${C.border}`, padding:"0 7px", height:"100%", cursor:"pointer", color:C.textMuted, fontSize:12, flexShrink:0 }}>▲</button>
       </div>
       {open && (
-        <div ref={listRef} style={{ position:"absolute", left:0, right:0, [dropUp?"bottom":"top"]:"calc(100% + 4px)", background:C.surface, border:`1.5px solid ${C.accent}`, borderRadius:10, boxShadow:"0 8px 32px rgba(42,31,20,.18)", zIndex:9999, maxHeight:220, overflowY:"auto" }}>
+        <div style={{ position:"absolute", left:0, right:0, [dropUp?"bottom":"top"]:"calc(100% + 4px)", background:C.surface, border:`1.5px solid ${C.accent}`, borderRadius:10, boxShadow:"0 8px 32px rgba(42,31,20,.18)", zIndex:9999, maxHeight:200, overflowY:"auto" }}>
           {DURATIONS.map(d => (
-            <button key={d} data-active={d===value?"true":"false"}
-              onMouseDown={e=>{e.preventDefault();setInputVal(String(d));onChange(d);setOpen(false);}}
+            <button key={d} onMouseDown={e=>{e.preventDefault();onChange(d);setOpen(false);}}
               style={{ display:"block", width:"100%", textAlign:"center", padding:"9px 12px", border:"none",
-                background: d===value ? C.accentLight : "transparent",
-                color: d===value ? C.accent : C.text,
-                fontWeight: d===value ? 700 : 400, fontSize:13, cursor:"pointer",
-                borderBottom:`1px solid ${C.border}20` }}
-              onMouseEnter={e=>{if(d!==value)e.currentTarget.style.background="rgba(160,104,56,.06)";}}
-              onMouseLeave={e=>{e.currentTarget.style.background=d===value?C.accentLight:"transparent";}}>
-              {label(d)} <span style={{color:C.textMuted,fontSize:11}}>({d} min)</span>
+                background:d===cur?C.accentLight:"transparent", color:d===cur?C.accent:C.text,
+                fontWeight:d===cur?700:400, fontSize:13, cursor:"pointer", borderBottom:`1px solid ${C.border}20` }}
+              onMouseEnter={e=>{if(d!==cur)e.currentTarget.style.background="rgba(160,104,56,.06)";}}
+              onMouseLeave={e=>{e.currentTarget.style.background=d===cur?C.accentLight:"transparent";}}>
+              {label(d)}
             </button>
           ))}
         </div>
@@ -1820,126 +1791,90 @@ function DurationPicker({ value, onChange }) {
   );
 }
 
-// ── TIME PICKER — spinners ▲▼ + saisie libre + dropdown optionnel ────────────
+// ── TIME PICKER ──────────────────────────────────────────────────────────────
 function TimePicker({ value, onChange }) {
+  const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState(false);
   const [inputVal, setInputVal] = useState(value || "09:00");
-  const [open, setOpen] = useState(false);
   const ref = React.useRef(null);
   const inputRef = React.useRef(null);
-  const listRef = React.useRef(null);
+  const triggerRef = React.useRef(null);
+  const [dropUp, setDropUp] = React.useState(false);
 
-  React.useEffect(() => {
-    if (!editing) setInputVal(value || "09:00");
-  }, [value, editing]);
+  React.useEffect(() => { if (!editing) setInputVal(value || "09:00"); }, [value, editing]);
 
-  // Fermer dropdown si clic extérieur
   React.useEffect(() => {
     if (!open) return;
-    const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
+    const h = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    document.addEventListener("mousedown", h);
+    return () => document.removeEventListener("mousedown", h);
   }, [open]);
 
-  // Auto-scroll dans dropdown
   React.useEffect(() => {
-    if (open && listRef.current) {
-      const active = listRef.current.querySelector('[data-active="true"]');
-      if (active) active.scrollIntoView({ block:"center" });
+    if (open && triggerRef.current) {
+      const r = triggerRef.current.getBoundingClientRect();
+      setDropUp(window.innerHeight - r.bottom < 220 && r.top > 220);
+    }
+    if (open) {
+      setTimeout(() => {
+        const el = ref.current?.querySelector('[data-active="true"]');
+        if (el) el.scrollIntoView({ block:"center" });
+      }, 30);
     }
   }, [open]);
 
-  // Demi-heures 06:00 → 22:00
   const slots = [];
   for (let h = 6; h <= 22; h++) {
     slots.push(`${String(h).padStart(2,"0")}:00`);
     if (h < 22) slots.push(`${String(h).padStart(2,"0")}:30`);
   }
 
-  const toMinutes = (v) => {
-    const m = v.match(/^([01]?\d|2[0-3]):([0-5]\d)$/);
-    return m ? parseInt(m[1])*60 + parseInt(m[2]) : null;
-  };
-  const fromMinutes = (min) => {
-    const h = Math.floor(min/60), m = min%60;
-    return `${String(h).padStart(2,"0")}:${String(m).padStart(2,"0")}`;
-  };
+  const toMin = (v) => { const m = v?.match(/^([01]?\d|2[0-3]):([0-5]\d)$/); return m ? parseInt(m[1])*60+parseInt(m[2]) : null; };
+  const fromMin = (m) => `${String(Math.floor(m/60)).padStart(2,"0")}:${String(m%60).padStart(2,"0")}`;
 
   const commit = (v) => {
     setEditing(false);
-    const min = toMinutes(v);
-    if (min !== null) {
-      const clean = fromMinutes(Math.max(0, Math.min(1439, Math.round(min/30)*30)));
-      setInputVal(clean); onChange(clean);
-    } else {
-      setInputVal(value || "09:00");
-    }
+    const min = toMin(v);
+    if (min !== null) { const c = fromMin(Math.max(0, Math.min(1439, Math.round(min/30)*30))); setInputVal(c); onChange(c); }
+    else setInputVal(value || "09:00");
   };
 
-  // Incrémenter/décrémenter par 30 min
   const step = (dir) => {
-    const min = toMinutes(value || "09:00") ?? 540;
-    const next = Math.max(360, Math.min(1320, min + dir*30)); // 06:00 → 22:00
-    const v = fromMinutes(next);
+    const min = toMin(value || "09:00") ?? 540;
+    const v = fromMin(Math.max(360, Math.min(1320, min + dir*30)));
     setInputVal(v); onChange(v);
   };
 
-  // Position dropdown (au-dessus si manque de place)
-  const triggerRef = React.useRef(null);
-  const [dropUp, setDropUp] = React.useState(false);
-  React.useEffect(() => {
-    if (open && triggerRef.current) {
-      const r = triggerRef.current.getBoundingClientRect();
-      setDropUp(window.innerHeight - r.bottom < 220 && r.top > 220);
-    }
-  }, [open]);
-
   return (
-    <div ref={ref} style={{ position:"relative", width:"100%" }}>
-      <div ref={triggerRef} style={{ display:"flex", alignItems:"center", border:`1.5px solid ${editing||open ? C.accent : C.border}`, borderRadius:9, background:C.surfaceWarm, overflow:"hidden", transition:"border-color .15s" }}>
-        {/* Spinner bas */}
+    <div ref={ref} style={{ position:"relative" }}>
+      <div ref={triggerRef} style={{ display:"flex", alignItems:"center", height:38, border:`1.5px solid ${editing||open?C.accent:C.border}`, borderRadius:9, background:C.surfaceWarm, overflow:"hidden", transition:"border-color .15s" }}>
         <button onMouseDown={e=>{e.preventDefault();step(-1);}} tabIndex={-1}
-          style={{ background:"none", border:"none", borderRight:`1px solid ${C.border}`, padding:"0 8px", height:38, cursor:"pointer", color:C.textMuted, fontSize:13, flexShrink:0, display:"flex", alignItems:"center" }}>
-          ▼
-        </button>
-        {/* Input texte */}
-        <input
-          ref={inputRef}
-          value={inputVal}
-          onChange={e => { setEditing(true); setInputVal(e.target.value); }}
-          onFocus={() => { setEditing(true); setOpen(false); }}
-          onBlur={e => commit(e.target.value)}
-          onKeyDown={e => {
-            if (e.key === "Enter") { e.target.blur(); }
-            if (e.key === "Escape") { setEditing(false); setInputVal(value||"09:00"); inputRef.current?.blur(); }
-            if (e.key === "ArrowUp")   { e.preventDefault(); step(1); }
-            if (e.key === "ArrowDown") { e.preventDefault(); step(-1); }
+          style={{ background:"none", border:"none", borderRight:`1px solid ${C.border}`, padding:"0 7px", height:"100%", cursor:"pointer", color:C.textMuted, fontSize:12, flexShrink:0 }}>▼</button>
+        <input ref={inputRef} value={inputVal}
+          onChange={e=>{setEditing(true);setInputVal(e.target.value);}}
+          onFocus={()=>{setEditing(true);setOpen(false);}}
+          onBlur={e=>commit(e.target.value)}
+          onKeyDown={e=>{
+            if(e.key==="Enter") e.target.blur();
+            if(e.key==="ArrowUp"){e.preventDefault();step(1);}
+            if(e.key==="ArrowDown"){e.preventDefault();step(-1);}
           }}
-          style={{ flex:1, border:"none", outline:"none", background:"transparent", padding:"0 6px", fontSize:14, color:C.text, fontWeight:700, minWidth:0, textAlign:"center", height:38 }}
+          style={{ flex:1, border:"none", outline:"none", background:"transparent", padding:"0 2px", fontSize:14, color:C.text, fontWeight:700, minWidth:0, textAlign:"center", height:"100%", cursor:"pointer" }}
+          onClick={()=>setOpen(o=>!o)}
         />
-        {/* Spinner haut */}
         <button onMouseDown={e=>{e.preventDefault();step(1);}} tabIndex={-1}
-          style={{ background:"none", border:"none", borderLeft:`1px solid ${C.border}`, padding:"0 8px", height:38, cursor:"pointer", color:C.textMuted, fontSize:13, flexShrink:0, display:"flex", alignItems:"center" }}>
-          ▲
-        </button>
-        {/* Ouvre le dropdown */}
-        <button onMouseDown={e=>{e.preventDefault();setOpen(o=>!o);setEditing(false);}} tabIndex={-1}
-          style={{ background:"none", border:"none", borderLeft:`1px solid ${C.border}`, padding:"0 9px", height:38, cursor:"pointer", color:open?C.accent:C.textMuted, fontSize:11, flexShrink:0, display:"flex", alignItems:"center" }}>
-          ☰
-        </button>
+          style={{ background:"none", border:"none", borderLeft:`1px solid ${C.border}`, padding:"0 7px", height:"100%", cursor:"pointer", color:C.textMuted, fontSize:12, flexShrink:0 }}>▲</button>
       </div>
       {open && (
-        <div ref={listRef} style={{ position:"absolute", left:0, right:0, [dropUp?"bottom":"top"]:"calc(100% + 4px)", background:C.surface, border:`1.5px solid ${C.accent}`, borderRadius:10, boxShadow:"0 8px 32px rgba(42,31,20,.18)", zIndex:9999, maxHeight:200, overflowY:"auto" }}>
+        <div style={{ position:"absolute", left:0, right:0, [dropUp?"bottom":"top"]:"calc(100% + 4px)", background:C.surface, border:`1.5px solid ${C.accent}`, borderRadius:10, boxShadow:"0 8px 32px rgba(42,31,20,.18)", zIndex:9999, maxHeight:200, overflowY:"auto" }}>
           {slots.map(t => (
             <button key={t} data-active={t===value?"true":"false"}
-              onMouseDown={e=>{e.preventDefault(); setInputVal(t); onChange(t); setOpen(false);}}
+              onMouseDown={e=>{e.preventDefault();setInputVal(t);onChange(t);setOpen(false);}}
               style={{ display:"block", width:"100%", textAlign:"center", padding:"8px 14px", border:"none",
-                background: t===value ? C.accentLight : "transparent",
-                color: t===value ? C.accent : C.text,
-                fontWeight: t===value ? 700 : 400, fontSize:13, cursor:"pointer",
-                borderBottom:`1px solid ${C.border}20` }}
-              onMouseEnter={e=>{ if(t!==value) e.currentTarget.style.background="rgba(160,104,56,.06)"; }}
-              onMouseLeave={e=>{ e.currentTarget.style.background=t===value?C.accentLight:"transparent"; }}>
+                background:t===value?C.accentLight:"transparent", color:t===value?C.accent:C.text,
+                fontWeight:t===value?700:400, fontSize:13, cursor:"pointer", borderBottom:`1px solid ${C.border}20` }}
+              onMouseEnter={e=>{if(t!==value)e.currentTarget.style.background="rgba(160,104,56,.06)";}}
+              onMouseLeave={e=>{e.currentTarget.style.background=t===value?C.accentLight:"transparent";}}>
               {t}
             </button>
           ))}
@@ -2061,25 +1996,34 @@ function DisciplinesPage({ isMobile }) {
             </div>
           ) : disc.slots.map((slot,si)=>(
             <div key={si} style={{
-              display:"grid", gridTemplateColumns:"1fr 1fr 1fr auto",
-              gap:8, alignItems:"end", marginBottom:10,
-              padding:"10px 12px", borderRadius:10,
+              marginBottom:8, padding:"10px 12px", borderRadius:10,
               background:C.surfaceWarm, border:`1px solid ${C.border}`
             }}>
-              <div>
-                <div style={{fontSize:10,fontWeight:700,color:C.textMuted,textTransform:"uppercase",letterSpacing:.6,marginBottom:4}}>Jour</div>
-                <DaySelect value={slot.day} onChange={v=>upSlot(disc.id,si,"day",v)}/>
+              {/* Ligne 1 : Jour + numéro + supprimer */}
+              <div style={{display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:8}}>
+                <div style={{display:"flex", alignItems:"center", gap:8}}>
+                  <span style={{fontSize:11,fontWeight:700,color:C.textMuted,textTransform:"uppercase",letterSpacing:.6}}>
+                    Créneau {si+1}
+                  </span>
+                </div>
+                <button onClick={()=>rmSlot(disc.id,si)}
+                  style={{width:26,height:26,borderRadius:7,border:`1px solid ${C.border}`,background:C.surface,color:"#F87171",cursor:"pointer",fontSize:13,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>✕</button>
               </div>
-              <div>
-                <div style={{fontSize:10,fontWeight:700,color:C.textMuted,textTransform:"uppercase",letterSpacing:.6,marginBottom:4}}>Heure</div>
-                <TimePicker value={slot.time} onChange={v=>upSlot(disc.id,si,"time",v)}/>
+              {/* Ligne 2 : Jour / Heure / Durée */}
+              <div style={{display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:8}}>
+                <div>
+                  <div style={{fontSize:10,fontWeight:700,color:C.textMuted,textTransform:"uppercase",letterSpacing:.6,marginBottom:4}}>Jour</div>
+                  <DaySelect value={slot.day} onChange={v=>upSlot(disc.id,si,"day",v)}/>
+                </div>
+                <div>
+                  <div style={{fontSize:10,fontWeight:700,color:C.textMuted,textTransform:"uppercase",letterSpacing:.6,marginBottom:4}}>Heure</div>
+                  <TimePicker value={slot.time} onChange={v=>upSlot(disc.id,si,"time",v)}/>
+                </div>
+                <div>
+                  <div style={{fontSize:10,fontWeight:700,color:C.textMuted,textTransform:"uppercase",letterSpacing:.6,marginBottom:4}}>Durée</div>
+                  <DurationPicker value={slot.duration||60} onChange={v=>upSlot(disc.id,si,"duration",v)}/>
+                </div>
               </div>
-              <div>
-                <div style={{fontSize:10,fontWeight:700,color:C.textMuted,textTransform:"uppercase",letterSpacing:.6,marginBottom:4}}>Durée</div>
-                <DurationPicker value={slot.duration||60} onChange={v=>upSlot(disc.id,si,"duration",v)}/>
-              </div>
-              <button onClick={()=>rmSlot(disc.id,si)}
-                style={{width:32,height:38,borderRadius:9,border:`1px solid ${C.border}`,background:C.surface,color:"#F87171",cursor:"pointer",fontSize:16,display:"flex",alignItems:"center",justifyContent:"center",alignSelf:"end"}}>✕</button>
             </div>
           ))}
           <button onClick={()=>addSlot(disc.id)}
