@@ -4,7 +4,8 @@ import { AppCtx } from "./context";
 import { C } from "./theme";
 import { MEMBERS_DEMO, SUBSCRIPTIONS_DEMO, SESSIONS_DEMO, BOOKINGS_DEMO, SUBSCRIPTIONS_INIT } from "./demoData";
 import { IcoUserPlus, IcoMail, IcoUser, IcoCalendar, IcoX, IcoCheck, IcoTag } from "./icons";
-import { Card, SectionHead, Button, Field, Tag, Pill, MemberRow, CreditBadge, DemoBanner, EmptyState } from "./ui";
+import { Card, SectionHead, Button, Field, FieldLabel, Tag, Pill, MemberRow, DemoBanner, EmptyState } from "./ui";
+import { CreditBadge } from "./ui";
 
 function Members({ isMobile }) {
   const { studioId } = useContext(AppCtx);

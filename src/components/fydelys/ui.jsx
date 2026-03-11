@@ -191,4 +191,36 @@ function DemoBanner() {
   );
 }
 
-export { ConfirmModal, Tag, Pill, Button, FieldLabel, Field, Card, SectionHead, DateLabel, SessionRow, MemberRow, KpiCard, EmptyState, DemoBanner };
+function creditColor(credits, total) {
+  if (credits === null) return { color:"#5C8A6A", bg:"#E8F5EE" };
+  const pct = credits / total;
+  if (pct <= 0.15) return { color:"#C0392B", bg:"#FDECEA" };
+  if (pct <= 0.35) return { color:"#D46A1A", bg:"#FDF0E6" };
+  if (pct <= 0.6)  return { color:"#B07848", bg:"#F5EBE0" };
+  return { color:"#3A7A50", bg:"#E4F4EC" };
+}
+
+function CreditBadge({ credits, total, sub }) {
+  if (credits === null) {
+    return (
+      <div style={{ display:"flex", alignItems:"center", gap:5 }}>
+        <span style={{ fontSize:13, color:"#5C8A6A", fontWeight:700, background:"#E8F5EE", padding:"3px 9px", borderRadius:10, whiteSpace:"nowrap" }}>∞ illimité</span>
+        <span style={{ fontSize:13, color:C.textMuted, whiteSpace:"nowrap" }}>{sub}</span>
+      </div>
+    );
+  }
+  const { color, bg } = creditColor(credits, total);
+  const pct = credits / total;
+  return (
+    <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+      <div style={{ width:40, height:3, background:"#EAE4DA", borderRadius:2, overflow:"hidden", flexShrink:0 }}>
+        <div style={{ height:"100%", width:`${pct*100}%`, background:color, borderRadius:2 }}/>
+      </div>
+      <span style={{ fontSize:14, fontWeight:800, color, background:bg, padding:"2px 8px", borderRadius:10, whiteSpace:"nowrap" }}>
+        {credits}/{total}
+      </span>
+    </div>
+  );
+}
+
+export { ConfirmModal, Tag, Pill, Button, FieldLabel, Field, Card, SectionHead, DateLabel, SessionRow, MemberRow, KpiCard, EmptyState, DemoBanner, creditColor, CreditBadge };
