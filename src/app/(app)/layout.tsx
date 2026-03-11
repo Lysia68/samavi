@@ -9,7 +9,8 @@ const FydelysV4 = dynamicImport(() => import("@/components/FydelysV4"), { ssr: f
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter()
-  const supabase = createClient()
+  // Instance stable : évite les "Lock broken by steal" causés par la recréation du client à chaque render
+  const supabase = useState(() => createClient())[0]
   const [initialRole, setInitialRole]           = useState<string | null>(null)
   const [studioSlug, setStudioSlug]             = useState<string>("")
   const [coachName, setCoachName]               = useState<string>("")

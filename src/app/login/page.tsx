@@ -200,6 +200,7 @@ export default function LoginPage() {
   const [email, setEmail]       = useState("")
   const [loading, setLoading]   = useState(false)
   const [sent, setSent]         = useState(false)
+  const [hydrated, setHydrated] = useState(false)
   const [error, setError]       = useState<string|null>(null)
   const [focused, setFocused]   = useState(false)
   const [reg, setReg] = useState({
@@ -214,7 +215,8 @@ export default function LoginPage() {
   const [slugStatus, setSlugStatus]   = useState<"idle"|"checking"|"ok"|"taken">("idle")
   const [emailStatus, setEmailStatus] = useState<"idle"|"checking"|"ok"|"taken">("idle")
 
-  const supabase = createClient()
+  // Instance stable pour éviter locks et re-renders multiples
+  const supabase = useState(() => createClient())[0]
 
   useEffect(()=>{
     const h = window.location.hostname
@@ -237,6 +239,7 @@ export default function LoginPage() {
     } else if(errParam) {
       setError("Erreur de connexion. Veuillez réessayer.")
     }
+    setHydrated(true)
   },[])
 
   const toSlug = (s:string) =>
@@ -277,8 +280,17 @@ export default function LoginPage() {
     }, 600)
   }
 
+  const lastLoginAttempt = React.useRef<number>(0)
   async function handleLogin(e:React.FormEvent){
-    e.preventDefault(); setLoading(true); setError(null)
+    e.preventDefault()
+    // Guard anti-429 : pas plus d'1 tentative toutes les 3 secondes
+    const now = Date.now()
+    if (now - lastLoginAttempt.current < 3000) {
+      setError("Veuillez patienter quelques secondes avant de réessayer.")
+      return
+    }
+    lastLoginAttempt.current = now
+    setLoading(true); setError(null)
     const hostname = window.location.hostname
     const tenantMatch = hostname.match(/^([a-z0-9-]+)\.fydelys\.fr/)
     const slug = tenantMatch ? tenantMatch[1] : null
@@ -307,8 +319,17 @@ export default function LoginPage() {
       const redirectTo = `https://fydelys.fr/auth/callback?next=/dashboard`
       const {error}=await supabase.auth.signInWithOtp({email,
         options:{emailRedirectTo: redirectTo}})
-      if(error&&!error.message?.includes("Database error")) setError(error.message)
-      else setSent(true)
+      if (error) {
+        if (error.message?.includes("rate limit") || error.status === 429) {
+          setError("Trop de tentatives. Attendez quelques minutes avant de réessayer.")
+        } else if (!error.message?.includes("Database error")) {
+          setError(error.message)
+        } else {
+          setSent(true)
+        }
+      } else {
+        setSent(true)
+      }
     }
     setLoading(false)
   }
@@ -381,6 +402,12 @@ export default function LoginPage() {
 
   const totalSlots = reg.disciplines.reduce((n,d)=>n+d.slots.length,0)
 
+  if (!hydrated) return (
+    <div style={{minHeight:"100vh",background:"#F4EFE8",display:"flex",alignItems:"center",justifyContent:"center"}}>
+      <div style={{width:56,height:56,borderRadius:"50%",background:"rgba(160,104,56,.12)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:24}}>✦</div>
+    </div>
+  )
+
   return (
     <div style={{minHeight:"100vh",background:C.bg,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:24,fontFamily:"'Inter',-apple-system,sans-serif"}}>
       <div style={{position:"fixed",inset:0,background:C.glow,pointerEvents:"none"}}/>
@@ -404,18 +431,7 @@ export default function LoginPage() {
           </p>
         </div>
 
-        {/* Tabs */}
-        {ctx==="superadmin" && (
-          <div style={{display:"flex",background:"rgba(160,104,56,.08)",borderRadius:12,padding:4,marginBottom:20,border:"1px solid rgba(160,104,56,.2)"}}>
-            {([["login","Se connecter"],["register","Créer mon studio"]] as const).map(([t,l])=>(
-              <button key={t} onClick={()=>{setTab(t);setError(null);setSent(false);setRegSent(false)}}
-                style={{flex:1,padding:"9px",borderRadius:9,border:"none",fontWeight:700,fontSize:14,cursor:"pointer",
-                  background:tab===t?C.btn:"transparent",color:tab===t?"#fff":C.sub}}>
-                {l}
-              </button>
-            ))}
-          </div>
-        )}
+        {/* Pas de tabs : le register est accessible via un lien sous le formulaire login */}
 
         <div style={{background:C.card,backdropFilter:"blur(20px)",WebkitBackdropFilter:"blur(20px)",border:C.border,borderRadius:20,padding:"28px 26px",boxShadow:"0 8px 40px rgba(42,31,20,.08)"}}>
 
@@ -450,6 +466,18 @@ export default function LoginPage() {
                   </p>
                 )}
               </form>
+
+              {/* Lien Créer mon studio — visible uniquement sur fydelys.fr */}
+              {ctx==="superadmin" && (
+                <div style={{textAlign:"center",marginTop:18,paddingTop:16,borderTop:"1px solid rgba(160,104,56,.1)"}}>
+                  <p style={{fontSize:12,color:C.footer,margin:"0 0 8px"}}>Pas encore de compte ?</p>
+                  <button onClick={()=>{setTab("register");setError(null);setSent(false);setRegSent(false)}}
+                    style={{background:"transparent",border:"1.5px solid rgba(160,104,56,.3)",borderRadius:10,
+                      padding:"9px 20px",fontSize:13,fontWeight:700,color:C.accent,cursor:"pointer",width:"100%"}}>
+                    Créer mon studio →
+                  </button>
+                </div>
+              )}
             </>
           )}
 
@@ -467,9 +495,9 @@ export default function LoginPage() {
           {/* REGISTER */}
           {ctx==="superadmin" && tab==="register" && !regSent && (
             <>
-              <button onClick={()=>window.location.href="/"}
+              <button onClick={()=>{setTab("login");setError(null);setRegStep(1);setRegSent(false)}}
                 style={{background:"none",border:"none",color:C.sub,fontSize:13,cursor:"pointer",padding:"0 0 16px",display:"flex",alignItems:"center",gap:6,fontWeight:600}}>
-                ← Retour à l'accueil
+                ← Retour à la connexion
               </button>
               <div style={{display:"flex",gap:6,marginBottom:22}}>
                 {["Studio","Contact","Confirmation"].map((s,i)=>(
