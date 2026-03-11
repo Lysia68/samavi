@@ -2055,7 +2055,7 @@ function DaySelect({ value, onChange }) {
   return (
     <div style={{ position:"relative", width:"100%" }}>
       <select value={value} onChange={e => onChange(e.target.value)}
-        style={{ width:"100%", padding:"9px 28px 9px 10px", borderRadius:9, border:`1.5px solid ${C.border}`, fontSize:13, color:C.text, background:C.surfaceWarm, outline:"none", appearance:"none", WebkitAppearance:"none", cursor:"pointer", fontWeight:600 }}>
+        style={{ width:"100%", padding:"9px 24px 9px 8px", borderRadius:9, border:`1.5px solid ${C.border}`, fontSize:12, color:C.text, background:C.surfaceWarm, outline:"none", appearance:"none", WebkitAppearance:"none", cursor:"pointer", fontWeight:600, minWidth:0, boxSizing:"border-box" }}>
         {DAYS_FULL.map(d => <option key={d.short} value={d.short}>{d.label}</option>)}
       </select>
       <span style={{ position:"absolute", right:8, top:"50%", transform:"translateY(-50%)", pointerEvents:"none", fontSize:10, color:C.textMuted }}>▼</span>
@@ -2177,7 +2177,7 @@ function DisciplinesPage({ isMobile }) {
                   style={{width:26,height:26,borderRadius:7,border:`1px solid ${C.border}`,background:C.surface,color:"#F87171",cursor:"pointer",fontSize:13,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>✕</button>
               </div>
               {/* Ligne 2 : Jour / Heure / Durée */}
-              <div style={{display:"grid", gridTemplateColumns:"1.8fr 1fr 1fr", gap:8}}>
+              <div style={{display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:8}}>
                 <div>
                   <div style={{fontSize:10,fontWeight:700,color:C.textMuted,textTransform:"uppercase",letterSpacing:.6,marginBottom:4}}>Jour</div>
                   <DaySelect value={slot.day} onChange={v=>upSlot(disc.id,si,"day",v)}/>
