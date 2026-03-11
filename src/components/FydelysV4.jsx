@@ -2201,7 +2201,7 @@ const ScheduleModal = ({ disc: discProp }) => {
             </div>
             
             {/* Ligne 2 : Jour / Heure / Durée — COLONNES ÉGALES */}
-            <div style={{display:"grid", gridTemplateColumns:"1fr 0.6fr 1fr", gap:10}}>
+            <div style={{display:"grid", gridTemplateColumns:"1.2fr 0.6fr 1.1fr", gap:10}}>
               <div>
                 <div style={{fontSize:10,fontWeight:700,color:C.textMuted,textTransform:"uppercase",letterSpacing:.6,marginBottom:5}}>Jour</div>
                 <DaySelect value={slot.day} onChange={v=>upSlot(disc.id,si,"day",v)}/>
