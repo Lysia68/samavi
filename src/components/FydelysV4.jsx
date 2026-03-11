@@ -2159,11 +2159,7 @@ function DisciplinesPage({ isMobile }) {
   const rmSlot  = (id,si) => setDiscs(prev=>prev.map(d=>d.id===id?{...d,slots:d.slots.filter((_,j)=>j!==si)}:d));
   const upSlot  = (id,si,field,val) => setDiscs(prev=>prev.map(d=>d.id===id?{...d,slots:d.slots.map((s,j)=>j===si?{...s,[field]:val}:s)}:d));
 
-  
-Schedulemodal fixed · JSX
-Copier
 
-// ScheduleModal corrigé - remplacer dans DisciplinesPage
 
 const ScheduleModal = ({ disc: discProp }) => {
   // Lire la discipline LIVE depuis le state pour voir les slots ajoutés en temps réel
