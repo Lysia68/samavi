@@ -24,18 +24,17 @@ const PAGE_TITLES = {
   settings:"Paramètres", aide:"Aide"
 };
 
-const PAGES = {
-  dashboard:Dashboard, planning:Planning, members:Members,
-  subscriptions:Subscriptions, payments:Payments, disciplines:DisciplinesPage,
-  settings:Settings, aide:AidePage,
-};
-
 export default function App({
   initialRole = "admin", studioSlug = "", studioName = "",
   studioId: propStudioId = "", planName = "", membersCount = 0,
   userName = "", userRole = "", coachName = "", coachDisciplines = [],
   billingStatus = "trialing", trialEndsAt = null, onSignOut = null
 }) {
+  const PAGES = {
+    dashboard:Dashboard, planning:Planning, members:Members,
+    subscriptions:Subscriptions, payments:Payments, disciplines:DisciplinesPage,
+    settings:Settings, aide:AidePage,
+  };
   const [role, setRole] = useState(initialRole);
   const [page, setPage] = useState("planning");
 
