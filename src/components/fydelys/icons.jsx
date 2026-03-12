@@ -89,8 +89,6 @@ function IcoLogOut({s,c}) {
 }
 
 
-
-
 const DISC_ICONS = { 1: IcoYoga, 2: IcoPilates, 3: IcoMeditation, 4: IcoMoon };
 const NAV_ICONS  = { dashboard: IcoHome2, planning: IcoCalendar2, members: IcoUsers2, subscriptions: IcoTag2, payments: IcoCreditCard2, disciplines: IcoLayers2, settings: IcoSettings2, aide: IcoHelpCircle };
 
