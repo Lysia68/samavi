@@ -312,9 +312,9 @@ function Planning({ isMobile }) {
       <div style={{ padding:p }}>
       <div style={{ display:"flex", gap:8, overflowX:"auto", paddingBottom:4, marginBottom:18, alignItems:"center", WebkitOverflowScrolling:"touch" }}>
         <Button sm variant={fd===null?"primary":"ghost"} onClick={()=>setFd(null)}>Toutes</Button>
-        {(discs||DISCIPLINES).map(d=>{ const Ico=DISC_ICONS[d.id]; return <Button key={d.id} sm variant={fd===d.id?"primary":"ghost"} onClick={()=>setFd(d.id)}><span style={{display:"flex",alignItems:"center",gap:5}}>{Ico&&<Ico s={13} c={fd===d.id?C.surface:d.color}/>}{d.name}</span></Button>; })}
+        {((discs?.length ? discs : DISCIPLINES)).map(d=>{ const Ico=DISC_ICONS[d.id]; return <Button key={d.id} sm variant={fd===d.id?"primary":"ghost"} onClick={()=>setFd(d.id)}><span style={{display:"flex",alignItems:"center",gap:5}}>{Ico&&<Ico s={13} c={fd===d.id?C.surface:d.color}/>}{d.name}</span></Button>; })}
         <div style={{ marginLeft:"auto", flexShrink:0 }}><Button sm variant="primary" onClick={()=>{
-          const allD = discs||DISCIPLINES;
+          const allD = (discs?.length ? discs : DISCIPLINES);
           if (!showAdd && allD.length > 0 && !nS.disciplineId) {
             setNS(prev => ({ ...prev, disciplineId: String(allD[0].id) }));
           }
@@ -342,9 +342,9 @@ function Planning({ isMobile }) {
               <div style={{ fontSize:13, fontWeight:700, color:C.accent, textTransform:"uppercase", letterSpacing:.5, marginBottom:14 }}>Créer une séance</div>
               <div style={{ display:"grid", gridTemplateColumns:`repeat(${isMobile?2:4},1fr)`, gap:14 }}>
                 <DiscSelect label="Discipline" value={nS.disciplineId} C={C}
-                  options={(discs||DISCIPLINES).map(d=>({id:String(d.id), name:d.name, icon:d.icon, color:d.color}))}
+                  options={((discs?.length ? discs : DISCIPLINES)).map(d=>({id:String(d.id), name:d.name, icon:d.icon, color:d.color}))}
                   onChange={v=>{
-                  const allD = discs||DISCIPLINES;
+                  const allD = (discs?.length ? discs : DISCIPLINES);
                   const disc = allD.find(d=>String(d.id)===String(v));
                   const slot = disc?.slots?.[0];
                   setNS({...nS, disciplineId:v, ...(slot?{time:slot.time, duration:slot.duration||60}:{})});

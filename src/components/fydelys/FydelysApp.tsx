@@ -59,14 +59,21 @@ const PAGE_TITLES = {
         const { data: prof } = await sb.from("profiles").select("first_name, last_name").eq("id", userId).single();
         const { data: discLinks } = await sb.from("coach_disciplines")
           .select("discipline_id, disciplines(id,name,icon,color)").eq("profile_id", userId);
-        setImpersonatedCoach({
-          name: prof ? `${prof.first_name||""} ${prof.last_name||""}`.trim() : "",
-          disciplines: discLinks?.map(r=>r.disciplines).filter(Boolean) || []
-        });
-      } catch(e) { setImpersonatedCoach({ name:"", disciplines:[] }); }
+        const name = prof ? `${prof.first_name||""} ${prof.last_name||""}`.trim() : "";
+        const disciplines = discLinks?.map(r=>r.disciplines).filter(Boolean) || [];
+        // Mettre à jour tous les états en un seul batch React
+        setImpersonatedCoach({ name, disciplines });
+        setImpersonating({ as: asRole, fromRole: role, userId });
+        setRole(asRole);
+      } catch(e) {
+        setImpersonatedCoach({ name:"", disciplines:[] });
+        setImpersonating({ as: asRole, fromRole: role, userId });
+        setRole(asRole);
+      }
+    } else {
+      setImpersonating({ as: asRole, fromRole: role, userId });
+      setRole(asRole);
     }
-    setImpersonating({ as: asRole, fromRole: role, userId });
-    setRole(asRole);
   }, [role]);
 
   const stopImpersonate = React.useCallback(() => {
@@ -97,20 +104,24 @@ const PAGE_TITLES = {
     }
   };
 
-  // Disciplines persistées dans localStorage
-  const [discs, setDiscs] = useState(DISCIPLINES.map(d => ({ ...d, slots: [] })));
+  const [discs, setDiscs] = useState([]);
 
-  // Charger les disciplines + slots depuis Supabase dès que studioId est connu
+  // Charger disciplines dès que studioId est connu (propStudioId OU sharedStudioId)
   useEffect(() => {
     const id = propStudioId || sharedStudioId;
     if (!id) return;
-    const sb = createClient();
-    sb.from("disciplines")
+    createClient()
+      .from("disciplines")
       .select("id,name,icon,color,slots")
       .eq("studio_id", id)
       .order("created_at")
       .then(({ data }) => {
-        if (data?.length) setDiscs(data.map(d => ({ ...d, slots: d.slots||[] })));
+        if (data?.length) {
+          setDiscs(data.map(d => ({ ...d, slots: d.slots||[] })));
+        } else {
+          // Fallback démo uniquement si aucune discipline en base
+          setDiscs(DISCIPLINES.map(d => ({ ...d, slots: [] })));
+        }
       });
   }, [propStudioId, sharedStudioId]);
 
