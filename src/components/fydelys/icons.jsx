@@ -41,7 +41,6 @@ const IcoPilates   = ({s,c}) => <ICG size={s} color={c}><circle cx="12" cy="5" r
 const IcoMeditation= ({s,c}) => <ICG size={s} color={c}><circle cx="12" cy="5" r="2"/><path d="M7 12c0-2.8 2.2-5 5-5s5 2.2 5 5"/><path d="M5 17c0 0 2-2 7-2s7 2 7 2"/><path d="M12 12v5"/></ICG>;
 const IcoMoon      = ({s,c}) => <ICG size={s} color={c}><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></ICG>;
 
-const DISC_ICONS = { 1: IcoYoga, 2: IcoPilates, 3: IcoMeditation, 4: IcoMoon };
 
 function IcoHelpCircle({s,c}) {
   return (
@@ -90,7 +89,10 @@ function IcoLogOut({s,c}) {
 }
 
 
-const NAV_ICONS  = { dashboard: IcoHome, planning: IcoCalendar, members: IcoUsers, subscriptions: IcoTag, payments: IcoCreditCard, disciplines: IcoLayers, settings: IcoSettings, aide: IcoHelpCircle };
+
+
+const DISC_ICONS = { 1: IcoYoga, 2: IcoPilates, 3: IcoMeditation, 4: IcoMoon };
+const NAV_ICONS  = { dashboard: IcoHome2, planning: IcoCalendar2, members: IcoUsers2, subscriptions: IcoTag2, payments: IcoCreditCard2, disciplines: IcoLayers2, settings: IcoSettings2, aide: IcoHelpCircle };
 
 export {
   IC, ICG,
