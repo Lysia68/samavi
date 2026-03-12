@@ -71,6 +71,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         .eq("id", user.id)
         .single()
 
+      console.log("LAYOUT profile:", JSON.stringify(profile))
       const role = profile?.role || "adherent"
 
       // Nom + disciplines pour les coachs

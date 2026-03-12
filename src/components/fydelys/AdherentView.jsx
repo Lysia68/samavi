@@ -18,6 +18,7 @@ function AdherentView({ onSwitch, isMobile, studioName = "" }) {
   const p = isMobile ? 16 : 28;
 
   const { studioId, discs } = useContext(AppCtx);
+  console.log("ADHERENT_VIEW studioId:", studioId, "loading:", loading);
   const allDiscs = discs?.length ? discs : DISCIPLINES;
 
   // ── Données membre chargées depuis Supabase ─────────────────────────────────
