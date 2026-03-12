@@ -103,12 +103,19 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Impossible de générer le lien" }, { status: 500 })
   }
 
-  // Reconstruire le lien avec token_hash pour éviter les problèmes SendGrid
+  // Logger pour diagnostiquer ce que retourne generateLink
+  console.log("generateLink properties:", JSON.stringify(linkData.properties))
+
   const actionUrl = new URL(linkData.properties.action_link)
   const tokenHash = actionUrl.searchParams.get("token_hash")
+  const hashedToken = (linkData.properties as any).hashed_token
+  console.log("tokenHash from URL:", tokenHash, "| hashed_token:", hashedToken)
+
   const magicLinkUrl = tokenHash
     ? `https://fydelys.fr/auth/confirm?token_hash=${tokenHash}&type=magiclink&tenant=${tenantSlug}`
-    : linkData.properties.action_link
+    : hashedToken
+      ? `https://fydelys.fr/auth/confirm?token_hash=${hashedToken}&type=magiclink&tenant=${tenantSlug}`
+      : linkData.properties.action_link
 
   // Email brandé au nom du studio
   const emailBody = {
