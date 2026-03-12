@@ -341,6 +341,19 @@ function AdherentView({ onSwitch, isMobile, studioName = "" }) {
     const [cardNum, setCardNum] = useState("");
     const [expiry, setExpiry]   = useState("");
     const [cvv, setCvv]         = useState("");
+    const [subs, setSubs]       = useState([]);
+    const [subsLoading, setSubsLoading] = useState(true);
+
+    useEffect(() => {
+      if (!studioId) return;
+      createClient().from("subscriptions")
+        .select("id, name, price, period, description, popular, color")
+        .eq("studio_id", studioId).eq("active", true).order("price")
+        .then(({ data }) => {
+          setSubs(data?.length ? data.map(s => ({ ...s, color: s.color || "#B8936A" })) : SUBSCRIPTIONS_INIT);
+          setSubsLoading(false);
+        });
+    }, [studioId]);
 
     if(step==="done") return (
       <div style={{ padding:p, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", minHeight:300 }}>
@@ -396,7 +409,7 @@ function AdherentView({ onSwitch, isMobile, studioName = "" }) {
         )}
         <div style={{ fontSize:16, fontWeight:700, color:C.text, marginBottom:16 }}>Changer d'abonnement</div>
         <div style={{ display:"grid", gridTemplateColumns:`repeat(${isMobile?1:2},1fr)`, gap:14 }}>
-          {SUBSCRIPTIONS_INIT.map(sub=>(
+          {subsLoading ? <div style={{ color:C.textMuted, fontSize:14 }}>Chargement…</div> : subs.map(sub=>(
             <div key={sub.id} onClick={()=>{setChosen(sub);setStep("stripe");}}
               style={{ background:C.surface, borderRadius:12, border:`2px solid ${sub.popular?C.accent:C.border}`, padding:"18px 16px", cursor:"pointer", position:"relative" }}
               onMouseEnter={e=>{e.currentTarget.style.borderColor=C.accent;}}
