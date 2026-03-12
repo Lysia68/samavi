@@ -1,15 +1,8 @@
 "use client";
-/* eslint-disable */
-// @ts-nocheck
-import App from "./FydelysApp";
+import React from "react";
 
-type Props = {
-  initialRole: string; studioSlug: string; studioName: string; studioId: string
-  planName: string; membersCount: number; userName: string; userRole: string
-  coachName: string; coachDisciplines: any[]; billingStatus: string
-  trialEndsAt: string | null; onSignOut: () => Promise<void>
-}
+// FydelysApp.jsx n'a pas de déclaration TypeScript — on passe par require
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const App = require("./FydelysApp").default as React.ComponentType<any>;
 
-export default function FydelysAppWrapper(props: Props) {
-  return <App {...props} />
-}
+export default App;
