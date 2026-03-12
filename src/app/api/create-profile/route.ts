@@ -57,6 +57,7 @@ export async function POST(request: NextRequest) {
       first_name: userMetadata?.first_name || "Nouveau",
       last_name:  userMetadata?.last_name  || "Membre",
       email: userEmail, status: "nouveau", credits: 0, credits_total: 0,
+      profile_complete: false,
     }, { onConflict: "studio_id,email" })
   }
 

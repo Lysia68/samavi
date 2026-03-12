@@ -6,26 +6,40 @@ export const dynamic = "force-dynamic"
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
-  const code      = searchParams.get("code")
-  const next      = searchParams.get("next") ?? "/dashboard"
-  const isRegister = searchParams.get("register") === "1"
-  const hostname  = request.headers.get("host") || ""
+  const code         = searchParams.get("code")
+  const next         = searchParams.get("next") ?? "/dashboard"
+  const isRegister   = searchParams.get("register") === "1"
+  const hostname     = request.headers.get("host") || ""
 
-  const isApp      = hostname === "fydelys.fr" || hostname.includes("localhost")
-  const tenantMatch = hostname.match(/^([a-z0-9-]+)\.fydelys\.fr/)
-  const tenantParam = searchParams.get("tenant")
-  const tenantSlug = (tenantMatch ? tenantMatch[1] : null) ?? tenantParam ?? null
-  const isTenant   = !!tenantSlug
+  const isApp        = hostname === "fydelys.fr" || hostname.includes("localhost")
+  const tenantMatch  = hostname.match(/^([a-z0-9-]+)\.fydelys\.fr/)
+  const tenantParam  = searchParams.get("tenant")
+  const tenantSlug   = (tenantMatch ? tenantMatch[1] : null) ?? tenantParam ?? null
+  const isTenant     = !!tenantSlug
 
-  const tokenHash  = searchParams.get("token_hash")
-  const type       = searchParams.get("type")
+  const tokenHash    = searchParams.get("token_hash")
+  const type         = searchParams.get("type")
 
+  // ── Cas 1 : ni code ni token_hash → page de confirmation ─────────────────
   if (!code && !tokenHash) {
     const confirmUrl = new URL("/auth/confirm", "https://fydelys.fr")
     if (tenantSlug) confirmUrl.searchParams.set("tenant", tenantSlug)
     return NextResponse.redirect(confirmUrl)
   }
 
+  // ── Cas 2 : token_hash depuis fydelys.fr avec tenant= ─────────────────────
+  // Le cookie ne peut pas être propagé cross-domain depuis une réponse serveur.
+  // On renvoie vers /auth/confirm qui gère la session côté client (setSession)
+  // puis appelle /api/create-profile pour créer le profil.
+  if (tokenHash && isApp && tenantSlug) {
+    const confirmUrl = new URL("/auth/confirm", "https://fydelys.fr")
+    confirmUrl.searchParams.set("token_hash", tokenHash)
+    confirmUrl.searchParams.set("type", type || "magiclink")
+    confirmUrl.searchParams.set("tenant", tenantSlug)
+    return NextResponse.redirect(confirmUrl)
+  }
+
+  // ── Cas 3 : code ou token_hash sur le bon domaine (sous-domaine direct) ──
   const response = NextResponse.redirect(new URL("/dashboard", request.url))
 
   const supabase = createServerClient(
@@ -108,7 +122,6 @@ export async function GET(request: NextRequest) {
         const { data: existingM } = await db.from("members")
           .select("id").eq("studio_id", existing.studio_id).eq("email", userEmail).single()
         if (!existingM) {
-          // Lire nom depuis user_metadata ou fallback générique
           await db.from("members").insert({
             studio_id: existing.studio_id, auth_user_id: userId,
             first_name: data.user.user_metadata?.first_name || "Nouveau",
@@ -190,16 +203,13 @@ export async function GET(request: NextRequest) {
         ? (invite.role as string)
         : (metaRole === "coach" ? "coach" : "adherent")
 
-      // ── Lire prénom/nom depuis la table members si disponible ──────────────
       let firstName = data.user.user_metadata?.first_name || ""
       let lastName  = data.user.user_metadata?.last_name  || ""
 
       if (!firstName || !lastName) {
         const { data: memberRow } = await db.from("members")
           .select("first_name, last_name")
-          .eq("studio_id", studio.id)
-          .eq("email", userEmail)
-          .single()
+          .eq("studio_id", studio.id).eq("email", userEmail).single()
         if (memberRow) {
           firstName = memberRow.first_name || firstName
           lastName  = memberRow.last_name  || lastName
@@ -208,8 +218,7 @@ export async function GET(request: NextRequest) {
 
       const { error: profileErr } = await db.from("profiles").upsert({
         id: userId, role, studio_id: studio.id,
-        first_name: firstName,
-        last_name:  lastName,
+        first_name: firstName, last_name: lastName,
       }, { onConflict: "id" })
       if (profileErr) console.error("profile upsert error:", profileErr)
 
