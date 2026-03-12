@@ -1,5 +1,4 @@
 "use client";
-
 import React, { useState, useEffect, useContext } from "react";
 import { createClient } from "@/lib/supabase";
 import { AppCtx } from "./context";
