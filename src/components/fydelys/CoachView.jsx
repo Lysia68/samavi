@@ -9,10 +9,6 @@ import { IcoBookOpen, IcoGraduate, IcoAward, IcoLogOut, IcoActivity, IcoCalendar
 import { Card, SectionHead, Button, Tag, Pill, EmptyState, DemoBanner } from "./ui";
 import { PlanningAccordion } from "./accordion";
 
-const MY_SESSIONS = SESSIONS_INIT.filter(s => s.teacher === MY_COACH_NAME);
-const COACH_NAV = COACH_NAV_KEYS.map((n,i) => ({ ...n, icon:[IcoBookOpen,IcoGraduate,IcoAward][i] }));
-const ADH_NAV = ADH_NAV_KEYS.map((n,i) => ({ ...n, icon:[IcoCalendar2,IcoUsers2,IcoBarChart2,IcoCreditCard2][i] }));
-const ADH_MOBILE_NAV = ADH_NAV;
 
 
 function CoachView({ onSwitch, isMobile, coachName = MY_COACH_NAME, coachDisciplines = [], studioName = "" }) {

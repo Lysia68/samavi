@@ -8,10 +8,10 @@ import { SESSIONS_INIT, MEMBERS_DEMO, DISCIPLINES, SUBSCRIPTIONS_INIT, ADH_NAV_K
 import { IcoCalendar2, IcoUser2, IcoChevron, IcoCreditCard2, IcoCheck, IcoX, IcoAlert2, IcoTag2, IcoUsers2, IcoBarChart2, IcoActivity, IcoHeart, IcoStar, IcoZap } from "./icons";
 import { Card, SectionHead, Button, Tag, Pill, EmptyState, DemoBanner, DateLabel, Field, SessionRow } from "./ui";
 
-const ADH_NAV = ADH_NAV_KEYS.map((n,i) => ({ ...n, icon:[IcoCalendar2,IcoHeart,IcoActivity,IcoCreditCard2][i] }));
-const ADH_MOBILE_NAV = ADH_NAV;
 
 function AdherentView({ onSwitch, isMobile, studioName = "" }) {
+  const ADH_NAV = ADH_NAV_KEYS.map((n,i) => ({ ...n, icon:[IcoCalendar2,IcoHeart,IcoActivity,IcoCreditCard2][i] }));
+  const ADH_MOBILE_NAV = ADH_NAV;
   const [page, setPage]    = useState("planning");
   const [myBookings, setMyBookings] = useState([1,3]);
   const [toast, setToast]  = useState(null);
