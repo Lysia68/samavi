@@ -12,11 +12,21 @@ export async function GET(request: NextRequest) {
 
   const [{ data: profiles }, { data: links }, { data: invites }] = await Promise.all([
     db.from("profiles").select("id, first_name, last_name, role, is_coach")
-      .eq("studio_id", studioId).in("role", ["coach", "admin"]),
+      .eq("studio_id", studioId),
     db.from("coach_disciplines").select("profile_id, discipline_id").eq("studio_id", studioId),
     db.from("invitations").select("id, email, created_at")
       .eq("studio_id", studioId).eq("role", "coach").eq("used", false),
   ])
+
+  // Croiser avec auth.users pour détecter email_confirmed_at
+  const profileIds = (profiles||[]).map((p: any) => p.id)
+  let confirmedMap: Record<string, boolean> = {}
+  if (profileIds.length > 0) {
+    const { data: { users: authUsers } } = await db.auth.admin.listUsers({ perPage: 1000 })
+    ;(authUsers||[]).forEach((u: any) => {
+      confirmedMap[u.id] = !!u.email_confirmed_at
+    })
+  }
 
   const discMap: Record<string, string[]> = {}
   ;(links||[]).forEach((l: any) => {
@@ -31,6 +41,7 @@ export async function GET(request: NextRequest) {
     role: p.role,
     is_coach: p.is_coach,
     disciplines: discMap[p.id] || [],
+    confirmed: confirmedMap[p.id] !== false, // true si confirmé ou inconnu
   }))
 
   return NextResponse.json({ coaches, invites: invites || [] })

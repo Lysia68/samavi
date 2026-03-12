@@ -53,14 +53,16 @@ function FieldLabel({ children }) {
   return <div style={{ fontSize:13, fontWeight:600, color:C.textSoft, letterSpacing:0.8, textTransform:"uppercase", marginBottom:6 }}>{children}</div>;
 }
 
-function Field({ label, value, onChange, type="text", placeholder, opts }) {
-  const s = { width:"100%", padding:"10px 14px", border:`1.5px solid ${C.border}`, borderRadius:8, fontSize:16, outline:"none", boxSizing:"border-box", color:C.text, background:C.surfaceWarm, transition:"border-color .15s" };
+function Field({ label, value, onChange, type="text", placeholder, opts, error }) {
+  const s = { width:"100%", padding:"10px 14px", border:`1.5px solid ${error ? "#C43A3A" : C.border}`, borderRadius:8, fontSize:16, outline:"none", boxSizing:"border-box", color:C.text, background: error ? "#FFF5F5" : C.surfaceWarm, transition:"border-color .15s" };
   return (
     <div>
       {label && <FieldLabel>{label}</FieldLabel>}
       {opts
         ? <select value={value} onChange={e=>onChange(e.target.value)} style={{...s,height:42}}>{opts.map(o=><option key={o.v??o} value={o.v??o}>{o.l??o}</option>)}</select>
-        : <input type={type} value={value} onChange={e=>onChange(e.target.value)} placeholder={placeholder} style={s} onFocus={e=>e.target.style.borderColor=C.accent} onBlur={e=>e.target.style.borderColor=C.border}/>
+        : <input type={type} value={value} onChange={e=>onChange(e.target.value)} placeholder={placeholder} style={s}
+            onFocus={e=>e.target.style.borderColor=error?"#C43A3A":C.accent}
+            onBlur={e=>e.target.style.borderColor=error?"#C43A3A":C.border}/>
       }
     </div>
   );

@@ -17,6 +17,7 @@ function Members({ isMobile }) {
   const [selected, setSelected] = useState(null);
   const [showAdd, setShowAdd] = useState(false);
   const [nM, setNM] = useState({ firstName:"", lastName:"", email:"", phone:"" });
+  const [nMErrors, setNMErrors] = useState({});
   const [modal, setModal] = useState(null);
   const [toast, setToast] = useState(null);
   const showToast = (msg, ok=true) => { setToast({msg,ok}); setTimeout(()=>setToast(null),3500); };
@@ -44,7 +45,11 @@ function Members({ isMobile }) {
   }, [studioId]);
 
   const add = async () => {
-    if (!nM.firstName||!nM.email||!studioId) return;
+    const errs = {};
+    if (!nM.firstName.trim()) errs.firstName = true;
+    if (!nM.email.trim()) errs.email = true;
+    setNMErrors(errs);
+    if (Object.keys(errs).length || !studioId) return;
     // Vérifier doublon email dans ce studio
     const { data: existing } = await createClient().from("members")
       .select("id").eq("studio_id", studioId).eq("email", nM.email.toLowerCase().trim()).single();
@@ -53,6 +58,7 @@ function Members({ isMobile }) {
     setMembers(prev=>[...prev, { id:tempId, ...nM, joined:new Date().toISOString().split("T")[0], status:"nouveau", credits:0, nextPayment:null, subscription:"—", avatar:(nM.firstName[0]||"")+(nM.lastName[0]||"") }]);
     setShowAdd(false);
     setNM({ firstName:"", lastName:"", email:"", phone:"" });
+    setNMErrors({});
     try {
       const { data, error } = await createClient().from("members").insert({
         studio_id: studioId, first_name: nM.firstName, last_name: nM.lastName,
@@ -218,9 +224,15 @@ function Members({ isMobile }) {
         <Card style={{ marginBottom:16, borderTop:`3px solid ${C.accent}` }}>
           <div style={{ fontSize:14, fontWeight:700, color:C.accent, textTransform:"uppercase", marginBottom:16 }}>Nouvel adhérent</div>
           <div style={{ display:"grid", gridTemplateColumns:`repeat(${isMobile?1:3},1fr)`, gap:14 }}>
-            <Field label="Prénom"     value={nM.firstName}    onChange={v=>setNM({...nM,firstName:v})}    placeholder="Prénom"/>
-            <Field label="Nom"        value={nM.lastName}     onChange={v=>setNM({...nM,lastName:v})}     placeholder="Nom"/>
-            <Field label="Email"      value={nM.email}        onChange={v=>setNM({...nM,email:v})}        placeholder="email@..."/>
+            <div>
+              <Field label={<span>Prénom <span style={{color:"#C43A3A"}}>*</span></span>} value={nM.firstName} onChange={v=>{setNM({...nM,firstName:v});setNMErrors(e=>({...e,firstName:false}))}} placeholder="Prénom" error={nMErrors.firstName}/>
+              {nMErrors.firstName && <div style={{fontSize:11,color:"#C43A3A",marginTop:3}}>Champ obligatoire</div>}
+            </div>
+            <Field label="Nom" value={nM.lastName} onChange={v=>setNM({...nM,lastName:v})} placeholder="Nom"/>
+            <div>
+              <Field label={<span>Email <span style={{color:"#C43A3A"}}>*</span></span>} value={nM.email} onChange={v=>{setNM({...nM,email:v});setNMErrors(e=>({...e,email:false}))}} placeholder="email@..." error={nMErrors.email}/>
+              {nMErrors.email && <div style={{fontSize:11,color:"#C43A3A",marginTop:3}}>Champ obligatoire</div>}
+            </div>
             <Field label="Téléphone"  value={nM.phone}        onChange={v=>setNM({...nM,phone:v})}        placeholder="06..."/>
             <Field label="Abonnement" value={nM.subscription} onChange={v=>setNM({...nM,subscription:v})} opts={SUBSCRIPTIONS_INIT.map(s=>({v:s.name,l:s.name}))}/>
           </div>

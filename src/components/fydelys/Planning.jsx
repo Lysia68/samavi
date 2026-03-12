@@ -11,6 +11,53 @@ import { DatePicker, TimePicker, DurationPicker, DaySelect } from "./pickers";
 import { PlanningAccordion, stLbl, stStyle } from "./accordion";
 
 
+// ── Sélecteur discipline visuel ──────────────────────────────────────────────
+function DiscSelect({ label, value, onChange, options, C }) {
+  const [open, setOpen] = React.useState(false);
+  const ref = React.useRef(null);
+  const selected = options.find(d => String(d.id) === String(value));
+
+  React.useEffect(() => {
+    const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  return (
+    <div ref={ref} style={{ position:"relative" }}>
+      {label && <div style={{ fontSize:11, fontWeight:700, color:C.textMuted, textTransform:"uppercase", letterSpacing:.8, marginBottom:5 }}>{label}</div>}
+      <button type="button" onClick={()=>setOpen(o=>!o)}
+        style={{ width:"100%", padding:"9px 12px", border:`1.5px solid ${open ? C.accent : C.border}`, borderRadius:8, background:C.surface, cursor:"pointer", display:"flex", alignItems:"center", gap:8, textAlign:"left", boxSizing:"border-box", transition:"border-color .15s" }}>
+        {selected ? (
+          <>
+            <span style={{ width:22, height:22, borderRadius:6, background:`${selected.color||C.accent}20`, border:`1px solid ${selected.color||C.accent}40`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:13, flexShrink:0 }}>{selected.icon||"🏃"}</span>
+            <span style={{ fontSize:13, fontWeight:600, color:C.text, flex:1 }}>{selected.name}</span>
+          </>
+        ) : (
+          <span style={{ fontSize:13, color:C.textMuted, flex:1 }}>— Choisir —</span>
+        )}
+        <span style={{ fontSize:10, color:C.textMuted, marginLeft:"auto" }}>▾</span>
+      </button>
+      {open && (
+        <div style={{ position:"absolute", top:"calc(100% + 4px)", left:0, right:0, background:C.surface, border:`1.5px solid ${C.accent}`, borderRadius:10, zIndex:200, boxShadow:"0 8px 24px rgba(0,0,0,.12)", overflow:"hidden", maxHeight:220, overflowY:"auto" }}>
+          {options.map(d => {
+            const active = String(d.id) === String(value);
+            return (
+              <button key={d.id} type="button" onClick={()=>{ onChange(String(d.id)); setOpen(false); }}
+                style={{ width:"100%", padding:"9px 12px", border:"none", background:active ? `${d.color||C.accent}12` : "transparent", cursor:"pointer", display:"flex", alignItems:"center", gap:10, textAlign:"left", borderBottom:`1px solid ${C.borderSoft}` }}>
+                <span style={{ width:26, height:26, borderRadius:7, background:`${d.color||C.accent}20`, border:`1.5px solid ${d.color||C.accent}40`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:14, flexShrink:0 }}>{d.icon||"🏃"}</span>
+                <span style={{ fontSize:13, fontWeight:active?700:500, color:active?d.color||C.accent:C.text }}>{d.name}</span>
+                {active && <span style={{ marginLeft:"auto", color:d.color||C.accent, fontSize:12 }}>✓</span>}
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+
 function PlanningSessionCard({ sess, expandedId, bookings, discs, onToggle, onChangeStatus, onDelete, onCancel }) {
   const allDiscs = discs?.length ? discs : DISCIPLINES;
   const disc = allDiscs.find(d=>String(d.id)===String(sess.disciplineId)) || allDiscs[0] || { name:"Cours", color:C.accent, icon:"🧘" };
@@ -294,12 +341,14 @@ function Planning({ isMobile }) {
             <>
               <div style={{ fontSize:13, fontWeight:700, color:C.accent, textTransform:"uppercase", letterSpacing:.5, marginBottom:14 }}>Créer une séance</div>
               <div style={{ display:"grid", gridTemplateColumns:`repeat(${isMobile?2:4},1fr)`, gap:14 }}>
-                <Field label="Discipline" value={nS.disciplineId} onChange={v=>{
+                <DiscSelect label="Discipline" value={nS.disciplineId} C={C}
+                  options={(discs||DISCIPLINES).map(d=>({id:String(d.id), name:d.name, icon:d.icon, color:d.color}))}
+                  onChange={v=>{
                   const allD = discs||DISCIPLINES;
                   const disc = allD.find(d=>String(d.id)===String(v));
                   const slot = disc?.slots?.[0];
                   setNS({...nS, disciplineId:v, ...(slot?{time:slot.time, duration:slot.duration||60}:{})});
-                }} opts={(discs||DISCIPLINES).map(d=>({v:String(d.id),l:d.name}))}/>
+                }}/>
                 <div>
                   <label style={{fontSize:11,fontWeight:700,color:C.textMuted,textTransform:"uppercase",letterSpacing:.8,display:"block",marginBottom:5}}>Professeur</label>
                   <select value={nS.teacher} onChange={e=>setNS({...nS,teacher:e.target.value})}
@@ -371,13 +420,21 @@ function Planning({ isMobile }) {
                       1 · Créneaux à inclure
                     </div>
                     {allSlotsRaw.length > 0 && (
-                      <select value={recFilterDisc||""} onChange={e=>setRecFilterDisc(e.target.value?Number(e.target.value):null)}
-                        style={{ fontSize:12, padding:"5px 10px", border:`1.5px solid ${C.border}`, borderRadius:8, background:C.surface, color:C.text, outline:"none", cursor:"pointer", maxWidth:160 }}>
-                        <option value="">Toutes les disciplines</option>
-                        {(discs||[]).filter(d=>(d.slots||[]).length>0).map(d=>(
-                          <option key={d.id} value={d.id}>{d.icon||""} {d.name}</option>
-                        ))}
-                      </select>
+                      <div style={{ display:"flex", flexWrap:"wrap", gap:6 }}>
+                        <button onClick={()=>setRecFilterDisc(null)}
+                          style={{ padding:"4px 10px", borderRadius:20, border:`1.5px solid ${!recFilterDisc?C.accent:C.border}`, background:!recFilterDisc?C.accentLight:"transparent", color:!recFilterDisc?C.accentDark:C.textMid, fontSize:12, fontWeight:600, cursor:"pointer" }}>
+                          Toutes
+                        </button>
+                        {(discs||[]).filter(d=>(d.slots||[]).length>0).map(d=>{
+                          const active = recFilterDisc===d.id;
+                          return (
+                            <button key={d.id} onClick={()=>setRecFilterDisc(active?null:d.id)}
+                              style={{ padding:"4px 10px", borderRadius:20, border:`1.5px solid ${active?(d.color||C.accent):C.border}`, background:active?`${d.color||C.accent}18`:"transparent", color:active?(d.color||C.accent):C.textMid, fontSize:12, fontWeight:600, cursor:"pointer", display:"flex", alignItems:"center", gap:5 }}>
+                              {d.icon||""} {d.name}
+                            </button>
+                          );
+                        })}
+                      </div>
                     )}
                   </div>
                   {allSlotsRaw.length === 0 ? (
@@ -392,26 +449,29 @@ function Planning({ isMobile }) {
                       {allSlots.map(slot => {
                         const sel = isSelected(slot.key);
                         const selSlot = recSlots.find(s=>s.key===slot.key);
+                        const slotColor = slot.discColor || C.accent;
                         return (
-                          <div key={slot.key} style={{ borderRadius:10, border:`1.5px solid ${sel?C.accent:C.border}`, background:sel?C.accentLight:C.surface, overflow:"hidden", transition:"all .15s" }}>
-                            {/* Ligne principale — clic pour sélectionner */}
-                            <div onClick={()=>toggleSlot(slot)}
-                              style={{ display:"flex", alignItems:"center", gap:10, padding:"10px 14px", cursor:"pointer" }}>
-                              <div style={{ width:20, height:20, borderRadius:5, border:`2px solid ${sel?C.accent:C.border}`, background:sel?C.accent:"transparent", flexShrink:0, display:"flex", alignItems:"center", justifyContent:"center" }}>
-                                {sel && <span style={{color:"#fff",fontSize:12,lineHeight:1}}>✓</span>}
+                          <div key={slot.key} style={{ borderRadius:12, border:`2px solid ${sel ? slotColor : C.border}`, background:sel ? `${slotColor}0D` : C.surface, overflow:"hidden", transition:"all .15s" }}>
+                            <div onClick={()=>toggleSlot(slot)} style={{ display:"flex", alignItems:"center", gap:10, padding:"11px 14px", cursor:"pointer" }}>
+                              {/* Checkbox custom */}
+                              <div style={{ width:22, height:22, borderRadius:6, border:`2px solid ${sel ? slotColor : C.border}`, background:sel ? slotColor : "transparent", flexShrink:0, display:"flex", alignItems:"center", justifyContent:"center", transition:"all .15s" }}>
+                                {sel && <span style={{ color:"#fff", fontSize:13, fontWeight:800, lineHeight:1 }}>✓</span>}
                               </div>
-                              <span style={{fontSize:15}}>{slot.discIcon}</span>
-                              <div style={{flex:1}}>
-                                <div style={{ fontSize:13, fontWeight:700, color:sel?C.accent:C.text }}>{slot.discName}</div>
-                                <div style={{ fontSize:11, color:C.textSoft }}>{dayLabel(slot.day)} · {slot.time} · {slot.duration} min</div>
+                              {/* Icône discipline */}
+                              <span style={{ width:32, height:32, borderRadius:8, background:`${slotColor}20`, border:`1.5px solid ${slotColor}40`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:16, flexShrink:0 }}>{slot.discIcon}</span>
+                              <div style={{ flex:1, minWidth:0 }}>
+                                <div style={{ fontSize:13, fontWeight:700, color: sel ? slotColor : C.text }}>{slot.discName}</div>
+                                <div style={{ fontSize:11, color:C.textSoft, marginTop:1 }}>
+                                  <span style={{ fontWeight:600 }}>{dayLabel(slot.day)}</span> · {slot.time} · {slot.duration} min
+                                </div>
                               </div>
+                              {sel && <span style={{ fontSize:11, fontWeight:700, padding:"2px 8px", borderRadius:8, background:slotColor, color:"#fff", flexShrink:0 }}>✓ Sélectionné</span>}
                             </div>
-                            {/* Coach par créneau — visible seulement si sélectionné */}
                             {sel && (
-                              <div style={{ borderTop:`1px solid ${C.border}`, padding:"8px 14px 10px", display:"flex", alignItems:"center", gap:10, background:"rgba(160,104,56,.04)" }}>
-                                <span style={{fontSize:11,fontWeight:700,color:C.textMuted,flexShrink:0,textTransform:"uppercase",letterSpacing:.6}}>Coach</span>
+                              <div style={{ borderTop:`1px solid ${slotColor}30`, padding:"8px 14px 10px", display:"flex", alignItems:"center", gap:10, background:`${slotColor}08` }}>
+                                <span style={{ fontSize:11, fontWeight:700, color:slotColor, flexShrink:0, textTransform:"uppercase", letterSpacing:.6 }}>Coach</span>
                                 <select value={selSlot?.teacher||""} onChange={e=>updateSlotCoach(slot.key, e.target.value)}
-                                  style={{flex:1,padding:"6px 10px",border:`1.5px solid ${C.border}`,borderRadius:7,fontSize:13,color:C.text,background:C.surface,outline:"none"}}>
+                                  style={{ flex:1, padding:"6px 10px", border:`1.5px solid ${slotColor}50`, borderRadius:7, fontSize:13, color:C.text, background:C.surface, outline:"none" }}>
                                   <option value="">— Coach par défaut ({nS.teacher||"non défini"}) —</option>
                                   {coachesList.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
                                 </select>

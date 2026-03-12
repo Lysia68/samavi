@@ -21,6 +21,7 @@ function RoleBadge({ role }) {
 function InviteCoachModal({ C, studioSlug, onClose, onSubmit }) {
   const [email, setEmail]   = React.useState("");
   const [name, setName]     = React.useState({ fn:"", ln:"" });
+  const [errors, setErrors] = React.useState({});
   const firstInputRef       = React.useRef(null);
   React.useEffect(() => {
     const t = setTimeout(() => firstInputRef.current?.focus(), 50);
@@ -39,27 +40,38 @@ function InviteCoachModal({ C, studioSlug, onClose, onSubmit }) {
           <div>
             <FieldLabel>Prénom</FieldLabel>
             <input ref={firstInputRef} name="invite_fn" autoComplete="new-password" value={name.fn}
-              onChange={e=>setName(p=>({...p,fn:e.target.value}))} placeholder="Marie" style={inpStyle}
-              onFocus={e=>e.target.style.borderColor=C.accent} onBlur={e=>e.target.style.borderColor=C.border}/>
+              onChange={e=>{setName(p=>({...p,fn:e.target.value}));setErrors(v=>({...v,fn:false}))}} placeholder="Marie *"
+              style={{...inpStyle, borderColor: errors.fn ? "#C43A3A" : C.border, background: errors.fn ? "#FFF5F5" : C.surfaceWarm}}
+              onFocus={e=>e.target.style.borderColor=errors.fn?"#C43A3A":C.accent} onBlur={e=>e.target.style.borderColor=errors.fn?"#C43A3A":C.border}/>
           </div>
           <div>
             <FieldLabel>Nom</FieldLabel>
             <input name="invite_ln" autoComplete="new-password" value={name.ln}
-              onChange={e=>setName(p=>({...p,ln:e.target.value}))} placeholder="Laurent" style={inpStyle}
-              onFocus={e=>e.target.style.borderColor=C.accent} onBlur={e=>e.target.style.borderColor=C.border}/>
+              onChange={e=>{setName(p=>({...p,ln:e.target.value}));setErrors(v=>({...v,ln:false}))}} placeholder="Laurent *"
+              style={{...inpStyle, borderColor: errors.ln ? "#C43A3A" : C.border, background: errors.ln ? "#FFF5F5" : C.surfaceWarm}}
+              onFocus={e=>e.target.style.borderColor=errors.ln?"#C43A3A":C.accent} onBlur={e=>e.target.style.borderColor=errors.ln?"#C43A3A":C.border}/>
           </div>
         </div>
         <div style={{marginBottom:16}}>
           <FieldLabel>Email professionnel</FieldLabel>
           <input name="invite_email" autoComplete="new-password" inputMode="email" value={email}
-            onChange={e=>setEmail(e.target.value)} placeholder="coach@studio.fr" style={inpStyle}
-            onFocus={e=>e.target.style.borderColor=C.accent} onBlur={e=>e.target.style.borderColor=C.border}/>
+            onChange={e=>{setEmail(e.target.value);setErrors(v=>({...v,email:false}))}} placeholder="coach@studio.fr *"
+            style={{...inpStyle, borderColor: errors.email ? "#C43A3A" : C.border, background: errors.email ? "#FFF5F5" : C.surfaceWarm}}
+            onFocus={e=>e.target.style.borderColor=errors.email?"#C43A3A":C.accent} onBlur={e=>e.target.style.borderColor=errors.email?"#C43A3A":C.border}/>
         </div>
         <div style={{padding:"10px 14px",background:C.accentLight,borderRadius:8,fontSize:12,color:C.accentDark,marginBottom:16}}>
           🔗 Un magic link sera envoyé à <strong>{email||"…"}</strong>. Le coach accédera via <strong>{studioSlug ? `${studioSlug}.fydelys.fr` : "votre studio"}</strong>
         </div>
         <div style={{display:"flex",gap:10}}>
-          <Button variant="primary" onClick={()=>onSubmit(email, name.fn, name.ln)} disabled={!email||!name.fn}>
+          <Button variant="primary" onClick={()=>{
+            const e = {};
+            if (!name.fn.trim()) e.fn = true;
+            if (!name.ln.trim()) e.ln = true;
+            if (!email.trim()) e.email = true;
+            setErrors(e);
+            if (Object.keys(e).length) return;
+            onSubmit(email, name.fn, name.ln);
+          }}>
             <IcoMail s={14} c="white"/> Envoyer l'invitation
           </Button>
           <Button variant="ghost" onClick={onClose}>Annuler</Button>
@@ -494,40 +506,106 @@ function Settings({ isMobile }) {
 
   // ── Tab: Users ────────────────────────────────────────────────────────────
   const TabUsers = () => {
-    const tenantUsers = isSA ? users : users.filter(u=>u.tenant==="t1");
+    const [realUsers, setRealUsers] = React.useState([]);
+    const [loadingUsers, setLoadingUsers] = React.useState(true);
+    const [confirmAction, setConfirmAction] = React.useState(null); // {id, action: "suspend"|"delete"}
+
+    React.useEffect(() => {
+      if (!studioId) return;
+      fetch(`/api/team?studioId=${studioId}`)
+        .then(r => r.json())
+        .then(data => {
+          setRealUsers(data.coaches || []);
+          setLoadingUsers(false);
+        })
+        .catch(() => setLoadingUsers(false));
+      // Aussi charger les membres (adhérents)
+      const sb = createClient();
+      sb.from("profiles").select("id, first_name, last_name, role")
+        .eq("studio_id", studioId)
+        .then(({ data }) => {
+          if (data) setRealUsers(data.map(p => ({
+            id: p.id, fn: p.first_name||"", ln: p.last_name||"", role: p.role
+          })));
+          setLoadingUsers(false);
+        });
+    }, [studioId]);
+
+    const handleSuspend = async (userId) => {
+      const res = await fetch("/api/team/suspend", {
+        method:"POST", headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({ userId, studioId })
+      });
+      if (res.ok) { showToast("Utilisateur suspendu"); setRealUsers(prev => prev.filter(u=>u.id!==userId)); }
+      else showToast("Erreur lors de la suspension", false);
+      setConfirmAction(null);
+    };
+
+    const handleDelete = async (userId) => {
+      const res = await fetch("/api/team/suspend", {
+        method:"DELETE", headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({ userId, studioId })
+      });
+      if (res.ok) { showToast("Utilisateur supprimé", false); setRealUsers(prev => prev.filter(u=>u.id!==userId)); }
+      else showToast("Erreur lors de la suppression", false);
+      setConfirmAction(null);
+    };
+
+    const roleLabel = { admin:"Admin", coach:"Coach", adherent:"Adhérent", superadmin:"Super Admin" };
+    const roleColor = { admin:C.accent, coach:"#7C3AED", adherent:"#3A6E46", superadmin:"#C43A3A" };
+
+    if (loadingUsers) return <div style={{padding:32,textAlign:"center",color:C.textMuted}}>Chargement…</div>;
+
     return (
       <div>
-        {isAdmin && (
-          <div style={{ display:"flex", justifyContent:"flex-end", marginBottom:12 }}>
-            <Button sm variant="primary" onClick={()=>setModal({type:"inviteUser"})}><span style={{display:"flex",alignItems:"center",gap:5}}><IcoUserPlus s={13} c="white"/>Inviter un utilisateur</span></Button>
-          </div>
-        )}
         <Card noPad>
-          {tenantUsers.map(u=>(
-            <div key={u.id} style={{ padding:"11px 16px", borderBottom:`1px solid ${C.borderSoft}`, transition:"background .1s" }}
-              onMouseEnter={e=>e.currentTarget.style.background=C.bg}
-              onMouseLeave={e=>e.currentTarget.style.background=""}>
-              <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:5 }}>
-                <div style={{ width:32, height:32, borderRadius:"50%", background:C.accentBg, border:`1px solid #DFC0A0`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:11, fontWeight:700, color:C.accent, flexShrink:0 }}>{u.fn[0]}{u.ln[0]}</div>
-                <div style={{ flex:1 }}>
-                  <div style={{ fontSize:14, fontWeight:700, color:C.text }}>{u.fn} {u.ln}</div>
-                  <div style={{ fontSize:11, color:C.textSoft }}>{u.email}</div>
+          {realUsers.length === 0 && (
+            <div style={{padding:32,textAlign:"center",color:C.textMuted}}>Aucun utilisateur trouvé</div>
+          )}
+          {realUsers.map(u => (
+            <div key={u.id} style={{ padding:"12px 16px", borderBottom:`1px solid ${C.borderSoft}` }}>
+              <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+                <div style={{ width:34, height:34, borderRadius:"50%", background:C.accentBg, border:`1px solid #DFC0A0`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:12, fontWeight:700, color:C.accent, flexShrink:0 }}>
+                  {(u.fn[0]||"?")}{ (u.ln[0]||"")}
                 </div>
-                <RoleBadge role={u.role}/>
-                {isSA && <span style={{ fontSize:10, color:C.textMuted, background:C.bg, padding:"2px 7px", borderRadius:8, border:`1px solid ${C.border}` }}>{tenants.find(t=>t.id===u.tenant)?.name}</span>}
-              </div>
-              <div style={{ display:"flex", alignItems:"center", gap:8, paddingLeft:42 }}>
-                <Tag s={u.status}/>
-                <span style={{ fontSize:11, color:C.textMuted, flex:1 }}>Connecté : {u.lastLogin}</span>
-                {isAdmin && (
-                  <div style={{ display:"flex", gap:5 }}>
-                    <button onClick={()=>setModal({type:"editUser",user:u})} style={{ fontSize:11, padding:"3px 10px", borderRadius:6, border:`1px solid ${C.border}`, background:C.bg, color:C.textMid, cursor:"pointer", fontWeight:600 }}>Modifier</button>
-                    {confirmDelete===u.id
-                      ? <button onClick={()=>{ setUsers(prev=>prev.filter(x=>x.id!==u.id)); setConfirmDelete(null); showToast("Utilisateur supprimé", false); }}
-                          style={{ fontSize:11, padding:"3px 10px", borderRadius:6, border:`1px solid #EFC8BC`, background:C.warnBg, color:C.warn, cursor:"pointer", fontWeight:700 }}>Confirmer</button>
-                      : <button onClick={()=>setConfirmDelete(u.id)}
-                          style={{ fontSize:11, padding:"3px 10px", borderRadius:6, border:`1px solid ${C.border}`, background:C.bg, color:C.textMuted, cursor:"pointer" }}>Supprimer</button>
-                    }
+                <div style={{ flex:1, minWidth:0 }}>
+                  <div style={{ fontSize:14, fontWeight:700, color:C.text }}>{u.fn} {u.ln}</div>
+                  <div style={{ display:"flex", alignItems:"center", gap:6, marginTop:3, flexWrap:"wrap" }}>
+                    <span style={{ fontSize:11, fontWeight:700, padding:"2px 8px", borderRadius:6, background:`${roleColor[u.role]||C.accent}18`, color:roleColor[u.role]||C.accent }}>
+                      {roleLabel[u.role]||u.role}
+                    </span>
+                    {u.confirmed === false && (
+                      <span style={{ fontSize:11, fontWeight:600, padding:"2px 8px", borderRadius:6, background:"#FFF3CD", color:"#856404" }}>
+                        ⏳ En attente de confirmation
+                      </span>
+                    )}
+                  </div>
+                </div>
+                {isAdmin && u.role !== "admin" && (
+                  <div style={{ display:"flex", gap:6 }}>
+                    {confirmAction?.id === u.id ? (
+                      <>
+                        <button onClick={()=> confirmAction.action==="delete" ? handleDelete(u.id) : handleSuspend(u.id)}
+                          style={{ fontSize:11, padding:"4px 10px", borderRadius:6, border:"1px solid #EFC8BC", background:C.warnBg, color:C.warn, cursor:"pointer", fontWeight:700 }}>
+                          Confirmer
+                        </button>
+                        <button onClick={()=>setConfirmAction(null)}
+                          style={{ fontSize:11, padding:"4px 10px", borderRadius:6, border:`1px solid ${C.border}`, background:C.bg, color:C.textMuted, cursor:"pointer" }}>
+                          Annuler
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <button onClick={()=>setConfirmAction({id:u.id,action:"suspend"})}
+                          style={{ fontSize:11, padding:"4px 10px", borderRadius:6, border:`1px solid ${C.border}`, background:C.bg, color:C.textMid, cursor:"pointer", fontWeight:600 }}>
+                          Suspendre
+                        </button>
+                        <button onClick={()=>setConfirmAction({id:u.id,action:"delete"})}
+                          style={{ fontSize:11, padding:"4px 10px", borderRadius:6, border:`1px solid #EFC8BC`, background:"transparent", color:C.warn, cursor:"pointer" }}>
+                          Supprimer
+                        </button>
+                      </>
+                    )}
                   </div>
                 )}
               </div>
@@ -907,7 +985,8 @@ function Settings({ isMobile }) {
 
         {/* Liste des coachs */}
         {coaches.map(coach => {
-          const assignedDiscs = DISCIPLINES.filter(d => coach.disciplines.includes(d.id));
+          const allDiscs = (discs && discs.length) ? discs : DISCIPLINES;
+          const assignedDiscs = allDiscs.filter(d => coach.disciplines.includes(d.id));
           const initials = (coach.fn[0]||"")+(coach.ln[0]||"");
           return (
             <div key={coach.id} style={{background:C.surface,borderRadius:14,border:`1px solid ${C.border}`,padding:"16px 18px",marginBottom:10}}>
