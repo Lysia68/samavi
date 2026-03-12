@@ -174,9 +174,47 @@ export default function LandingPage() {
   useEffect(() => {
     if (typeof window === "undefined") return
     const hash = window.location.hash
-    if (hash && hash.includes("access_token=")) {
-      window.location.href = "/auth/confirm" + hash
-    }
+    if (!hash || !hash.includes("access_token=")) return
+
+    const params = new URLSearchParams(hash.replace("#", ""))
+    const accessToken  = params.get("access_token")
+    const refreshToken = params.get("refresh_token")
+    const studioSlug   = params.get("studio_slug")
+
+    if (!accessToken || !refreshToken) return
+
+    // Établir la session via Supabase client
+    import("@supabase/ssr").then(({ createBrowserClient }) => {
+      const supabase = createBrowserClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      )
+      supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken })
+        .then(async ({ data, error }) => {
+          if (error || !data?.user) {
+            window.location.href = "/login?error=lien_expire"
+            return
+          }
+          // Lire studio_slug depuis app_metadata
+          const slug = data.user.app_metadata?.studio_slug
+          if (slug) {
+            window.location.href = `https://${slug}.fydelys.fr/dashboard`
+            return
+          }
+          // Fallback : lire le profil
+          const { data: profile } = await supabase
+            .from("profiles").select("role, studio_id").eq("id", data.user.id).single()
+          if (profile?.studio_id) {
+            const { data: studio } = await supabase
+              .from("studios").select("slug").eq("id", profile.studio_id).single()
+            if (studio?.slug) {
+              window.location.href = `https://${studio.slug}.fydelys.fr/dashboard`
+              return
+            }
+          }
+          window.location.href = "/dashboard"
+        })
+    })
   }, [])
 
   return (
