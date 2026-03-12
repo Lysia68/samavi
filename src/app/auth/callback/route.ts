@@ -24,8 +24,14 @@ export async function GET(request: NextRequest) {
 
   console.log("CALLBACK | url:", request.url, "| tenant:", tenantParam, "| tokenHash:", !!tokenHash, "| code:", !!code)
 
+  // Supabase peut rediriger avec #access_token dans le hash (géré côté client)
+  // ou avec ?code= ou ?token_hash= (géré ici)
   if (!code && !tokenHash) {
-    return NextResponse.redirect(new URL("/", request.url))
+    // Pas de token dans l'URL — Supabase a peut-être mis le token dans le hash
+    // On laisse le client gérer via la page /auth/confirm
+    const confirmUrl = new URL("/auth/confirm", "https://fydelys.fr")
+    if (tenantSlug) confirmUrl.searchParams.set("tenant", tenantSlug)
+    return NextResponse.redirect(confirmUrl)
   }
 
   // ── Construire la réponse de redirection temporaire (sera remplacée) ──────

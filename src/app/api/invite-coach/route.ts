@@ -92,13 +92,17 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Impossible de générer le lien" }, { status: 500 })
   }
 
-  // Extraire le token_hash du lien généré et reconstruire l'URL brandée
+  // Extraire token ou token_hash selon le format retourné par Supabase
   const actionUrl = new URL(linkData.properties.action_link)
   const tokenHash = actionUrl.searchParams.get("token_hash")
-  console.log("INVITE | action_link:", linkData.properties.action_link, "| tokenHash:", tokenHash)
+  const token     = actionUrl.searchParams.get("token")
+  // Utiliser le lien Supabase natif en remplaçant juste le redirect_to
   const magicLinkUrl = tokenHash
     ? `https://fydelys.fr/auth/callback?token_hash=${tokenHash}&type=magiclink&tenant=${studioSlug}`
-    : linkData.properties.action_link
+    : token
+      ? `${actionUrl.origin}${actionUrl.pathname}?token=${token}&type=magiclink&redirect_to=${encodeURIComponent(`https://fydelys.fr/auth/callback?tenant=${studioSlug}&next=/dashboard`)}`
+      : linkData.properties.action_link
+  console.log("INVITE | magicLinkUrl:", magicLinkUrl)
 
   // Email brandé au nom du studio
   const coachFirstName = firstName || email.split("@")[0]
