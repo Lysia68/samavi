@@ -18,7 +18,12 @@ function RoleBadge({ role }) {
 
 // ── AIDE ILLUSTRATIONS — visuels SVG pour les guides ────────────────────────
 
-function InviteCoachModal({ C, inviteEmail, setInviteEmail, inviteName, setInviteName, onClose, onSubmit }) {
+function InviteCoachModal({ C, studioSlug, inviteEmail, setInviteEmail, inviteName, setInviteName, onClose, onSubmit }) {
+  const firstInputRef = React.useRef(null);
+  React.useEffect(() => {
+    const t = setTimeout(() => firstInputRef.current?.focus(), 50);
+    return () => clearTimeout(t);
+  }, []);
   return (
     <div onClick={e=>e.target===e.currentTarget&&onClose()}
       style={{position:"fixed",inset:0,background:"rgba(42,31,20,.45)",zIndex:600,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
@@ -31,7 +36,7 @@ function InviteCoachModal({ C, inviteEmail, setInviteEmail, inviteName, setInvit
           {[["Prénom","fn","Marie"],["Nom","ln","Laurent"]].map(([lbl,k,ph],i)=>(
             <div key={k}>
               <FieldLabel>{lbl}</FieldLabel>
-              <input autoFocus={i===0} autoComplete="off" value={inviteName[k]} onChange={e=>setInviteName(p=>({...p,[k]:e.target.value}))} placeholder={ph}
+              <input ref={i===0 ? firstInputRef : null} autoComplete="off" value={inviteName[k]} onChange={e=>setInviteName(p=>({...p,[k]:e.target.value}))} placeholder={ph}
                 style={{width:"100%",padding:"9px 12px",border:`1.5px solid ${C.border}`,borderRadius:8,fontSize:14,outline:"none",boxSizing:"border-box",color:C.text,background:C.surfaceWarm}}
                 onFocus={e=>e.target.style.borderColor=C.accent} onBlur={e=>e.target.style.borderColor=C.border}/>
             </div>
@@ -44,7 +49,7 @@ function InviteCoachModal({ C, inviteEmail, setInviteEmail, inviteName, setInvit
             onFocus={e=>e.target.style.borderColor=C.accent} onBlur={e=>e.target.style.borderColor=C.border}/>
         </div>
         <div style={{padding:"10px 14px",background:C.accentLight,borderRadius:8,fontSize:12,color:C.accentDark,marginBottom:16}}>
-          🔗 Un magic link sera envoyé à <strong>{inviteEmail||"…"}</strong>. Le coach accédera au studio via <strong>son URL Fydelys</strong>
+          🔗 Un magic link sera envoyé à <strong>{inviteEmail||"…"}</strong>. Le coach accédera via <strong>{studioSlug ? `${studioSlug}.fydelys.fr` : "votre studio"}</strong>
         </div>
         <div style={{display:"flex",gap:10}}>
           <Button variant="primary" onClick={onSubmit}>
@@ -58,7 +63,7 @@ function InviteCoachModal({ C, inviteEmail, setInviteEmail, inviteName, setInvit
 }
 
 function Settings({ isMobile }) {
-  const { studioName, userName, userEmail, planName, membersCount, userRole, studioId, discs } = useContext(AppCtx);
+  const { studioName, studioSlug, userName, userEmail, planName, membersCount, userRole, studioId, discs } = useContext(AppCtx);
   const p = isMobile?12:28;
   const realRole = userRole || "admin";
   const [currentRole, setCurrentRole] = useState(realRole);
@@ -855,7 +860,8 @@ function Settings({ isMobile }) {
         {editCoach && <DiscModal coach={editCoach}/>}
         {inviteModal && <InviteCoachModal
         C={C}
-        inviteEmail={inviteEmail}
+        studioSlug={studioSlug}
+          inviteEmail={inviteEmail}
         setInviteEmail={setInviteEmail}
         inviteName={inviteName}
         setInviteName={setInviteName}
