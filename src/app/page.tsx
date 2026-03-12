@@ -170,6 +170,15 @@ export default function LandingPage() {
     return () => window.removeEventListener("scroll", fn)
   }, [])
 
+  // Intercepter les liens Supabase natifs avec #access_token dans le hash
+  useEffect(() => {
+    if (typeof window === "undefined") return
+    const hash = window.location.hash
+    if (hash && hash.includes("access_token=")) {
+      window.location.href = "/auth/confirm" + hash
+    }
+  }, [])
+
   return (
     <>
       <style>{`
@@ -318,7 +327,7 @@ export default function LandingPage() {
           <a href="#fonctionnalites" className="nav-link">Fonctionnalités</a>
           <a href="#tarifs" className="nav-link">Tarifs</a>
           <a href="/login" className="nav-cta-ghost">Connexion</a>
-          <a href="/login" className="nav-cta">Créer mon studio</a>
+          <a href="/login?tab=register" className="nav-cta">Créer mon studio</a>
         </div>
       </nav>
 
