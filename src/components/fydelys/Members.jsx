@@ -215,11 +215,12 @@ function Members({ isMobile }) {
       {modal?.type==="history"      && <HistoryModal/>}
 
       <div style={{ display:"flex", gap:10, marginBottom:18, alignItems:"center" }}>
-        <div style={{ position:"relative", display:"flex", alignItems:"center" }}>
+        <div style={{ position:"relative", display:"flex", alignItems:"center", flex:1 }}>
           <span style={{ position:"absolute", left:10, pointerEvents:"none", display:"flex" }}><IcoSearch s={15} c={C.textMuted}/></span>
-          <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Rechercher…" style={{ paddingLeft:32 }}
-          style={{ flex:1, padding:isMobile?"9px 12px":"10px 14px", border:`1px solid ${C.border}`, borderRadius:8, fontSize:16, outline:"none", color:C.text, background:C.surfaceWarm }}
-          onFocus={e=>e.target.style.borderColor=C.accent} onBlur={e=>e.target.style.borderColor=C.border}/>
+          <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Rechercher…"
+            style={{ flex:1, padding:isMobile?"9px 12px":"10px 14px", paddingLeft:34, border:`1px solid ${C.border}`, borderRadius:8, fontSize:16, outline:"none", color:C.text, background:C.surfaceWarm, width:"100%" }}
+            onFocus={e=>e.target.style.borderColor=C.accent} onBlur={e=>e.target.style.borderColor=C.border}/>
+        </div>
         <Button sm variant="primary" onClick={()=>setShowAdd(!showAdd)}>＋ {!isMobile&&"Adhérent"}</Button>
       </div>
       {showAdd && (
