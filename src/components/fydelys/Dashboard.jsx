@@ -59,7 +59,9 @@ function DashboardSessionCard({ sess, expandedId, bookings, onToggle, onChangeSt
 
 function Dashboard({ isMobile }) {
   const p = isMobile?12:28;
-  const { studioId, discs } = useContext(AppCtx);
+  const { studioId, discs: ctxDiscs, setDiscs } = useContext(AppCtx);
+  const [localDiscs, setLocalDiscs] = useState([]);
+  const discs = localDiscs.length ? localDiscs : ctxDiscs;
   const [expandedId, setExpandedId] = useState(null);
   const [sessions, setSessions] = useState([]);
   const [bookings, setBookings] = useState({});
@@ -83,10 +85,12 @@ function Dashboard({ isMobile }) {
       sb.from("sessions").select("id,discipline_id,teacher,room,duration_min,spots,session_date,session_time,status").eq("studio_id", studioId),
       sb.from("profiles").select("id,status").eq("studio_id", studioId).eq("role","member"),
       sb.from("payments").select("id,amount,status,payment_date").eq("studio_id", studioId),
-    ]).then(([sessRes, membRes, payRes]) => {
+      sb.from("disciplines").select("id,name,color,icon").eq("studio_id", studioId),
+    ]).then(([sessRes, membRes, payRes, discRes]) => {
       const sessData = sessRes.data || [];
       const membData = membRes.data || [];
       const payData  = payRes.data  || [];
+      const discData = discRes.data || [];
 
       if (sessData.length === 0 && membData.length === 0) {
         // Données démo
@@ -105,6 +109,10 @@ function Dashboard({ isMobile }) {
         })));
         setMembers(membData);
         setPayments(payData.map(p=>({...p, date:p.payment_date, status:p.status})));
+        if (discData.length > 0) {
+          setLocalDiscs(discData);
+          setDiscs(discData);
+        }
         setIsDemo(false);
       }
       setLoading(false);

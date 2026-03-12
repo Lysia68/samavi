@@ -77,7 +77,7 @@ function Planning({ isMobile }) {
   const [expandedId, setExpandedId] = useState(null);
   const [fd, setFd] = useState(null);
   const [showAdd, setShowAdd] = useState(false);
-  const [nS, setNS] = useState({ disciplineId:null, teacher:"", date:"", time:"09:00", duration:60, spots:12, level:"Tous niveaux", room:"Studio A" });
+  const [nS, setNS] = useState({ disciplineId:"", teacher:"", date:"", time:"09:00", duration:60, spots:12, level:"Tous niveaux", room:"Studio A" });
   const [coachesList, setCoachesList] = useState([]);
   // Mode récurrence
   const [recMode, setRecMode] = useState(false); // false = séance unique, true = récurrence
@@ -168,7 +168,7 @@ function Planning({ isMobile }) {
     const tempId = `tmp-${Date.now()}`;
     setSessions(prev => [...prev, { id:tempId, ...sess, booked:0, waitlist:0 }]);
     setShowAdd(false);
-    setNS({ disciplineId:null, teacher:"", date:"", time:"09:00", duration:60, spots:12, level:"Tous niveaux", room:"Studio A" });
+    setNS({ disciplineId:"", teacher:"", date:"", time:"09:00", duration:60, spots:12, level:"Tous niveaux", room:"Studio A" });
     try {
       const sb = createClient();
       console.log("INSERT session — studioId:", studioId, "disciplineId:", sess.disciplineId, "date:", sess.date);
@@ -266,7 +266,13 @@ function Planning({ isMobile }) {
       <div style={{ display:"flex", gap:8, overflowX:"auto", paddingBottom:4, marginBottom:18, alignItems:"center", WebkitOverflowScrolling:"touch" }}>
         <Button sm variant={fd===null?"primary":"ghost"} onClick={()=>setFd(null)}>Toutes</Button>
         {(discs||DISCIPLINES).map(d=>{ const Ico=DISC_ICONS[d.id]; return <Button key={d.id} sm variant={fd===d.id?"primary":"ghost"} onClick={()=>setFd(d.id)}><span style={{display:"flex",alignItems:"center",gap:5}}>{Ico&&<Ico s={13} c={fd===d.id?C.surface:d.color}/>}{d.name}</span></Button>; })}
-        <div style={{ marginLeft:"auto", flexShrink:0 }}><Button sm variant="primary" onClick={()=>setShowAdd(!showAdd)}>＋ Séance</Button></div>
+        <div style={{ marginLeft:"auto", flexShrink:0 }}><Button sm variant="primary" onClick={()=>{
+          const allD = discs||DISCIPLINES;
+          if (!showAdd && allD.length > 0 && !nS.disciplineId) {
+            setNS(prev => ({ ...prev, disciplineId: String(allD[0].id) }));
+          }
+          setShowAdd(!showAdd);
+        }}>＋ Séance</Button></div>
       </div>
 
       {showAdd && (
@@ -289,10 +295,11 @@ function Planning({ isMobile }) {
               <div style={{ fontSize:13, fontWeight:700, color:C.accent, textTransform:"uppercase", letterSpacing:.5, marginBottom:14 }}>Créer une séance</div>
               <div style={{ display:"grid", gridTemplateColumns:`repeat(${isMobile?2:4},1fr)`, gap:14 }}>
                 <Field label="Discipline" value={nS.disciplineId} onChange={v=>{
-                  const disc = DISCIPLINES.find(d=>d.id===parseInt(v));
+                  const allD = discs||DISCIPLINES;
+                  const disc = allD.find(d=>String(d.id)===String(v));
                   const slot = disc?.slots?.[0];
                   setNS({...nS, disciplineId:v, ...(slot?{time:slot.time, duration:slot.duration||60}:{})});
-                }} opts={(discs||DISCIPLINES).map(d=>({v:d.id,l:d.name}))}/>
+                }} opts={(discs||DISCIPLINES).map(d=>({v:String(d.id),l:d.name}))}/>
                 <div>
                   <label style={{fontSize:11,fontWeight:700,color:C.textMuted,textTransform:"uppercase",letterSpacing:.8,display:"block",marginBottom:5}}>Professeur</label>
                   <select value={nS.teacher} onChange={e=>setNS({...nS,teacher:e.target.value})}

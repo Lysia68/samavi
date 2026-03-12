@@ -143,9 +143,9 @@ function DatePicker({ value, onChange, label, minDate }) {
 const DURATIONS = [30, 45, 60, 75, 90, 105, 120];
 function DurationPicker({ value, onChange }) {
   const [open, setOpen] = useState(false);
+  const [dropPos, setDropPos] = React.useState({ top:0, left:0, width:0 });
   const ref = React.useRef(null);
   const triggerRef = React.useRef(null);
-  const [dropUp, setDropUp] = React.useState(false);
 
   React.useEffect(() => {
     if (!open) return;
@@ -154,12 +154,14 @@ function DurationPicker({ value, onChange }) {
     return () => document.removeEventListener("mousedown", h);
   }, [open]);
 
-  React.useEffect(() => {
-    if (open && triggerRef.current) {
+  const openDrop = () => {
+    if (triggerRef.current) {
       const r = triggerRef.current.getBoundingClientRect();
-      setDropUp(window.innerHeight - r.bottom < 200 && r.top > 200);
+      const above = window.innerHeight - r.bottom < 200 && r.top > 200;
+      setDropPos({ left:r.left, width:r.width, top: above ? undefined : r.bottom+4, bottom: above ? window.innerHeight-r.top+4 : undefined });
     }
-  }, [open]);
+    setOpen(o => !o);
+  };
 
   const step = (dir) => {
     const cur = value || 60;
@@ -174,7 +176,7 @@ function DurationPicker({ value, onChange }) {
       <div ref={triggerRef} style={{ display:"flex", alignItems:"center", height:38, border:`1.5px solid ${open?C.accent:C.border}`, borderRadius:9, background:C.surfaceWarm, overflow:"hidden", transition:"border-color .15s" }}>
         <button onMouseDown={e=>{e.preventDefault();step(-1);}} tabIndex={-1}
           style={{ background:"none", border:"none", borderRight:`1px solid ${C.border}`, padding:"0 7px", height:"100%", cursor:"pointer", color:C.textMuted, fontSize:12, flexShrink:0 }}>▼</button>
-        <button onMouseDown={e=>{e.preventDefault();setOpen(o=>!o);}} tabIndex={-1}
+        <button onMouseDown={e=>{e.preventDefault();openDrop();}} tabIndex={-1}
           style={{ flex:1, background:"none", border:"none", height:"100%", cursor:"pointer", fontSize:13, color:C.text, fontWeight:700, textAlign:"center", padding:"0 2px", minWidth:0, overflow:"hidden", whiteSpace:"nowrap" }}>
           {label(cur)}
         </button>
@@ -182,7 +184,10 @@ function DurationPicker({ value, onChange }) {
           style={{ background:"none", border:"none", borderLeft:`1px solid ${C.border}`, padding:"0 7px", height:"100%", cursor:"pointer", color:C.textMuted, fontSize:12, flexShrink:0 }}>▲</button>
       </div>
       {open && (
-        <div style={{ position:"absolute", left:0, right:0, [dropUp?"bottom":"top"]:"calc(100% + 4px)", background:C.surface, border:`1.5px solid ${C.accent}`, borderRadius:10, boxShadow:"0 8px 32px rgba(42,31,20,.18)", zIndex:9999, maxHeight:200, overflowY:"auto" }}>
+        <div style={{ position:"fixed", left:dropPos.left, top:dropPos.top, bottom:dropPos.bottom, width:dropPos.width,
+          background:C.surface, border:`1.5px solid ${C.accent}`, borderRadius:10,
+          boxShadow:"0 8px 32px rgba(42,31,20,.22)", zIndex:9999, maxHeight:200, overflowY:"scroll",
+          scrollbarWidth:"thin", scrollbarColor:`${C.accent}40 transparent` }}>
           {DURATIONS.map(d => (
             <button key={d} onMouseDown={e=>{e.preventDefault();onChange(d);setOpen(false);}}
               style={{ display:"block", width:"100%", textAlign:"center", padding:"9px 12px", border:"none",
@@ -204,10 +209,9 @@ function TimePicker({ value, onChange }) {
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState(false);
   const [inputVal, setInputVal] = useState(value || "09:00");
+  const [dropPos, setDropPos] = React.useState({ top:0, left:0, width:0 });
   const ref = React.useRef(null);
-  const inputRef = React.useRef(null);
   const triggerRef = React.useRef(null);
-  const [dropUp, setDropUp] = React.useState(false);
 
   React.useEffect(() => { if (!editing) setInputVal(value || "09:00"); }, [value, editing]);
 
@@ -218,18 +222,18 @@ function TimePicker({ value, onChange }) {
     return () => document.removeEventListener("mousedown", h);
   }, [open]);
 
-  React.useEffect(() => {
-    if (open && triggerRef.current) {
+  const openDrop = () => {
+    if (triggerRef.current) {
       const r = triggerRef.current.getBoundingClientRect();
-      setDropUp(window.innerHeight - r.bottom < 220 && r.top > 220);
+      const above = window.innerHeight - r.bottom < 220 && r.top > 220;
+      setDropPos({ left: r.left, width: r.width, top: above ? undefined : r.bottom + 4, bottom: above ? window.innerHeight - r.top + 4 : undefined });
     }
-    if (open) {
-      setTimeout(() => {
-        const el = ref.current?.querySelector('[data-active="true"]');
-        if (el) el.scrollIntoView({ block:"center" });
-      }, 30);
-    }
-  }, [open]);
+    setOpen(o => !o);
+    setTimeout(() => {
+      const el = document.querySelector('[data-timepicker-active="true"]');
+      if (el) el.scrollIntoView({ block:"center" });
+    }, 30);
+  };
 
   const slots = [];
   for (let h = 6; h <= 22; h++) {
@@ -244,7 +248,6 @@ function TimePicker({ value, onChange }) {
 
   const commit = (v) => {
     setEditing(false);
-    // Accepter "1615" ou "16h15" ou "16:15"
     const normalized = v.replace(/[h\s]/,":");
     const min = toMin(normalized);
     if (min !== null) { const c = fromMin(Math.max(0, Math.min(1439, min))); setInputVal(c); onChange(c); }
@@ -260,9 +263,7 @@ function TimePicker({ value, onChange }) {
   return (
     <div ref={ref} style={{ position:"relative" }}>
       <div ref={triggerRef} style={{ display:"flex", alignItems:"center", height:38, border:`1.5px solid ${editing||open?C.accent:C.border}`, borderRadius:9, background:C.surfaceWarm, overflow:"hidden", transition:"border-color .15s" }}>
-        <button onMouseDown={e=>{e.preventDefault();step(-1);}} tabIndex={-1}
-          style={{ background:"none", border:"none", borderRight:`1px solid ${C.border}`, padding:"0 7px", height:"100%", cursor:"pointer", color:C.textMuted, fontSize:12, flexShrink:0 }}>▼</button>
-        <input ref={inputRef} value={inputVal}
+        <input value={inputVal}
           onChange={e=>{setEditing(true);setInputVal(e.target.value);}}
           onFocus={()=>{setEditing(true);setOpen(false);}}
           onBlur={e=>commit(e.target.value)}
@@ -271,16 +272,18 @@ function TimePicker({ value, onChange }) {
             if(e.key==="ArrowUp"){e.preventDefault();step(1);}
             if(e.key==="ArrowDown"){e.preventDefault();step(-1);}
           }}
-          style={{ flex:1, border:"none", outline:"none", background:"transparent", padding:"0 2px", fontSize:14, color:C.text, fontWeight:700, minWidth:0, textAlign:"center", height:"100%", cursor:"pointer" }}
-          onClick={()=>setOpen(o=>!o)}
+          style={{ flex:1, border:"none", outline:"none", background:"transparent", padding:"0 6px", fontSize:13, color:C.text, fontWeight:700, minWidth:0, textAlign:"center", height:"100%", cursor:"pointer" }}
+          onClick={openDrop}
         />
-        <button onMouseDown={e=>{e.preventDefault();step(1);}} tabIndex={-1}
-          style={{ background:"none", border:"none", borderLeft:`1px solid ${C.border}`, padding:"0 7px", height:"100%", cursor:"pointer", color:C.textMuted, fontSize:12, flexShrink:0 }}>▲</button>
+        <span onClick={openDrop} style={{ padding:"0 6px", color:C.textMuted, fontSize:10, cursor:"pointer", flexShrink:0 }}>▼</span>
       </div>
       {open && (
-        <div style={{ position:"absolute", left:0, right:0, [dropUp?"bottom":"top"]:"calc(100% + 4px)", background:C.surface, border:`1.5px solid ${C.accent}`, borderRadius:10, boxShadow:"0 8px 32px rgba(42,31,20,.18)", zIndex:9999, maxHeight:200, overflowY:"auto" }}>
+        <div style={{ position:"fixed", left:dropPos.left, top:dropPos.top, bottom:dropPos.bottom, width:dropPos.width,
+          background:C.surface, border:`1.5px solid ${C.accent}`, borderRadius:10,
+          boxShadow:"0 8px 32px rgba(42,31,20,.22)", zIndex:9999, maxHeight:200, overflowY:"scroll",
+          scrollbarWidth:"thin", scrollbarColor:`${C.accent}40 transparent` }}>
           {slots.map(t => (
-            <button key={t} data-active={t===value?"true":"false"}
+            <button key={t} data-timepicker-active={t===value?"true":"false"}
               onMouseDown={e=>{e.preventDefault();setInputVal(t);onChange(t);setOpen(false);}}
               style={{ display:"block", width:"100%", textAlign:"center", padding:"8px 14px", border:"none",
                 background:t===value?C.accentLight:"transparent", color:t===value?C.accent:C.text,
@@ -307,8 +310,8 @@ function DaySelect({ value, onChange }) {
   return (
     <div style={{ position:"relative", width:"100%" }}>
       <select value={value} onChange={e => onChange(e.target.value)}
-        style={{ width:"100%", padding:"9px 24px 9px 8px", borderRadius:9, border:`1.5px solid ${C.border}`, fontSize:12, color:C.text, background:C.surfaceWarm, outline:"none", appearance:"none", WebkitAppearance:"none", cursor:"pointer", fontWeight:600, minWidth:0, boxSizing:"border-box" }}>
-        {DAYS_FULL.map(d => <option key={d.short} value={d.short}>{d.label}</option>)}
+        style={{ width:"100%", padding:"9px 20px 9px 8px", borderRadius:9, border:`1.5px solid ${C.border}`, fontSize:13, color:C.text, background:C.surfaceWarm, outline:"none", appearance:"none", WebkitAppearance:"none", cursor:"pointer", fontWeight:600, minWidth:0, boxSizing:"border-box" }}>
+        {DAYS_FULL.map(d => <option key={d.short} value={d.short}>{d.short}</option>)}
       </select>
       <span style={{ position:"absolute", right:8, top:"50%", transform:"translateY(-50%)", pointerEvents:"none", fontSize:10, color:C.textMuted }}>▼</span>
     </div>
