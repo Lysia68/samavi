@@ -13,7 +13,7 @@ type FydelysProps = {
   trialEndsAt: string | null; onSignOut: () => Promise<void>
 }
 const FydelysV4 = dynamicImport<FydelysProps>(
-  () => import("@/components/fydelys/FydelysApp") as any,
+  () => (import("@/components/fydelys/FydelysApp") as any).then((m: any) => m.default ? m : { default: m }),
   { ssr: false }
 )
 
