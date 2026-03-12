@@ -1,4 +1,5 @@
 "use client";
+
 import React, { useState, useEffect, useContext } from "react";
 import { createClient } from "@/lib/supabase";
 import { AppCtx } from "./context";
@@ -11,6 +12,10 @@ import { PlanningAccordion } from "./accordion";
 
 
 function CoachView({ onSwitch, isMobile, coachName = MY_COACH_NAME, coachDisciplines = [], studioName = "" }) {
+  const MY_SESSIONS   = SESSIONS_INIT.filter(s => s.teacher === MY_COACH_NAME);
+  const COACH_NAV     = COACH_NAV_KEYS.map((n,i) => ({ ...n, icon:[IcoBookOpen,IcoGraduate,IcoAward][i] }));
+  const ADH_NAV       = ADH_NAV_KEYS.map((n,i) => ({ ...n, icon:[IcoCalendar2,IcoUsers2,IcoBarChart2,IcoCreditCard2][i] }));
+  const ADH_MOBILE_NAV = ADH_NAV;
   const [page, setPage]  = useState("planning");
   const [toast, setToast] = useState(null);
   const showToast = (msg, ok=true) => { setToast({msg,ok}); setTimeout(()=>setToast(null),3000); };
