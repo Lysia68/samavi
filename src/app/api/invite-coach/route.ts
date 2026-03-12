@@ -63,7 +63,6 @@ export async function POST(request: NextRequest) {
     studio_id: studio.id,
     role: "coach",
     used: false,
-    expires_at: new Date(Date.now() + 7 * 24 * 3600 * 1000).toISOString(), // 7 jours
   }, { onConflict: "email,studio_id" })
 
   // Créer le user s'il n'existe pas encore (coach nouvellement invité)

@@ -114,13 +114,29 @@ export async function GET(request: NextRequest) {
         return response
       }
     }
-    // Adhérent ou Coach existant → rediriger vers le bon studio
+    // Adhérent ou Coach existant → s'assurer que le membre existe + rediriger
     if (existing.role === "adherent" || existing.role === "coach") {
       let slugToUse: string | null = tenantSlug
       if (!slugToUse && existing.studio_id) {
         const { data: studio } = await db
           .from("studios").select("slug").eq("id", existing.studio_id).single()
         slugToUse = studio?.slug ?? null
+      }
+      // Créer le membre si manquant (cas reconnexion sans fiche membre)
+      if (existing.role === "adherent" && existing.studio_id) {
+        const { data: existingM } = await db.from("members")
+          .select("id").eq("studio_id", existing.studio_id).eq("email", userEmail).single()
+        if (!existingM) {
+          await db.from("members").insert({
+            studio_id: existing.studio_id, auth_user_id: userId,
+            first_name: data.user.user_metadata?.first_name || "Nouveau",
+            last_name:  data.user.user_metadata?.last_name  || "Membre",
+            email: userEmail, status: "nouveau", credits: 0, credits_total: 0,
+          })
+        } else if (!existingM) {
+          await db.from("members").update({ auth_user_id: userId })
+            .eq("studio_id", existing.studio_id).eq("email", userEmail)
+        }
       }
       if (slugToUse) {
         response.headers.set("Location", `https://${slugToUse}.fydelys.fr/dashboard`)
@@ -190,7 +206,7 @@ export async function GET(request: NextRequest) {
     if (studio) {
       const { data: invite } = await db.from("invitations")
         .select("role").eq("email", userEmail).eq("studio_id", studio.id)
-        .eq("used", false).gt("expires_at", new Date().toISOString()).single()
+        .eq("used", false).single()
 
       const role = invite ? (invite.role as string) : "adherent"
 
