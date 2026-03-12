@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase";
 import { AppCtx } from "./context";
 import { C } from "./theme";
 import { SESSIONS_INIT, BOOKINGS_INIT, DISCIPLINES, MY_COACH_NAME, COACH_NAV_KEYS, ADH_NAV_KEYS } from "./demoData";
-import { IcoCalendar, IcoUsers, IcoUser, IcoChevron, IcoBarChart, IcoCreditCard } from "./icons";
+import { IcoCalendar, IcoUsers, IcoUser, IcoChevron, IcoBarChart, IcoCreditCard, IcoLogOut } from "./icons";
 import { Card, SectionHead, Button, Tag, Pill, EmptyState, DemoBanner } from "./ui";
 import { PlanningAccordion } from "./accordion";
 
@@ -15,11 +15,17 @@ const ADH_NAV = ADH_NAV_KEYS.map((n,i) => ({ ...n, icon:[IcoCalendar,IcoUsers,Ic
 const ADH_MOBILE_NAV = ADH_NAV;
 
 
-function CoachView({ onSwitch, isMobile, coachName = MY_COACH_NAME, coachDisciplines = [] }) {
+function CoachView({ onSwitch, isMobile, coachName = MY_COACH_NAME, coachDisciplines = [], studioName = "" }) {
   const [page, setPage]  = useState("planning");
   const [toast, setToast] = useState(null);
   const showToast = (msg, ok=true) => { setToast({msg,ok}); setTimeout(()=>setToast(null),3000); };
   const p = isMobile ? 16 : 28;
+
+  const handleSignOut = async () => {
+    const sb = createClient();
+    await sb.auth.signOut();
+    window.location.href = "/login";
+  };
 
   // Séances du coach uniquement
   const [sessions, setSessions] = useState(
@@ -53,8 +59,8 @@ function CoachView({ onSwitch, isMobile, coachName = MY_COACH_NAME, coachDiscipl
       <div style={{ width:220, minHeight:"100vh", background:C.surface, borderRight:`1px solid ${C.border}`, display:"flex", flexDirection:"column", flexShrink:0 }}>
         {/* Logo */}
         <div style={{ padding:"24px 20px 20px", borderBottom:`1px solid ${C.borderSoft}` }}>
-          <div style={{ fontSize:22, fontWeight:800, color:C.text, letterSpacing:-0.5 }}>
-            Fyde<span style={{ color:C.accent }}>lys</span>
+          <div style={{ fontSize:18, fontWeight:800, color:C.text, letterSpacing:-0.5, lineHeight:1.2 }}>
+            {studioName || <span>Fyde<span style={{ color:C.accent }}>lys</span></span>}
           </div>
           <div style={{ fontSize:11, color:C.textMuted, fontWeight:600, textTransform:"uppercase", letterSpacing:1, marginTop:2 }}>Espace Coach</div>
         </div>
@@ -80,6 +86,14 @@ function CoachView({ onSwitch, isMobile, coachName = MY_COACH_NAME, coachDiscipl
             );
           })}
         </nav>
+        {/* Déconnexion */}
+        <div style={{ padding:"12px 10px", borderTop:`1px solid ${C.borderSoft}` }}>
+          <button onClick={handleSignOut}
+            style={{ display:"flex", alignItems:"center", gap:10, width:"100%", padding:"10px 12px", borderRadius:10, border:"none", background:"transparent", color:C.textMuted, fontSize:14, cursor:"pointer" }}>
+            <IcoLogOut s={18} c={C.textMuted}/>
+            Se déconnecter
+          </button>
+        </div>
       </div>
     )
   );
@@ -89,8 +103,13 @@ function CoachView({ onSwitch, isMobile, coachName = MY_COACH_NAME, coachDiscipl
     <div style={{ padding:`${p}px ${p}px 0`, marginBottom:20 }}>
       {isMobile && (
         <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:16 }}>
-          <div style={{ fontSize:18, fontWeight:800, color:C.text, letterSpacing:-0.3 }}>Fyde<span style={{ color:C.accent }}>lys</span></div>
-          <div style={{ width:32, height:32, borderRadius:"50%", background:C.accentLight, display:"flex", alignItems:"center", justifyContent:"center", color:C.accent, fontSize:13, fontWeight:700 }}>{initials}</div>
+          <div style={{ fontSize:16, fontWeight:800, color:C.text, letterSpacing:-0.3 }}>{studioName || <span>Fyde<span style={{ color:C.accent }}>lys</span></span>}</div>
+          <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+            <button onClick={handleSignOut} style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:8, padding:"6px 8px", cursor:"pointer", display:"flex", alignItems:"center" }}>
+              <IcoLogOut s={16} c={C.textMuted}/>
+            </button>
+            <div style={{ width:32, height:32, borderRadius:"50%", background:C.accentLight, display:"flex", alignItems:"center", justifyContent:"center", color:C.accent, fontSize:13, fontWeight:700 }}>{initials}</div>
+          </div>
         </div>
       )}
       <div style={{ fontSize:isMobile?20:24, fontWeight:800, color:C.text, letterSpacing:-0.5 }}>{title}</div>

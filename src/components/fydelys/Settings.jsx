@@ -36,18 +36,22 @@ function InviteCoachModal({ C, studioSlug, onClose, onSubmit }) {
           <button onClick={onClose} style={{background:"none",border:`1.5px solid ${C.border}`,borderRadius:8,padding:"4px 8px",cursor:"pointer"}}><IcoX s={14} c={C.textSoft}/></button>
         </div>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:12}}>
-          {[["Prénom","fn","Marie"],["Nom","ln","Laurent"]].map(([lbl,k,ph],i)=>(
-            <div key={k}>
-              <FieldLabel>{lbl}</FieldLabel>
-              <input ref={i===0 ? firstInputRef : null} autoComplete="off" value={name[k]}
-                onChange={e=>setName(p=>({...p,[k]:e.target.value}))} placeholder={ph} style={inpStyle}
-                onFocus={e=>e.target.style.borderColor=C.accent} onBlur={e=>e.target.style.borderColor=C.border}/>
-            </div>
-          ))}
+          <div>
+            <FieldLabel>Prénom</FieldLabel>
+            <input ref={firstInputRef} name="invite_fn" autoComplete="new-password" value={name.fn}
+              onChange={e=>setName(p=>({...p,fn:e.target.value}))} placeholder="Marie" style={inpStyle}
+              onFocus={e=>e.target.style.borderColor=C.accent} onBlur={e=>e.target.style.borderColor=C.border}/>
+          </div>
+          <div>
+            <FieldLabel>Nom</FieldLabel>
+            <input name="invite_ln" autoComplete="new-password" value={name.ln}
+              onChange={e=>setName(p=>({...p,ln:e.target.value}))} placeholder="Laurent" style={inpStyle}
+              onFocus={e=>e.target.style.borderColor=C.accent} onBlur={e=>e.target.style.borderColor=C.border}/>
+          </div>
         </div>
         <div style={{marginBottom:16}}>
           <FieldLabel>Email professionnel</FieldLabel>
-          <input type="text" inputMode="email" autoComplete="off" value={email}
+          <input name="invite_email" autoComplete="new-password" inputMode="email" value={email}
             onChange={e=>setEmail(e.target.value)} placeholder="coach@studio.fr" style={inpStyle}
             onFocus={e=>e.target.style.borderColor=C.accent} onBlur={e=>e.target.style.borderColor=C.border}/>
         </div>
@@ -744,38 +748,46 @@ function Settings({ isMobile }) {
   const COACHES_INIT = [];
 
   const TabTeam = () => {
-    const [coaches, setCoaches]         = useState(COACHES_INIT);
+    const [coaches, setCoaches]         = useState([]);
+    const [pendingInvites, setPendingInvites] = useState([]);
     const [editCoach, setEditCoach]     = useState(null);
 
-    // ── Charger les coachs + leurs disciplines depuis Supabase ────────────────
-    useEffect(() => {
+    // ── Charger les coachs + invitations en attente ───────────────────────────
+    const loadCoaches = async () => {
       if (!studioId) return;
       const sb = createClient();
-      sb.from("profiles")
-        .select("id, first_name, last_name, email, role, is_coach")
+      // Profils coaches (sans colonne email)
+      const { data: profiles } = await sb.from("profiles")
+        .select("id, first_name, last_name, role")
         .eq("studio_id", studioId)
-        .in("role", ["coach", "admin"])
-        .then(async ({ data: profiles }) => {
-          if (!profiles?.length) return;
-          const { data: links } = await sb
-            .from("coach_disciplines")
-            .select("profile_id, discipline_id")
-            .eq("studio_id", studioId);
-          const discMap = {};
-          (links||[]).forEach(l => {
-            if (!discMap[l.profile_id]) discMap[l.profile_id] = [];
-            discMap[l.profile_id].push(l.discipline_id);
-          });
-          setCoaches(profiles.map(p => ({
-            id: p.id,
-            fn: p.first_name || "",
-            ln: p.last_name || "",
-            email: p.email || "",
-            role: p.role,
-            disciplines: discMap[p.id] || [],
-          })));
-        });
-    }, [studioId]);
+        .in("role", ["coach", "admin"]);
+      // Disciplines
+      const { data: links } = await sb.from("coach_disciplines")
+        .select("profile_id, discipline_id").eq("studio_id", studioId);
+      const discMap = {};
+      (links||[]).forEach(l => {
+        if (!discMap[l.profile_id]) discMap[l.profile_id] = [];
+        discMap[l.profile_id].push(l.discipline_id);
+      });
+      if (profiles?.length) {
+        setCoaches(profiles.map(p => ({
+          id: p.id,
+          fn: p.first_name || "",
+          ln: p.last_name || "",
+          role: p.role,
+          disciplines: discMap[p.id] || [],
+        })));
+      } else {
+        setCoaches([]);
+      }
+      // Invitations en attente
+      const { data: invites } = await sb.from("invitations")
+        .select("id, email, created_at").eq("studio_id", studioId)
+        .eq("role", "coach").eq("used", false);
+      setPendingInvites(invites || []);
+    };
+
+    useEffect(() => { loadCoaches(); }, [studioId]);
 
     // ── Sauvegarder disciplines → coach_disciplines ───────────────────────────
     const saveDisciplines = async (coachId, discIds) => {
@@ -882,21 +894,7 @@ function Settings({ isMobile }) {
               return;
             }
             showToast(`Invitation envoyée à ${emailSent} ✓`);
-            // Recharger la liste des coaches depuis Supabase
-            if (studioId) {
-              const sb = createClient();
-              const { data: profiles } = await sb.from("profiles")
-                .select("id, first_name, last_name, email, role")
-                .eq("studio_id", studioId).in("role", ["coach","admin"]);
-              const { data: links } = await sb.from("coach_disciplines")
-                .select("profile_id, discipline_id").eq("studio_id", studioId);
-              const discMap = {};
-              (links||[]).forEach(l => { if(!discMap[l.profile_id]) discMap[l.profile_id]=[]; discMap[l.profile_id].push(l.discipline_id); });
-              if (profiles) setCoaches(profiles.map(p => ({
-                id:p.id, fn:p.first_name||"", ln:p.last_name||"", email:p.email||"",
-                role:p.role, disciplines:discMap[p.id]||[], status:"actif"
-              })));
-            }
+            await loadCoaches();
           } catch(e) {
             console.error("invite error", e);
             showToast("Erreur réseau lors de l'invitation");
@@ -913,6 +911,22 @@ function Settings({ isMobile }) {
             + Inviter un coach
           </Button>
         </div>
+
+        {/* Invitations en attente */}
+        {pendingInvites.length > 0 && (
+          <div style={{marginBottom:16}}>
+            <div style={{fontSize:12,fontWeight:700,color:C.textMuted,textTransform:"uppercase",letterSpacing:1,marginBottom:8}}>⏳ Invitations en attente</div>
+            {pendingInvites.map(inv => (
+              <div key={inv.id} style={{display:"flex",alignItems:"center",justifyContent:"space-between",background:C.accentLight,borderRadius:10,border:`1px solid ${C.accentBorder||C.border}`,padding:"10px 14px",marginBottom:6}}>
+                <div>
+                  <div style={{fontSize:13,fontWeight:600,color:C.accentDark}}>{inv.email}</div>
+                  <div style={{fontSize:11,color:C.textMuted,marginTop:1}}>Invitation envoyée · En attente de connexion</div>
+                </div>
+                <span style={{fontSize:11,fontWeight:700,padding:"3px 9px",borderRadius:8,background:"#FFF3CD",color:"#856404"}}>⏳ En attente</span>
+              </div>
+            ))}
+          </div>
+        )}
 
         {/* Liste des coachs */}
         {coaches.map(coach => {

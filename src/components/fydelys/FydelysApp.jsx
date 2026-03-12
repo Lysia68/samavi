@@ -99,7 +99,7 @@ export default function App({
 
   // ── CONDITIONAL RENDERS (after all hooks) ─────────────────────────────────
   if (role === "superadmin") return <SuperAdminView onSwitch={setRole} isMobile={isMobile} onSignOut={onSignOut}/>;
-  if (role === "coach")      return <CoachView onSwitch={setRole} isMobile={isMobile} coachName={coachName||MY_COACH_NAME} coachDisciplines={coachDisciplines}/>;
+  if (role === "coach")      return <CoachView onSwitch={setRole} isMobile={isMobile} coachName={coachName||MY_COACH_NAME} coachDisciplines={coachDisciplines} studioName={studioName}/>;
   if (role === "adherent")   return <AdherentView onSwitch={setRole} isMobile={isMobile}/>;
 
   const Page = PAGES[page] || Dashboard;
