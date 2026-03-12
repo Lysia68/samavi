@@ -95,6 +95,7 @@ export async function POST(request: NextRequest) {
   // Extraire le token_hash du lien généré et reconstruire l'URL brandée
   const actionUrl = new URL(linkData.properties.action_link)
   const tokenHash = actionUrl.searchParams.get("token_hash")
+  console.log("INVITE | action_link:", linkData.properties.action_link, "| tokenHash:", tokenHash)
   const magicLinkUrl = tokenHash
     ? `https://fydelys.fr/auth/callback?token_hash=${tokenHash}&type=magiclink&tenant=${studioSlug}`
     : linkData.properties.action_link
