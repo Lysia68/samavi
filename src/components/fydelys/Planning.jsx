@@ -462,10 +462,10 @@ function Planning({ isMobile }) {
         .then(({ data }) => { if (data?.length) setLocalDiscs(data.map(d => ({ ...d, slots: d.slots || [] }))); });
     }
     // Coachs — toujours recharger pour avoir la liste à jour
-    sb.from("profiles").select("id, first_name, last_name").eq("studio_id", studioId).in("role", ["coach", "admin"])
+    sb.from("profiles").select("id, first_name, last_name, role, is_coach").eq("studio_id", studioId)
       .then(({ data }) => {
         if (data?.length) setCoachesList(
-          data.map(c => ({ id: c.id, name: `${c.first_name || ""} ${c.last_name || ""}`.trim() })).filter(c => c.name)
+          data.filter(c => c.role === "coach" || c.role === "admin" || c.is_coach === true).map(c => ({ id: c.id, name: `${c.first_name || ""} ${c.last_name || ""}`.trim() })).filter(c => c.name)
         );
       });
     // Salles

@@ -5,136 +5,43 @@ import { C } from "./theme";
 import { Button } from "./ui";
 import { IcoChevron , IcoCalendar2 } from "./icons";
 
-function DatePicker({ value, onChange, label, minDate }) {
-  const [open, setOpen] = useState(false);
-  const ref = React.useRef(null);
-
-  // value = "YYYY-MM-DD" ou ""
+function DatePicker({ value, onChange, label, minDate, maxDate }) {
+  const inputRef = React.useRef(null);
   const parsed = value ? new Date(value + "T12:00:00") : null;
-  const today = new Date(); today.setHours(0,0,0,0);
-
-  const [viewYear, setViewYear] = useState(() => parsed?.getFullYear() || today.getFullYear());
-  const [viewMonth, setViewMonth] = useState(() => parsed?.getMonth() ?? today.getMonth());
-
-  React.useEffect(() => {
-    if (!open) return;
-    const h = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
-    document.addEventListener("mousedown", h);
-    return () => document.removeEventListener("mousedown", h);
-  }, [open]);
-
-  // Sync view au changement de value
-  React.useEffect(() => {
-    if (parsed) { setViewYear(parsed.getFullYear()); setViewMonth(parsed.getMonth()); }
-  }, [value]);
-
-  const MONTHS = ["Janvier","Février","Mars","Avril","Mai","Juin","Juillet","Août","Septembre","Octobre","Novembre","Décembre"];
-  const DAYS_H = ["Lu","Ma","Me","Je","Ve","Sa","Di"];
-
-  const prevMonth = () => { if (viewMonth === 0) { setViewMonth(11); setViewYear(y=>y-1); } else setViewMonth(m=>m-1); };
-  const nextMonth = () => { if (viewMonth === 11) { setViewMonth(0); setViewYear(y=>y+1); } else setViewMonth(m=>m+1); };
-
-  // Jours du mois + padding pour commencer lundi
-  const firstDay = new Date(viewYear, viewMonth, 1);
-  const startPad = (firstDay.getDay() + 6) % 7; // 0=Lun
-  const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
-  const cells = Array(startPad).fill(null).concat(Array.from({length:daysInMonth},(_,i)=>i+1));
-
-  const minD = minDate ? new Date(minDate + "T12:00:00") : null;
-
-  const selectDay = (day) => {
-    const m = String(viewMonth+1).padStart(2,"0"), d = String(day).padStart(2,"0");
-    onChange(`${viewYear}-${m}-${d}`);
-    setOpen(false);
-  };
-
-  const isSelected = (day) => {
-    if (!parsed || !day) return false;
-    return parsed.getFullYear()===viewYear && parsed.getMonth()===viewMonth && parsed.getDate()===day;
-  };
-  const isToday = (day) => {
-    return today.getFullYear()===viewYear && today.getMonth()===viewMonth && today.getDate()===day;
-  };
-  const isDisabled = (day) => {
-    if (!day || !minD) return false;
-    return new Date(viewYear, viewMonth, day) < minD;
-  };
-
   const displayValue = parsed
-    ? parsed.toLocaleDateString("fr-FR", {weekday:"short", day:"numeric", month:"long", year:"numeric"})
+    ? parsed.toLocaleDateString("fr-FR", { weekday:"short", day:"numeric", month:"long", year:"numeric" })
     : "";
 
-  // Position (au-dessus si manque de place)
-  const triggerRef = React.useRef(null);
-  const [dropUp, setDropUp] = React.useState(false);
-  React.useEffect(() => {
-    if (open && triggerRef.current) {
-      const r = triggerRef.current.getBoundingClientRect();
-      setDropUp(window.innerHeight - r.bottom < 300 && r.top > 300);
-    }
-  }, [open]);
-
   return (
-    <div ref={ref} style={{ position:"relative" }}>
-      {label && <div style={{ fontSize:11, fontWeight:700, color:C.textMuted, textTransform:"uppercase", letterSpacing:.8, marginBottom:5 }}>{label}</div>}
-      <button ref={triggerRef} onClick={()=>setOpen(o=>!o)}
-        style={{ width:"100%", display:"flex", alignItems:"center", gap:10, padding:"9px 12px", border:`1.5px solid ${open?C.accent:C.border}`, borderRadius:9, background:C.surfaceWarm, cursor:"pointer", transition:"border-color .15s", textAlign:"left" }}>
-        <IcoCalendar2 s={16} c={C.textMuted}/>
-        <span style={{ flex:1, fontSize:13, color:displayValue?C.text:C.textMuted, fontWeight:displayValue?600:400 }}>
-          {displayValue || "Choisir une date…"}
-        </span>
-        <span style={{ fontSize:10, color:C.textMuted }}>{open?"▲":"▼"}</span>
-      </button>
-
-      {open && (
-        <div style={{ position:"absolute", left:0, [dropUp?"bottom":"top"]:"calc(100% + 6px)", zIndex:9999, background:C.surface, border:`1.5px solid ${C.accent}`, borderRadius:14, boxShadow:"0 12px 40px rgba(42,31,20,.2)", padding:16, minWidth:260 }}>
-          {/* Navigation mois */}
-          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:12 }}>
-            <button onClick={prevMonth} style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:8, width:32, height:32, cursor:"pointer", fontSize:14, color:C.textMid, display:"flex", alignItems:"center", justifyContent:"center" }}>‹</button>
-            <div style={{ fontSize:14, fontWeight:700, color:C.text }}>{MONTHS[viewMonth]} {viewYear}</div>
-            <button onClick={nextMonth} style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:8, width:32, height:32, cursor:"pointer", fontSize:14, color:C.textMid, display:"flex", alignItems:"center", justifyContent:"center" }}>›</button>
-          </div>
-
-          {/* Entêtes jours */}
-          <div style={{ display:"grid", gridTemplateColumns:"repeat(7,1fr)", gap:2, marginBottom:4 }}>
-            {DAYS_H.map(d=>(
-              <div key={d} style={{ textAlign:"center", fontSize:11, fontWeight:700, color:C.textMuted, padding:"2px 0" }}>{d}</div>
-            ))}
-          </div>
-
-          {/* Cellules jours */}
-          <div style={{ display:"grid", gridTemplateColumns:"repeat(7,1fr)", gap:2 }}>
-            {cells.map((day,i)=>{
-              const sel = isSelected(day);
-              const tod = isToday(day);
-              const dis = isDisabled(day);
-              return (
-                <button key={i} disabled={!day||dis} onClick={()=>day&&!dis&&selectDay(day)}
-                  style={{
-                    height:34, borderRadius:8, border:"none", fontSize:13, fontWeight:sel?700:400,
-                    background: sel ? C.accent : tod ? C.accentLight : "transparent",
-                    color: !day ? "transparent" : sel ? "#fff" : dis ? C.textMuted : C.text,
-                    cursor: !day||dis ? "default" : "pointer",
-                    opacity: dis ? .4 : 1,
-                    transition:"background .1s",
-                  }}
-                  onMouseEnter={e=>{ if(day&&!dis&&!sel) e.currentTarget.style.background=C.accentLight; }}
-                  onMouseLeave={e=>{ if(!sel&&!tod) e.currentTarget.style.background="transparent"; if(tod&&!sel) e.currentTarget.style.background=C.accentLight; }}>
-                  {day||""}
-                </button>
-              );
-            })}
-          </div>
-
-          {/* Aujourd'hui */}
-          <div style={{ marginTop:10, textAlign:"center" }}>
-            <button onClick={()=>{ const d=today; selectDay(d.getDate()); setViewYear(d.getFullYear()); setViewMonth(d.getMonth()); }}
-              style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:7, padding:"5px 14px", fontSize:12, color:C.accent, fontWeight:600, cursor:"pointer" }}>
-              Aujourd'hui
-            </button>
-          </div>
+    <div style={{ position:"relative" }}>
+      {label && (
+        <div style={{ fontSize:11, fontWeight:700, color:C.textMuted, textTransform:"uppercase", letterSpacing:.8, marginBottom:5 }}>
+          {label}
         </div>
       )}
+      <button type="button" onClick={() => inputRef.current?.showPicker?.() || inputRef.current?.click()}
+        style={{ width:"100%", display:"flex", alignItems:"center", gap:10, padding:"9px 12px",
+          border:`1.5px solid ${C.border}`, borderRadius:9, background:C.surfaceWarm,
+          cursor:"pointer", textAlign:"left", boxSizing:"border-box" }}>
+        <IcoCalendar2 s={16} c={C.textMuted}/>
+        <span style={{ flex:1, fontSize:13, color:displayValue?C.text:C.textMuted, fontWeight:displayValue?600:400 }}>
+          {displayValue || "Choisir une date\u2026"}
+        </span>
+        {value && (
+          <span onClick={e=>{ e.stopPropagation(); onChange(""); }}
+            style={{ fontSize:12, color:C.textMuted, lineHeight:1, padding:"0 2px", cursor:"pointer" }}>\u2715</span>
+        )}
+      </button>
+      <input
+        ref={inputRef}
+        type="date"
+        value={value || ""}
+        min={minDate || ""}
+        max={maxDate || ""}
+        onChange={e => onChange(e.target.value)}
+        style={{ position:"absolute", top:0, left:0, width:"100%", height:"100%",
+          opacity:0, pointerEvents:"none" }}
+      />
     </div>
   );
 }
