@@ -1073,7 +1073,7 @@ function Settings({ isMobile, onImpersonate }) {
   const TabRooms = () => {
     const sb = createClient();
     const COLORS = ["#C8906A","#7C9E8A","#8A7CC8","#C87C7C","#7CB8C8","#C8C07C","#B07CA0","#7C9EC8"];
-    const emptyRoom = { name:"", capacity:10, location:"", color:COLORS[0], notes:"" };
+    const emptyRoom = { name:"", capacity:10, location:"", address:"", maps_url:"", color:COLORS[0], notes:"" };
     const [rooms, setRooms]         = React.useState([]);
     const [loading, setLoading]     = React.useState(true);
     const [modal, setModal]         = React.useState(null); // null | "add" | room obj
@@ -1088,7 +1088,7 @@ function Settings({ isMobile, onImpersonate }) {
     }, [studioId]);
 
     function openAdd() { setForm(emptyRoom); setModal("add"); }
-    function openEdit(r) { setForm({ name:r.name, capacity:r.capacity, location:r.location||"", color:r.color||COLORS[0], notes:r.notes||"" }); setModal(r); }
+    function openEdit(r) { setForm({ name:r.name, capacity:r.capacity, location:r.location||"", address:r.address||"", maps_url:r.maps_url||"", color:r.color||COLORS[0], notes:r.notes||"" }); setModal(r); }
 
     async function save() {
       if (!form.name.trim()) return;
@@ -1153,6 +1153,14 @@ function Settings({ isMobile, onImpersonate }) {
                   <div>
                     <div style={{ fontSize:15, fontWeight:700, color:C.text }}>{r.name}</div>
                     {r.location && <div style={{ fontSize:12, color:C.textMuted, marginTop:1 }}>📍 {r.location}</div>}
+                    {r.address && <div style={{ fontSize:12, color:C.textMuted, marginTop:1 }}>{r.address}</div>}
+                    {r.maps_url && (
+                      <a href={r.maps_url} target="_blank" rel="noopener noreferrer"
+                        onClick={e=>e.stopPropagation()}
+                        style={{ fontSize:12, color:C.accent, fontWeight:600, marginTop:2, display:"inline-flex", alignItems:"center", gap:3, textDecoration:"none" }}>
+                        🗺 Voir sur Google Maps
+                      </a>
+                    )}
                   </div>
                 </div>
                 <div style={{ display:"flex", gap:5, flexShrink:0 }}>
@@ -1204,9 +1212,25 @@ function Settings({ isMobile, onImpersonate }) {
                     onFocus={e=>e.target.style.borderColor=C.accent} onBlur={e=>e.target.style.borderColor=C.border}/>
                 </div>
                 <div>
-                  <div style={{ fontSize:11, fontWeight:700, color:C.textMuted, marginBottom:4, textTransform:"uppercase", letterSpacing:.5 }}>Localisation</div>
-                  <input value={form.location} onChange={e=>setForm(f=>({...f,location:e.target.value}))} placeholder="Ex : 1er étage" style={inp}
+                  <div style={{ fontSize:11, fontWeight:700, color:C.textMuted, marginBottom:4, textTransform:"uppercase", letterSpacing:.5 }}>Localisation / Étage</div>
+                  <input value={form.location} onChange={e=>setForm(f=>({...f,location:e.target.value}))} placeholder="Ex : 1er étage, Bâtiment B" style={inp}
                     onFocus={e=>e.target.style.borderColor=C.accent} onBlur={e=>e.target.style.borderColor=C.border}/>
+                </div>
+                <div style={{ gridColumn:"1/-1" }}>
+                  <div style={{ fontSize:11, fontWeight:700, color:C.textMuted, marginBottom:4, textTransform:"uppercase", letterSpacing:.5 }}>Adresse complète</div>
+                  <input value={form.address} onChange={e=>setForm(f=>({...f,address:e.target.value}))} placeholder="Ex : 12 rue de la Paix, 75001 Paris" style={inp}
+                    onFocus={e=>e.target.style.borderColor=C.accent} onBlur={e=>e.target.style.borderColor=C.border}/>
+                </div>
+                <div style={{ gridColumn:"1/-1" }}>
+                  <div style={{ fontSize:11, fontWeight:700, color:C.textMuted, marginBottom:4, textTransform:"uppercase", letterSpacing:.5 }}>Lien Google Maps</div>
+                  <input value={form.maps_url} onChange={e=>setForm(f=>({...f,maps_url:e.target.value}))} placeholder="https://maps.google.com/…" style={inp}
+                    onFocus={e=>e.target.style.borderColor=C.accent} onBlur={e=>e.target.style.borderColor=C.border}/>
+                  {form.maps_url && (
+                    <a href={form.maps_url} target="_blank" rel="noopener noreferrer"
+                      style={{ fontSize:11, color:C.accent, marginTop:4, display:"inline-block", textDecoration:"none" }}>
+                      🗺 Vérifier le lien →
+                    </a>
+                  )}
                 </div>
                 <div style={{ gridColumn:"1/-1" }}>
                   <div style={{ fontSize:11, fontWeight:700, color:C.textMuted, marginBottom:4, textTransform:"uppercase", letterSpacing:.5 }}>Couleur</div>
