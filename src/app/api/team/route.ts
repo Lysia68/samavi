@@ -12,8 +12,7 @@ export async function GET(request: NextRequest) {
 
   const [{ data: profiles }, { data: links }, { data: invites }, { data: members }] = await Promise.all([
     db.from("profiles").select("id, first_name, last_name, role, is_coach")
-      .eq("studio_id", studioId)
-      .neq("role", "adherent"),
+      .eq("studio_id", studioId),
     db.from("coach_disciplines").select("profile_id, discipline_id").eq("studio_id", studioId),
     db.from("invitations").select("id, email, created_at")
       .eq("studio_id", studioId).eq("role", "coach").eq("used", false),
@@ -26,14 +25,15 @@ export async function GET(request: NextRequest) {
   ;(members || []).forEach((m: any) => { membersByUid[m.auth_user_id] = m })
 
   // Croiser avec auth.users pour email + confirmed
-  const profileIds = (profiles || []).map((p: any) => p.id)
-  let authMap: Record<string, { email: string; confirmed: boolean }> = {}
-  if (profileIds.length > 0) {
+  const profileIdSet = new Set((profiles || []).map((p: any) => p.id))
+  // Toujours charger authMap — nécessaire pour les orphans (membres avec auth_user_id sans profil)
+  const authMap: Record<string, { email: string; confirmed: boolean }> = {}
+  try {
     const { data: { users: authUsers } } = await db.auth.admin.listUsers({ perPage: 1000 })
     ;(authUsers || []).forEach((u: any) => {
       authMap[u.id] = { email: u.email || "", confirmed: !!u.email_confirmed_at }
     })
-  }
+  } catch(_) {}
 
   const discMap: Record<string, string[]> = {}
   ;(links || []).forEach((l: any) => {
@@ -59,7 +59,21 @@ export async function GET(request: NextRequest) {
     }
   })
 
-  return NextResponse.json({ coaches, invites: invites || [] })
+  // Membres avec auth_user_id mais sans profil dans profiles (adherents sans compte app complet)
+  const orphanMembers = (members || [])
+    .filter((m: any) => m.auth_user_id && !profileIdSet.has(m.auth_user_id))
+    .map((m: any) => ({
+      id: m.auth_user_id,
+      fn: m.first_name || "",
+      ln: m.last_name  || "",
+      email: m.email   || authMap[m.auth_user_id]?.email || "",
+      role: "adherent",
+      is_coach: false,
+      disciplines: [],
+      confirmed: authMap[m.auth_user_id]?.confirmed !== false,
+    }))
+
+  return NextResponse.json({ coaches: [...coaches, ...orphanMembers], invites: invites || [] })
 }
 
 // POST /api/team → sauvegarder disciplines d'un coach

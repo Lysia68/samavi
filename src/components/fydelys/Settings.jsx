@@ -163,6 +163,7 @@ function Settings({ isMobile, onImpersonate }) {
     try {
       const res = await fetch(`/api/team?studioId=${studioId}`);
       const data = await res.json();
+      console.log("[TabUsers] /api/team →", data.coaches?.length, "users", data.coaches?.map(c=>c.fn+" "+c.ln+" ("+c.role+")"));
       setTeamData({ coaches: data.coaches||[], invites: data.invites||[], loaded:true });
     } catch(e) { console.error("loadTeam error", e); }
   }, [studioId]);
