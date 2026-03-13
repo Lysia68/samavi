@@ -110,12 +110,14 @@ export function PlanningAccordion({ sess, sessId, bookings, onChangeStatus, onAd
 
       {isPast && (
         <div style={{ display:"flex", borderBottom:`1px solid ${C.borderSoft}`, background:"#F7F3EE" }}>
-          {[["reservations", <><IcoClipboard s={13} c={tab==="reservations" ? C.accent : C.textMuted}/> Réservations</>],["presences", <><IcoUsers s={13} c={tab==="presences" ? C.accent : C.textMuted}/> Présences</>]].map(([key,label])=>(
+          {[{key:"reservations",label:"Réservations",Icon:IcoClipboard},{key:"presences",label:"Présences",Icon:IcoUsers}].map(({key,label,Icon})=>(
             <button key={key} onClick={()=>setTab(key)}
               style={{ flex:1, padding:"9px 0", fontSize:13, fontWeight:700, border:"none", cursor:"pointer", background:"transparent",
                 color: tab===key ? C.accent : C.textMuted,
                 borderBottom: tab===key ? `2px solid ${C.accent}` : "2px solid transparent" }}>
-              {label}
+              <span style={{display:"flex",alignItems:"center",gap:5,justifyContent:"center"}}>
+                <Icon s={13} c={tab===key ? C.accent : C.textMuted}/> {label}
+              </span>
               {key==="presences" && pendingCount>0 && (
                 <span style={{ marginLeft:5, fontSize:11, padding:"1px 6px", borderRadius:10, background:C.accentBg, color:C.accent }}>{pendingCount}</span>
               )}
