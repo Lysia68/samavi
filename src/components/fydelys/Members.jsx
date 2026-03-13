@@ -241,9 +241,12 @@ function Members({ isMobile }) {
         body: JSON.stringify({ id: modal.member.id, subscription_id: subId || null }) });
       setSaving(false);
       if (res.ok) {
-        setMembers(prev=>prev.map(m=>m.id===modal.member.id
-          ? {...m, subscriptionId:subId||null, subscription:subscriptionsList.find(s=>s.id===subId)?.name||"—"}
-          : m));
+        const newSub = subscriptionsList.find(s=>s.id===subId)?.name||"—";
+        const updater = m => m.id===modal.member.id
+          ? {...m, subscriptionId:subId||null, subscription:newSub}
+          : m;
+        setMembers(prev=>prev.map(updater));
+        setSelected(prev=>prev?.id===modal.member.id ? {...prev, subscriptionId:subId||null, subscription:newSub} : prev);
         setSaved(true);
         setTimeout(()=>setModal(null), 1200);
       } else { showToast("Erreur lors de la sauvegarde",false); }
