@@ -11,8 +11,7 @@ import { PlanningAccordion } from "./accordion";
 
 
 
-function CoachView({ onSwitch, isMobile, coachName = MY_COACH_NAME, coachDisciplines = [], studioName = "" }) {
-  const MY_SESSIONS   = SESSIONS_INIT.filter(s => s.teacher === MY_COACH_NAME);
+function CoachView({ onSwitch, isMobile, coachName = MY_COACH_NAME, coachDisciplines = [], studioName = "", studioId = "" }) {
   const COACH_NAV     = COACH_NAV_KEYS.map((n,i) => ({ ...n, icon:[IcoBookOpen,IcoGraduate,IcoAward][i] }));
   const ADH_NAV       = ADH_NAV_KEYS.map((n,i) => ({ ...n, icon:[IcoCalendar2,IcoUsers2,IcoBarChart2,IcoCreditCard2][i] }));
   const ADH_MOBILE_NAV = ADH_NAV;
@@ -27,16 +26,83 @@ function CoachView({ onSwitch, isMobile, coachName = MY_COACH_NAME, coachDiscipl
     window.location.href = "/login";
   };
 
-  // Séances du coach uniquement
-  const [sessions, setSessions] = useState(
-    SESSIONS_INIT.filter(s => s.teacher === coachName)
-  );
+  // Séances du coach — chargées depuis Supabase
+  const [sessions, setSessions] = useState([]);
+  const [bookings, setBookings] = useState({}); // { sessionId: [{fn,ln,email,st}] }
+  const [dbLoading, setDbLoading] = useState(true);
   const [selectedSession, setSelectedSession] = useState(null);
+
+  useEffect(() => {
+    if (!studioId || !coachName) return;
+    const sb = createClient();
+    setDbLoading(true);
+
+    // Charger les séances de ce coach sur 90 jours passés + futur
+    const from90 = new Date(); from90.setDate(from90.getDate() - 90);
+    const dateFrom = from90.toISOString().split("T")[0];
+
+    sb.from("sessions")
+      .select("id, discipline_id, teacher, room, level, session_date, session_time, duration_min, spots, status")
+      .eq("studio_id", studioId)
+      .eq("teacher", coachName)
+      .gte("session_date", dateFrom)
+      .order("session_date", { ascending: true })
+      .order("session_time", { ascending: true })
+      .then(async ({ data: sessData }) => {
+        if (!sessData?.length) { setSessions([]); setDbLoading(false); return; }
+
+        const mapped = sessData.map(s => ({
+          id: s.id,
+          disciplineId: s.discipline_id,
+          teacher: s.teacher,
+          room: s.room || "",
+          level: s.level || "",
+          date: s.session_date,
+          time: s.session_time?.slice(0,5) || "",
+          duration: s.duration_min || 60,
+          spots: s.spots || 10,
+          status: s.status || "scheduled",
+          booked: 0,
+          waitlist: 0,
+        }));
+
+        // Charger les bookings pour ces séances
+        const ids = mapped.map(s => s.id);
+        const { data: bkData } = await sb.from("bookings")
+          .select("session_id, status, members(first_name, last_name, email, phone)")
+          .in("session_id", ids);
+
+        const bkMap = {};
+        (bkData || []).forEach(b => {
+          if (!bkMap[b.session_id]) bkMap[b.session_id] = [];
+          bkMap[b.session_id].push({
+            fn: b.members?.first_name || "",
+            ln: b.members?.last_name || "",
+            email: b.members?.email || "",
+            phone: b.members?.phone || "",
+            st: b.status,
+          });
+        });
+
+        // Enrichir les sessions avec compteurs
+        const enriched = mapped.map(s => ({
+          ...s,
+          booked: (bkMap[s.id] || []).filter(b => b.st === "confirmed").length,
+          waitlist: (bkMap[s.id] || []).filter(b => b.st === "waitlist").length,
+        }));
+
+        setSessions(enriched);
+        setBookings(bkMap);
+        setDbLoading(false);
+      })
+      .catch(e => { console.error("CoachView load error", e); setDbLoading(false); });
+  }, [studioId, coachName]);
 
   const initials = coachName.split(" ").map(n=>n[0]).join("").toUpperCase();
   const totalStudents = sessions.reduce((sum,s)=>sum+s.booked, 0);
+  const today = new Date().toISOString().split("T")[0];
   const nextSession = [...sessions]
-    .filter(s=>s.date >= new Date().toISOString().split("T")[0])
+    .filter(s=>s.date >= today && s.status !== "cancelled")
     .sort((a,b)=>a.date.localeCompare(b.date)||a.time.localeCompare(b.time))[0];
 
   // ── Nav bar ──────────────────────────────────────────────────────────────────
@@ -138,7 +204,9 @@ function CoachView({ onSwitch, isMobile, coachName = MY_COACH_NAME, coachDiscipl
 
     return (
       <>
-        <Header title="Mes cours" sub={`${sessions.length} séance${sessions.length>1?"s":""} à venir`}/>
+        <Header title="Mes cours" sub={dbLoading ? "Chargement…" : `${sessions.filter(s=>s.date>=today).length} séance${sessions.filter(s=>s.date>=today).length!==1?"s":""} à venir`}/>
+        {dbLoading && <div style={{textAlign:"center",padding:"32px 0",color:C.textMuted,fontSize:13}}>Chargement des séances…</div>}
+        {!dbLoading && sessions.length === 0 && <div style={{textAlign:"center",padding:"32px 0",color:C.textMuted,fontSize:14}}>Aucune séance assignée.</div>}
 
         {/* KPIs rapides */}
         <div style={{ padding:`0 ${p}px`, display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:10, marginBottom:20 }}>
@@ -211,7 +279,7 @@ function CoachView({ onSwitch, isMobile, coachName = MY_COACH_NAME, coachDiscipl
         {selectedSession && (() => {
           const s    = selectedSession;
           const disc = DISCIPLINES.find(d=>d.id===s.disciplineId);
-          const bks  = BOOKINGS_INIT[s.id] || [];
+          const bks  = bookings[s.id] || [];
           const confirmed = bks.filter(b=>b.st==="confirmed");
           const waiting   = bks.filter(b=>b.st==="waitlist");
           return (
@@ -294,9 +362,9 @@ function CoachView({ onSwitch, isMobile, coachName = MY_COACH_NAME, coachDiscipl
   // ── VUE INSCRITS COACH ────────────────────────────────────────────────────
   function CoachStudents() {
     // Tous les inscrits uniques sur les séances du coach
-    const allStudents = Object.entries(BOOKINGS_INIT)
+    const allStudents = Object.entries(bookings)
       .filter(([sid]) => sessions.some(s=>String(s.id)===String(sid)))
-      .flatMap(([sid, bks]) => bks.filter(b=>b.st==="confirmed").map(b=>({...b, sessionId:Number(sid)})))
+      .flatMap(([sid, bks]) => bks.filter(b=>b.st==="confirmed").map(b=>({...b, sessionId:sid})))
 
     const uniqueEmails = new Set();
     const unique = allStudents.filter(b=>{

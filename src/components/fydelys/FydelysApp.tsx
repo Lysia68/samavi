@@ -155,7 +155,7 @@ const PAGE_TITLES = {
         </div>
       )}
       <div style={{ marginTop: impersonating ? 38 : 0 }}>
-        <CoachView onSwitch={setRole} isMobile={isMobile} coachName={impersonating?.userId ? (impersonatedCoach.name||coachName||MY_COACH_NAME) : (coachName||MY_COACH_NAME)} coachDisciplines={impersonating?.userId ? impersonatedCoach.disciplines : coachDisciplines} studioName={studioName}/>
+        <CoachView onSwitch={setRole} isMobile={isMobile} coachName={impersonating?.userId ? (impersonatedCoach.name||coachName||MY_COACH_NAME) : (coachName||MY_COACH_NAME)} coachDisciplines={impersonating?.userId ? impersonatedCoach.disciplines : coachDisciplines} studioName={studioName} studioId={propStudioId||sharedStudioId||""}/>
       </div>
     </>
   );
