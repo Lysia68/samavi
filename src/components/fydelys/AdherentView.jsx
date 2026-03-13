@@ -31,30 +31,33 @@ function AdherentView({ onSwitch, isMobile, studioName = "" }) {
     const sb = createClient();
     sb.auth.getUser().then(async ({ data: { user } }) => {
       if (!user) return;
-      const email = user.email;
 
-      // Fiche membre
-      const { data: member } = await sb.from("members")
+      // Recherche uniquement par auth_user_id — c'est la vraie clé de liaison
+      let member = null;
+      const { data: byUid } = await sb.from("members")
         .select("id, first_name, last_name, email, status, credits, credits_total, created_at, phone, address, postal_code, city, profile_complete")
-        .eq("studio_id", studioId).eq("email", email).maybeSingle();
+        .eq("studio_id", studioId).eq("auth_user_id", user.id).maybeSingle();
+      member = byUid;
+
       if (member) setMe(member);
 
-      // Bookings actifs (sessions futures)
-      const today = new Date().toISOString().split("T")[0];
-      const { data: bk } = await sb.from("bookings")
-        .select("session_id, status")
-        .eq("member_id", member?.id)
-        .in("status", ["confirmed","waitlist"]);
-      setMyBookings((bk||[]).map(b => b.session_id));
+      // Bookings actifs
+      if (member?.id) {
+        const { data: bk } = await sb.from("bookings")
+          .select("session_id, status")
+          .eq("member_id", member.id)
+          .in("status", ["confirmed", "waitlist"]);
+        setMyBookings((bk || []).map(b => b.session_id));
 
-      // Historique (séances passées)
-      const { data: hist } = await sb.from("bookings")
-        .select("session_id, status, sessions(session_date, session_time, discipline_id, teacher, disciplines(name,color))")
-        .eq("member_id", member?.id)
-        .lte("sessions.session_date", today)
-        .order("session_id", { ascending: false })
-        .limit(50);
-      setHistory((hist||[]).filter(h => h.sessions));
+        // Historique
+        const today = new Date().toISOString().split("T")[0];
+        const { data: hist } = await sb.from("bookings")
+          .select("session_id, status, sessions(session_date, session_time, discipline_id, teacher, disciplines(name,color))")
+          .eq("member_id", member.id)
+          .order("session_id", { ascending: false })
+          .limit(50);
+        setHistory((hist || []).filter(h => h.sessions && h.sessions.session_date <= today));
+      }
 
       setLoading(false);
     });
@@ -271,7 +274,18 @@ function AdherentView({ onSwitch, isMobile, studioName = "" }) {
   // ── Mon Compte ──────────────────────────────────────────────────────────────
   function AdhAccount() {
     const initials = me ? `${me.first_name?.[0]||""}${me.last_name?.[0]||""}`.toUpperCase() : "?";
-    const bookedSessions = sessions_for_account;
+    if (loading) return <div style={{ padding:p, color:C.textMuted, fontSize:14 }}>Chargement…</div>;
+    if (!me) return (
+      <div style={{ padding:p }}>
+        <Card>
+          <div style={{ textAlign:"center", padding:"24px 0", color:C.textMuted }}>
+            <div style={{ fontSize:32, marginBottom:8 }}>👤</div>
+            <div style={{ fontSize:15, fontWeight:600, color:C.text, marginBottom:4 }}>Profil introuvable</div>
+            <div style={{ fontSize:13 }}>Votre fiche membre n'a pas encore été créée par le studio.</div>
+          </div>
+        </Card>
+      </div>
+    );
     return (
       <div style={{ padding:p, maxWidth:600 }}>
         <Card style={{ marginBottom:16 }}>
