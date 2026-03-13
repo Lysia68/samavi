@@ -118,7 +118,7 @@ function DiscSelect({ label, value, onChange, options }) {
 }
 
 // ── Session card ─────────────────────────────────────────────────────────────
-function PlanningSessionCard({ sess, expandedId, bookings, discs, onToggle, onChangeStatus, onDelete, onCancel, onAddBooking, onSendReminder }) {
+function PlanningSessionCard({ sess, expandedId, bookings, discs, onToggle, onChangeStatus, onDelete, onCancel, onRestore, onAddBooking, onSendReminder }) {
   const allDiscs = discs?.length ? discs : DISCIPLINES;
   const disc = allDiscs.find(d => String(d.id) === String(sess.disciplineId)) || allDiscs[0] || { name: "Cours", color: C.accent, icon: "🧘" };
   const bl     = bookings[sess.id] || [];
@@ -166,13 +166,21 @@ function PlanningSessionCard({ sess, expandedId, bookings, discs, onToggle, onCh
             </button>
             {sess.status !== "cancelled" && onCancel && (
               <button onClick={() => onCancel(sess.id)}
-                style={{ fontSize: 12, padding: "5px 10px", borderRadius: 8, border: `1px solid ${C.border}`, background: C.surface, color: C.textMuted, cursor: "pointer", fontWeight: 600 }}>
-                Annuler
+                style={{ fontSize: 12, padding: "5px 10px", borderRadius: 8, border: `1px solid #EFC8BC`, background: "#FFF5F5", color: C.warn, cursor: "pointer", fontWeight: 600, whiteSpace: "nowrap" }}>
+                ⚠ Annuler séance
+              </button>
+            )}
+            {sess.status === "cancelled" && onCancel && (
+              <button onClick={async () => {
+                if (!window.confirm("Remettre cette séance en planifiée ?")) return;
+                onRestore && onRestore(sess.id);
+              }} style={{ fontSize: 12, padding: "5px 10px", borderRadius: 8, border: `1px solid #B8DFC4`, background: C.okBg, color: C.ok, cursor: "pointer", fontWeight: 600, whiteSpace: "nowrap" }}>
+                ↩ Rétablir
               </button>
             )}
             {onDelete && (
-              <button onClick={() => { if (window.confirm("Supprimer cette séance ?")) onDelete(sess.id); }}
-                style={{ fontSize: 12, padding: "5px 10px", borderRadius: 8, border: `1px solid #EFC8BC`, background: "#FFF5F5", color: C.warn, cursor: "pointer", fontWeight: 600 }}>
+              <button onClick={() => { if (window.confirm("Supprimer définitivement cette séance ?")) onDelete(sess.id); }}
+                style={{ fontSize: 12, padding: "5px 10px", borderRadius: 8, border: `1px solid ${C.border}`, background: C.surface, color: C.textMuted, cursor: "pointer", fontWeight: 600 }}>
                 ✕
               </button>
             )}
@@ -430,14 +438,21 @@ function Planning({ isMobile }) {
   };
 
   const cancelSession = async id => {
-    if (!window.confirm("Annuler cette séance ? Les inscrits seront informés.")) return;
-    // Optimistic update
+    if (!window.confirm("Annuler cette séance ? Les inscrits verront la séance comme annulée.")) return;
     setSessions(prev => prev.map(s => s.id === id ? { ...s, status: "cancelled" } : s));
     const { error } = await createClient().from("sessions").update({ status: "cancelled" }).eq("id", id);
     if (error) {
-      // Rollback
       setSessions(prev => prev.map(s => s.id === id ? { ...s, status: "scheduled" } : s));
       alert("❌ Erreur lors de l'annulation. La séance a été restaurée.");
+    }
+  };
+
+  const restoreSession = async id => {
+    setSessions(prev => prev.map(s => s.id === id ? { ...s, status: "scheduled" } : s));
+    const { error } = await createClient().from("sessions").update({ status: "scheduled" }).eq("id", id);
+    if (error) {
+      setSessions(prev => prev.map(s => s.id === id ? { ...s, status: "cancelled" } : s));
+      alert("❌ Erreur lors du rétablissement.");
     }
   };
 
@@ -765,6 +780,7 @@ function Planning({ isMobile }) {
                 onSendReminder={handleSendReminder}
                 onDelete={deleteSession}
                 onCancel={cancelSession}
+                onRestore={restoreSession}
               />
             ))}
           </div>

@@ -129,6 +129,19 @@ function AdherentView({ onSwitch, isMobile, studioName = "" }) {
     };
 
     const cancel = async (s) => {
+      // Vérifier le délai d'annulation autorisé
+      const { data: studio } = await createClient().from("studios")
+        .select("cancel_delay_hours").eq("id", studioId).single();
+      const delayH = studio?.cancel_delay_hours ?? 2; // défaut 2h
+      const now = new Date();
+      const [y,mo,d] = (s.date||s.session_date||"").split("-").map(Number);
+      const [h,mi]   = (s.time||s.session_time||"00:00").split(":").map(Number);
+      const sessStart = new Date(y, mo-1, d, h, mi);
+      const diffH = (sessStart - now) / 3600000;
+      if (diffH < delayH) {
+        showToast(`Annulation impossible — délai de ${delayH}h dépassé`, false);
+        return;
+      }
       const sb = createClient();
       const { data: { user } } = await sb.auth.getUser();
       if (!user) return;
