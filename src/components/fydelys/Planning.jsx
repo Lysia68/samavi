@@ -118,7 +118,7 @@ function DiscSelect({ label, value, onChange, options }) {
 }
 
 // ── Session card ─────────────────────────────────────────────────────────────
-function PlanningSessionCard({ sess, expandedId, bookings, discs, onToggle, onChangeStatus, onDelete, onCancel, onRestore, onAddBooking, onSendReminder, closures = [] }) {
+function PlanningSessionCard({ sess, expandedId, bookings, discs, onToggle, onChangeStatus, onDelete, onCancel, onRestore, onAddBooking, onSendReminder, closures = [], isMobile = false, onConfirm }) {
   const allDiscs = discs?.length ? discs : DISCIPLINES;
   const disc = allDiscs.find(d => String(d.id) === String(sess.disciplineId)) || allDiscs[0] || { name: "Cours", color: C.accent, icon: "🧘" };
   const bl     = bookings[sess.id] || [];
@@ -163,39 +163,45 @@ function PlanningSessionCard({ sess, expandedId, bookings, discs, onToggle, onCh
             {sess.teacher && <><span style={{ fontWeight: 600 }}>{sess.teacher}</span> · </>}{sess.room} · {sess.duration}min
           </div>
         </div>
-        <div style={{ flexShrink: 0, textAlign: "right", marginRight: 4 }}>
-          <div style={{ fontSize: 14, fontWeight: 800, color: isFull ? C.warn : C.text }}>{booked}/{sess.spots}</div>
-          <div style={{ width: 48, height: 4, background: C.bgDeep, borderRadius: 3, marginTop: 4 }}>
-            <div style={{ height: "100%", width: `${Math.min(pct * 100, 100)}%`, background: isFull ? C.warn : pct > .75 ? C.accent : C.ok, borderRadius: 3 }} />
+        {(!isExp || !isMobile) && (
+          <div style={{ flexShrink: 0, textAlign: "right", marginRight: 4 }}>
+            <div style={{ fontSize: 14, fontWeight: 800, color: isFull ? C.warn : C.text }}>{booked}/{sess.spots}</div>
+            <div style={{ width: 48, height: 4, background: C.bgDeep, borderRadius: 3, marginTop: 4 }}>
+              <div style={{ height: "100%", width: `${Math.min(pct * 100, 100)}%`, background: isFull ? C.warn : pct > .75 ? C.accent : C.ok, borderRadius: 3 }} />
+            </div>
+            {wait > 0 && <div style={{ fontSize: 11, color: C.accent, fontWeight: 700, marginTop: 2 }}>+{wait} att.</div>}
           </div>
-          {wait > 0 && <div style={{ fontSize: 11, color: C.accent, fontWeight: 700, marginTop: 2 }}>+{wait} att.</div>}
-        </div>
+        )}
         {/* Boutons actions inline (séance expanded) */}
         {isExp && (
-          <div onClick={e => e.stopPropagation()} style={{ display: "flex", gap: 5, flexShrink: 0 }}>
-
+          <div onClick={e => e.stopPropagation()} style={{ display: "flex", gap: 4, flexShrink: 0 }}>
             <button onClick={() => onSendReminder && onSendReminder(sess.id)}
-              title="Envoyer rappel"
-              style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12, padding: "5px 10px", borderRadius: 8, border: `1px solid ${C.border}`, background: C.surfaceWarm, color: C.textSoft, cursor: "pointer", fontWeight: 600, whiteSpace: "nowrap" }}>
-              <IcoMail s={13} c={C.textSoft} /> Rappel
+              title="Envoyer un rappel"
+              style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12, padding: "5px 9px", borderRadius: 8, border: `1px solid ${C.border}`, background: C.surfaceWarm, color: C.textSoft, cursor: "pointer", fontWeight: 600, whiteSpace: "nowrap" }}>
+              <IcoMail s={13} c={C.textSoft} />
+              {!isMobile && <span>Rappel</span>}
             </button>
             {sess.status !== "cancelled" && onCancel && (
-              <button onClick={() => onCancel(sess.id)}
-                style={{ fontSize: 12, padding: "5px 10px", borderRadius: 8, border: `1px solid #EFC8BC`, background: "#FFF5F5", color: C.warn, cursor: "pointer", fontWeight: 600, whiteSpace: "nowrap" }}>
-                ⚠ Annuler séance
+              <button onClick={() => onCancel(sess.id)} title="Annuler cette séance"
+                style={{ display:"flex", alignItems:"center", gap:4, fontSize: 12, padding: "5px 9px", borderRadius: 8, border: `1px solid #EFC8BC`, background: "#FFF5F5", color: C.warn, cursor: "pointer", fontWeight: 600, whiteSpace: "nowrap" }}>
+                ⚠ <span style={{ display: isMobile ? "none" : "inline" }}>Annuler</span>
               </button>
             )}
             {sess.status === "cancelled" && onCancel && (
-              <button onClick={async () => {
-                if (!window.confirm("Remettre cette séance en planifiée ?")) return;
-                onRestore && onRestore(sess.id);
-              }} style={{ fontSize: 12, padding: "5px 10px", borderRadius: 8, border: `1px solid #B8DFC4`, background: C.okBg, color: C.ok, cursor: "pointer", fontWeight: 600, whiteSpace: "nowrap" }}>
-                ↩ Rétablir
+              <button onClick={() => onConfirm
+                ? onConfirm("Rétablir cette séance ?", () => onRestore && onRestore(sess.id))
+                : onRestore && onRestore(sess.id)
+              } title="Rétablir la séance"
+                style={{ display:"flex", alignItems:"center", gap:4, fontSize: 12, padding: "5px 9px", borderRadius: 8, border: `1px solid #B8DFC4`, background: C.okBg, color: C.ok, cursor: "pointer", fontWeight: 600, whiteSpace: "nowrap" }}>
+                ↩ <span style={{ display: isMobile ? "none" : "inline" }}>Rétablir</span>
               </button>
             )}
             {onDelete && (
-              <button onClick={() => { if (window.confirm("Supprimer définitivement cette séance ?")) onDelete(sess.id); }}
-                style={{ fontSize: 12, padding: "5px 10px", borderRadius: 8, border: `1px solid ${C.border}`, background: C.surface, color: C.textMuted, cursor: "pointer", fontWeight: 600 }}>
+              <button onClick={() => onConfirm
+                ? onConfirm("Supprimer cette séance ?", () => onDelete(sess.id), { subMsg:"Cette action est irréversible.", danger:true })
+                : onDelete(sess.id)
+              } title="Supprimer définitivement"
+                style={{ fontSize: 12, padding: "5px 8px", borderRadius: 8, border: `1px solid ${C.border}`, background: C.surface, color: C.textMuted, cursor: "pointer", fontWeight: 600 }}>
                 ✕
               </button>
             )}
@@ -342,6 +348,31 @@ function BookingModal({ sessId, sessions, studioId, bookings, setBookings, setSe
 }
 
 // ── Planning principal ───────────────────────────────────────────────────────
+
+// ── Modal de confirmation custom ────────────────────────────────────────────
+function ConfirmModal({ msg, subMsg = null, danger = false, onConfirm, onCancel }) {
+  return (
+    <div onClick={onCancel}
+      style={{ position:"fixed", inset:0, background:"rgba(0,0,0,.45)", zIndex:9999, display:"flex", alignItems:"center", justifyContent:"center", padding:16 }}>
+      <div onClick={e=>e.stopPropagation()}
+        style={{ background:"#fff", borderRadius:16, padding:"28px 28px 22px", maxWidth:380, width:"100%", boxShadow:"0 8px 40px rgba(0,0,0,.18)" }}>
+        <div style={{ fontSize:16, fontWeight:800, color:"#1A1009", marginBottom:subMsg?8:20 }}>{msg}</div>
+        {subMsg && <div style={{ fontSize:13, color:"#7A6652", marginBottom:20, lineHeight:1.5 }}>{subMsg}</div>}
+        <div style={{ display:"flex", gap:10, justifyContent:"flex-end" }}>
+          <button onClick={onCancel}
+            style={{ padding:"8px 18px", borderRadius:9, border:"1.5px solid #DDD", background:"#fff", color:"#7A6652", fontSize:13, fontWeight:700, cursor:"pointer" }}>
+            Annuler
+          </button>
+          <button onClick={onConfirm}
+            style={{ padding:"8px 18px", borderRadius:9, border:"none", background:danger?"#EF4444":"#B07848", color:"#fff", fontSize:13, fontWeight:700, cursor:"pointer" }}>
+            Confirmer
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function Planning({ isMobile }) {
   const { discs, studioId } = useContext(AppCtx);
   const [sessions, setSessions]       = useState([]);
@@ -366,7 +397,17 @@ function Planning({ isMobile }) {
   const [closureForm, setClosureForm] = useState({ label:"Fermeture", date_start:"", date_end:"", single:true });
   const [closureEdit, setClosureEdit] = useState(null); // null | closure obj
   const [localDiscs, setLocalDiscs]   = useState([]);
+  const [confirmModal, setConfirmModal] = useState(null); // { msg, subMsg, danger, onConfirm }
+  const [planToast, setPlanToast]     = useState(null); // { msg, ok }
   const p = isMobile ? 12 : 28;
+
+  function showPlanToast(msg, ok=true) {
+    setPlanToast({ msg, ok });
+    setTimeout(() => setPlanToast(null), 3500);
+  }
+  function openConfirm(msg, onConfirm, opts={}) {
+    setConfirmModal({ msg, subMsg: opts.subMsg||null, danger: opts.danger||false, onConfirm: () => { setConfirmModal(null); onConfirm(); } });
+  }
 
   // ── Helpers fermetures ──────────────────────────────────────────────────────
   function isDateClosed(dateStr) {
@@ -384,16 +425,22 @@ function Planning({ isMobile }) {
       date_end: form.single ? form.date_start : form.date_end,
     };
     if (editId) {
-      const { data } = await sb.from("studio_closures").update(payload).eq("id", editId).select().single();
+      const { data, error } = await sb.from("studio_closures").update(payload).eq("id", editId).select().single();
+      if (error) { showPlanToast("Erreur : " + (error.message || "impossible de modifier"), false); return; }
       if (data) setClosures(prev => prev.map(c => c.id === editId ? data : c).sort((a,b) => a.date_start.localeCompare(b.date_start)));
+      showPlanToast("Fermeture modifiée");
     } else {
-      const { data } = await sb.from("studio_closures").insert(payload).select().single();
+      const { data, error } = await sb.from("studio_closures").insert(payload).select().single();
+      if (error) { showPlanToast("Erreur : " + (error.message || "table manquante — exécutez le SQL de création"), false); return; }
       if (data) setClosures(prev => [...prev, data].sort((a,b) => a.date_start.localeCompare(b.date_start)));
+      showPlanToast("Fermeture ajoutée");
     }
   }
   async function deleteClosure(id) {
-    await createClient().from("studio_closures").delete().eq("id", id);
+    const { error } = await createClient().from("studio_closures").delete().eq("id", id);
+    if (error) { showPlanToast("Erreur suppression : " + error.message, false); return; }
     setClosures(prev => prev.filter(c => c.id !== id));
+    showPlanToast("Fermeture supprimée");
   }
 
   const DAY_NUM = { Lun: 1, Mar: 2, Mer: 3, Jeu: 4, Ven: 5, Sam: 6, Dim: 0 };
@@ -531,14 +578,15 @@ function Planning({ isMobile }) {
     await createClient().from("sessions").delete().eq("id", id);
   };
 
-  const cancelSession = async id => {
-    if (!window.confirm("Annuler cette séance ? Les inscrits verront la séance comme annulée.")) return;
-    setSessions(prev => prev.map(s => s.id === id ? { ...s, status: "cancelled" } : s));
-    const { error } = await createClient().from("sessions").update({ status: "cancelled" }).eq("id", id);
-    if (error) {
-      setSessions(prev => prev.map(s => s.id === id ? { ...s, status: "scheduled" } : s));
-      alert("❌ Erreur lors de l'annulation. La séance a été restaurée.");
-    }
+  const cancelSession = id => {
+    openConfirm("Annuler cette séance ?", async () => {
+      setSessions(prev => prev.map(s => s.id === id ? { ...s, status: "cancelled" } : s));
+      const { error } = await createClient().from("sessions").update({ status: "cancelled" }).eq("id", id);
+      if (error) {
+        setSessions(prev => prev.map(s => s.id === id ? { ...s, status: "scheduled" } : s));
+        showPlanToast("Erreur lors de l'annulation", false);
+      }
+    }, { subMsg: "Les inscrits verront la séance comme annulée.", danger: true });
   };
 
   const restoreSession = async id => {
@@ -546,7 +594,7 @@ function Planning({ isMobile }) {
     const { error } = await createClient().from("sessions").update({ status: "scheduled" }).eq("id", id);
     if (error) {
       setSessions(prev => prev.map(s => s.id === id ? { ...s, status: "cancelled" } : s));
-      alert("❌ Erreur lors du rétablissement.");
+      showPlanToast("Erreur lors du rétablissement", false);
     }
   };
 
@@ -592,6 +640,27 @@ function Planning({ isMobile }) {
   return (
     <div>
       {isDemoData && <DemoBanner />}
+
+      {/* ── Modal confirmation custom ── */}
+      {confirmModal && (
+        <ConfirmModal
+          msg={confirmModal.msg}
+          subMsg={confirmModal.subMsg}
+          danger={confirmModal.danger}
+          onConfirm={confirmModal.onConfirm}
+          onCancel={() => setConfirmModal(null)}
+        />
+      )}
+
+      {/* ── Toast Planning ── */}
+      {planToast && (
+        <div style={{ position:"fixed", bottom:90, left:"50%", transform:"translateX(-50%)", zIndex:9000,
+          padding:"10px 20px", borderRadius:10, background:planToast.ok?"#065F46":"#991B1B",
+          color:"#fff", fontSize:13, fontWeight:700, boxShadow:"0 4px 20px rgba(0,0,0,.2)", whiteSpace:"nowrap",
+          animation:"fadeInUp .2s ease" }}>
+          {planToast.ok ? "✓" : "✗"} {planToast.msg}
+        </div>
+      )}
 
       {/* Modale booking */}
       {/* ── Modal Fermetures ── */}
@@ -1028,7 +1097,7 @@ function Planning({ isMobile }) {
           <div key={date} style={{ marginBottom: 22 }}>
             <DateLabel date={date} />
             {filtered.filter(s => s.date === date).map(s => (
-              <PlanningSessionCard key={s.id} sess={s} expandedId={expandedId} bookings={bookings} discs={effectiveDiscs} closures={closures}
+              <PlanningSessionCard key={s.id} sess={s} expandedId={expandedId} bookings={bookings} discs={effectiveDiscs} closures={closures} isMobile={isMobile} onConfirm={openConfirm}
                 onToggle={id => setExpandedId(prev => prev === id ? null : id)}
                 onChangeStatus={handleChangeStatus}
                 onAddBooking={id => setBookingModal(id)}
