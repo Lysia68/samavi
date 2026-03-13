@@ -83,10 +83,10 @@ function Dashboard({ isMobile }) {
 
     Promise.all([
       sb.from("sessions").select("id,discipline_id,teacher,room,duration_min,spots,session_date,session_time,status").eq("studio_id", studioId),
-      sb.from("profiles").select("id,status").eq("studio_id", studioId).eq("role","member"),
+      sb.from("members").select("id,status").eq("studio_id", studioId),
       sb.from("payments").select("id,amount,status,payment_date").eq("studio_id", studioId),
       sb.from("disciplines").select("id,name,color,icon").eq("studio_id", studioId),
-    ]).then(([sessRes, membRes, payRes, discRes]) => {
+    ]).then(async ([sessRes, membRes, payRes, discRes]) => {
       const sessData = sessRes.data || [];
       const membData = membRes.data || [];
       const payData  = payRes.data  || [];
@@ -100,13 +100,29 @@ function Dashboard({ isMobile }) {
         setPayments(PAYMENTS);
         setIsDemo(true);
       } else {
-        setSessions(sessData.map(s=>({
+        const mappedSessions = sessData.map(s=>({
           id: s.id, disciplineId: s.discipline_id,
-          teacher: s.teacher||"", room: s.room||"Studio A",
+          teacher: s.teacher||"", room: s.room||"",
           duration: s.duration_min||60, spots: s.spots||12,
           date: s.session_date, time: s.session_time?.slice(0,5)||"09:00",
           status: s.status||"scheduled", booked:0, waitlist:0,
-        })));
+        }));
+
+        // Charger les bookings pour calculer le taux de remplissage
+        const sessionIds = mappedSessions.map(s => s.id);
+        let bkMap = {};
+        if (sessionIds.length > 0) {
+          const { data: bkData } = await sb.from("bookings")
+            .select("session_id, status")
+            .in("session_id", sessionIds);
+          (bkData || []).forEach(b => {
+            if (!bkMap[b.session_id]) bkMap[b.session_id] = [];
+            bkMap[b.session_id].push({ st: b.status });
+          });
+        }
+
+        setSessions(mappedSessions);
+        setBookings(bkMap);
         setMembers(membData);
         setPayments(payData.map(p=>({...p, date:p.payment_date, status:p.status})));
         if (discData.length > 0) {
@@ -127,7 +143,7 @@ function Dashboard({ isMobile }) {
 
   // KPIs
   const monthStr = todayStr.slice(0,7);
-  const activeMembers = members.filter(m=>m.status==="active"||m.status==="actif").length;
+  const activeMembers = members.filter(m=>m.status==="active"||m.status==="actif"||m.status==="Actif").length;
   const monthSessions = sessions.filter(s=>s.date?.startsWith(monthStr)).length;
   const totalBooked = sessions.reduce((acc,s)=>{ const bks=bookings[s.id]||[]; return acc+(bks.length?bks.filter(b=>b.st==="confirmed").length:s.booked||0); },0);
   const totalCap = sessions.reduce((acc,s)=>acc+(s.spots||0),0);
