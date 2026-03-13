@@ -10,39 +10,53 @@ export async function GET(request: NextRequest) {
 
   const db = createServiceSupabase()
 
-  const [{ data: profiles }, { data: links }, { data: invites }] = await Promise.all([
+  const [{ data: profiles }, { data: links }, { data: invites }, { data: members }] = await Promise.all([
     db.from("profiles").select("id, first_name, last_name, role, is_coach")
       .eq("studio_id", studioId),
     db.from("coach_disciplines").select("profile_id, discipline_id").eq("studio_id", studioId),
     db.from("invitations").select("id, email, created_at")
       .eq("studio_id", studioId).eq("role", "coach").eq("used", false),
+    db.from("members").select("auth_user_id, first_name, last_name, email")
+      .eq("studio_id", studioId).not("auth_user_id", "is", null),
   ])
 
-  // Croiser avec auth.users pour détecter email_confirmed_at
-  const profileIds = (profiles||[]).map((p: any) => p.id)
-  let confirmedMap: Record<string, boolean> = {}
+  // Map membres par auth_user_id pour enrichissement rapide
+  const membersByUid: Record<string, any> = {}
+  ;(members || []).forEach((m: any) => { membersByUid[m.auth_user_id] = m })
+
+  // Croiser avec auth.users pour email + confirmed
+  const profileIds = (profiles || []).map((p: any) => p.id)
+  let authMap: Record<string, { email: string; confirmed: boolean }> = {}
   if (profileIds.length > 0) {
     const { data: { users: authUsers } } = await db.auth.admin.listUsers({ perPage: 1000 })
-    ;(authUsers||[]).forEach((u: any) => {
-      confirmedMap[u.id] = !!u.email_confirmed_at
+    ;(authUsers || []).forEach((u: any) => {
+      authMap[u.id] = { email: u.email || "", confirmed: !!u.email_confirmed_at }
     })
   }
 
   const discMap: Record<string, string[]> = {}
-  ;(links||[]).forEach((l: any) => {
+  ;(links || []).forEach((l: any) => {
     if (!discMap[l.profile_id]) discMap[l.profile_id] = []
     discMap[l.profile_id].push(l.discipline_id)
   })
 
-  const coaches = (profiles||[]).map((p: any) => ({
-    id: p.id,
-    fn: p.first_name || "",
-    ln: p.last_name || "",
-    role: p.role,
-    is_coach: p.is_coach,
-    disciplines: discMap[p.id] || [],
-    confirmed: confirmedMap[p.id] !== false, // true si confirmé ou inconnu
-  }))
+  const coaches = (profiles || []).map((p: any) => {
+    // Priorité : members > profiles pour les noms
+    const member = membersByUid[p.id]
+    const fn = member?.first_name || p.first_name || ""
+    const ln = member?.last_name  || p.last_name  || ""
+    const email = member?.email   || authMap[p.id]?.email || ""
+    return {
+      id: p.id,
+      fn,
+      ln,
+      email,
+      role: p.role,
+      is_coach: p.is_coach,
+      disciplines: discMap[p.id] || [],
+      confirmed: authMap[p.id]?.confirmed !== false,
+    }
+  })
 
   return NextResponse.json({ coaches, invites: invites || [] })
 }
