@@ -219,6 +219,8 @@ export default function LoginPage() {
   const supabase = useState(() => createClient())[0]
 
   useEffect(()=>{
+    const saved = localStorage.getItem("fydelys_last_email")
+    if (saved) setEmail(saved)
     const h = window.location.hostname
     if(h==="fydelys.fr"||h==="localhost"||h.startsWith("localhost:")) {
       setCtx("superadmin")
@@ -310,6 +312,7 @@ export default function LoginPage() {
           setLoading(false)
           return
         }
+        localStorage.setItem("fydelys_last_email", email)
         setSent(true)
       } catch {
         setError("Erreur réseau. Réessayez.")
@@ -328,6 +331,7 @@ export default function LoginPage() {
           setSent(true)
         }
       } else {
+        localStorage.setItem("fydelys_last_email", email)
         setSent(true)
       }
     }
