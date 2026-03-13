@@ -117,15 +117,38 @@ function Members({ isMobile }) {
   useEffect(() => {
     if (!studioId) return;
     setDbLoading(true);
-    fetch(`/api/members?studioId=${studioId}`)
-      .then(r => r.json())
-      .then(({ members, error }) => {
-        if (error) { console.error("load members", error); setDbLoading(false); return; }
-        if (!members || members.length === 0) { setMembers(MEMBERS_DEMO); setIsDemoData(true); setDbLoading(false); return; }
-        setMembers(members.map(mapRow));
-        setDbLoading(false);
-      })
-      .catch(e => { console.error("load members", e); setDbLoading(false); });
+
+    async function load() {
+      // Essai via /api/members (service role, contourne RLS)
+      try {
+        const r = await fetch(`/api/members?studioId=${studioId}`);
+        if (r.ok) {
+          const { members, error } = await r.json();
+          if (!error && members) {
+            if (members.length === 0) { setMembers([]); }
+            else setMembers(members.map(mapRow));
+            setDbLoading(false);
+            return;
+          }
+        }
+      } catch(_) {}
+
+      // Fallback : client Supabase direct (fonctionne si RLS ok pour cet utilisateur)
+      const { data, error } = await createClient()
+        .from("members")
+        .select("id,first_name,last_name,email,phone,address,postal_code,city,birth_date,status,credits,credits_total,joined_at,next_payment,notes,subscription_id,profile_complete,subscriptions(name)")
+        .eq("studio_id", studioId).order("last_name");
+
+      if (error || !data || data.length === 0) {
+        console.warn("load members fallback:", error?.message || "empty");
+        setMembers([]);
+      } else {
+        setMembers(data.map(mapRow));
+      }
+      setDbLoading(false);
+    }
+
+    load();
   }, [studioId]);
 
   function mapRow(m) {
@@ -319,7 +342,6 @@ function Members({ isMobile }) {
 
   return (
     <div>
-      {isDemoData && <DemoBanner/>}
       {toast && (
         <div style={{position:"fixed",bottom:90,left:"50%",transform:"translateX(-50%)",zIndex:9000,padding:"10px 20px",borderRadius:10,background:toast.ok?"#065F46":"#991B1B",color:"#fff",fontSize:13,fontWeight:700,boxShadow:"0 4px 20px rgba(0,0,0,.2)",whiteSpace:"nowrap"}}>
           {toast.ok?"✓":"✗"} {toast.msg}
