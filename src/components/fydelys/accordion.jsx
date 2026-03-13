@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { C } from "./theme";
-import { IcoCheck, IcoX, IcoUndo, IcoUserPlus2, IcoMail } from "./icons";
+import { IcoCheck, IcoX, IcoUndo, IcoUserPlus2, IcoMail, IcoPhone } from "./icons";
 import { CreditBadge } from "./ui";
 import { createClient } from "@/lib/supabase";
 
@@ -143,7 +143,13 @@ export function PlanningAccordion({ sess, sessId, bookings, onChangeStatus, onAd
               </div>
               <div style={{ display:"flex", alignItems:"center", gap:8, paddingLeft:39 }}>
                 <span style={{ padding:"3px 10px", borderRadius:20, fontSize:13, fontWeight:600, whiteSpace:"nowrap", flexShrink:0, ...stStyle(b.st) }}>{stLbl(b.st)}</span>
-                <span style={{ fontSize:13, color:C.textSoft, flex:1 }}>{b.phone}</span>
+                {b.phone && (
+                  <a href={`tel:${b.phone}`} title={b.phone}
+                    style={{ display:"flex", alignItems:"center", gap:4, fontSize:12, color:C.textSoft, textDecoration:"none", padding:"3px 8px", borderRadius:7, border:`1px solid ${C.borderSoft}`, background:C.surface, flexShrink:0, whiteSpace:"nowrap" }}>
+                    <IcoPhone s={12} c={C.textMuted}/> {b.phone}
+                  </a>
+                )}
+                <div style={{ flex:1 }}/>
                 <div style={{ flexShrink:0 }}>
                   {b.st==="waitlist"  && <button onClick={()=>onChangeStatus(b.id,sessId,"confirmed")} style={{ display:"flex",alignItems:"center",gap:5, fontSize:12, padding:"4px 12px", borderRadius:7, fontWeight:600, border:`1px solid #B8DFC4`, color:C.ok,   background:C.okBg,   cursor:"pointer", whiteSpace:"nowrap" }}><IcoCheck s={13} c={C.ok}/>Confirmer</button>}
                   {b.st==="confirmed" && <button onClick={()=>onChangeStatus(b.id,sessId,"cancelled")} style={{ display:"flex",alignItems:"center",gap:5, fontSize:12, padding:"4px 12px", borderRadius:7, fontWeight:600, border:`1px solid #EFC8BC`, color:C.warn, background:C.warnBg, cursor:"pointer", whiteSpace:"nowrap" }}><IcoX s={13} c={C.warn}/>Annuler</button>}
