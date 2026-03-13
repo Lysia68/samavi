@@ -158,9 +158,8 @@ export function PlanningAccordion({ sess, sessId, bookings, onChangeStatus, onAd
               </div>
             </div>
           ))}
-          <div style={{ padding:"8px 13px", display:"flex", gap:7, flexWrap:"wrap" }}>
+          <div style={{ padding:"8px 13px 10px", display:"flex", gap:7, flexWrap:"wrap" }}>
             <button onClick={()=>onAddBooking&&onAddBooking(sessId)} style={{ display:"flex",alignItems:"center",gap:6, fontSize:12, padding:"5px 12px", borderRadius:8, fontWeight:600, border:`1px solid #DFC0A0`, color:C.accentDark, background:C.accentBg, cursor:"pointer" }}><IcoUserPlus2 s={14} c={C.accentDark}/>Inscrire un adhérent</button>
-            <button onClick={()=>onSendReminder&&onSendReminder(sessId)} style={{ display:"flex",alignItems:"center",gap:6, fontSize:12, padding:"5px 12px", borderRadius:8, fontWeight:600, border:`1px solid ${C.border}`, color:C.textSoft, background:C.surfaceWarm, cursor:"pointer" }}><IcoMail s={14} c={C.textSoft}/>Envoyer rappel</button>
           </div>
         </>
       )}

@@ -73,7 +73,7 @@ function AdherentView({ onSwitch, isMobile, studioName = "" }) {
       createClient().from("sessions")
         .select("id, discipline_id, teacher, room, level, session_date, session_time, duration_min, spots, status, disciplines(name,color,icon)")
         .eq("studio_id", studioId)
-        .eq("status", "scheduled")
+        .in("status", ["scheduled", "cancelled"])
         .gte("session_date", today)
         .order("session_date").order("session_time")
         .limit(60)
@@ -202,29 +202,37 @@ function AdherentView({ onSwitch, isMobile, studioName = "" }) {
             <div key={date} style={{ marginBottom:20 }}>
               <DateLabel date={date}/>
               {daySessions.map(s=>{
-                const isBooked = myBookings.includes(s.id);
-                const isFull   = s.booked >= s.spots;
-                const pct      = s.booked/s.spots;
+                const isBooked   = myBookings.includes(s.id);
+                const isFull     = s.booked >= s.spots;
+                const isCancelled = s.status === "cancelled";
+                const pct        = s.booked/s.spots;
                 return (
-                  <Card key={s.id} style={{ marginBottom:8, borderLeft:`3px solid ${s.discColor}`, opacity:isFull&&!isBooked?.7:1 }}>
+                  <Card key={s.id} style={{ marginBottom:8, borderLeft:`3px solid ${isCancelled ? C.warn : s.discColor}`, opacity: isCancelled ? 0.75 : (isFull&&!isBooked ? .7 : 1) }}>
+                    {isCancelled && (
+                      <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:8, padding:"5px 10px", background:C.warnBg, borderRadius:8, fontSize:12, fontWeight:700, color:C.warn }}>
+                        ⚠ Séance annulée{isBooked ? " — votre réservation est automatiquement annulée" : ""}
+                      </div>
+                    )}
                     <div style={{ display:"flex", alignItems:"flex-start", gap:12 }}>
-                      <div style={{ fontSize:isMobile?15:16, fontWeight:700, color:C.accent, width:38, flexShrink:0, paddingTop:2 }}>{s.time}</div>
+                      <div style={{ fontSize:isMobile?15:16, fontWeight:700, color:isCancelled?C.warn:C.accent, width:38, flexShrink:0, paddingTop:2 }}>{s.time}</div>
                       <div style={{ flex:1, minWidth:0 }}>
                         <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:2 }}>
-                          <span style={{ fontSize:isMobile?15:16, fontWeight:700, color:C.text }}>{s.discName}</span>
-                          <Pill color={s.discColor} bg={s.discColor+"18"}>{s.level}</Pill>
-                          {isFull && !isBooked && <Tag s="complet"/>}
+                          <span style={{ fontSize:isMobile?15:16, fontWeight:700, color:isCancelled?C.textMuted:C.text, textDecoration:isCancelled?"line-through":"none" }}>{s.discName}</span>
+                          {!isCancelled && <Pill color={s.discColor} bg={s.discColor+"18"}>{s.level}</Pill>}
+                          {isFull && !isBooked && !isCancelled && <Tag s="complet"/>}
                         </div>
                         <div style={{ fontSize:isMobile?14:15, color:C.textSoft, marginBottom:6 }}>{s.teacher} · {s.room} · {s.duration_min} min</div>
-                        <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-                          <div style={{ flex:1, maxWidth:160, height:4, background:C.bgDeep, borderRadius:2 }}>
-                            <div style={{ height:"100%", width:`${Math.min(pct*100,100)}%`, background:pct>=1?C.warn:C.ok, borderRadius:2 }}/>
+                        {!isCancelled && (
+                          <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                            <div style={{ flex:1, maxWidth:160, height:4, background:C.bgDeep, borderRadius:2 }}>
+                              <div style={{ height:"100%", width:`${Math.min(pct*100,100)}%`, background:pct>=1?C.warn:C.ok, borderRadius:2 }}/>
+                            </div>
+                            <span style={{ fontSize:12, fontWeight:600, color:pct>=1?C.warn:C.textSoft }}>{s.booked}/{s.spots} places</span>
                           </div>
-                          <span style={{ fontSize:12, fontWeight:600, color:pct>=1?C.warn:C.textSoft }}>{s.booked}/{s.spots} places</span>
-                        </div>
+                        )}
                       </div>
                       <div style={{ flexShrink:0 }}>
-                        {isBooked
+                        {isCancelled ? null : isBooked
                           ? <Button sm variant="danger" onClick={()=>cancel(s)}>Annuler</Button>
                           : isFull
                             ? <Button sm variant="secondary" onClick={()=>showToast("Ajouté à la liste d'attente")}>Liste d'attente</Button>
@@ -232,7 +240,7 @@ function AdherentView({ onSwitch, isMobile, studioName = "" }) {
                         }
                       </div>
                     </div>
-                    {isBooked && (
+                    {isBooked && !isCancelled && (
                       <div style={{ marginTop:10, padding:"7px 12px", background:C.okBg, borderRadius:8, fontSize:13, color:C.ok, display:"flex", alignItems:"center", gap:6 }}>
                         <IcoCheck s={14} c={C.ok}/> Vous êtes inscrit(e) à cette séance
                       </div>

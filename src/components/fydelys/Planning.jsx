@@ -430,8 +430,15 @@ function Planning({ isMobile }) {
   };
 
   const cancelSession = async id => {
+    if (!window.confirm("Annuler cette séance ? Les inscrits seront informés.")) return;
+    // Optimistic update
     setSessions(prev => prev.map(s => s.id === id ? { ...s, status: "cancelled" } : s));
-    await createClient().from("sessions").update({ status: "cancelled" }).eq("id", id);
+    const { error } = await createClient().from("sessions").update({ status: "cancelled" }).eq("id", id);
+    if (error) {
+      // Rollback
+      setSessions(prev => prev.map(s => s.id === id ? { ...s, status: "scheduled" } : s));
+      alert("❌ Erreur lors de l'annulation. La séance a été restaurée.");
+    }
   };
 
   const addRecurringSessions = async () => {
