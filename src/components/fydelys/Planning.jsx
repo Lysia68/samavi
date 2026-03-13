@@ -109,7 +109,7 @@ function PlanningSessionCard({ sess, expandedId, bookings, discs, onToggle, onCh
       {sess.status === "cancelled" && (
         <div style={{ background:"#FFF5F5", padding:"4px 14px", fontSize:12, color:C.warn, fontWeight:600 }}>⚠ Séance annulée</div>
       )}
-      {isExp && <PlanningAccordion sessId={sess.id} bookings={bookings} onChangeStatus={onChangeStatus}/>}
+      {isExp && <PlanningAccordion sess={sess} sessId={sess.id} bookings={bookings} onChangeStatus={onChangeStatus}/>}
     </div>
   );
 }
@@ -149,7 +149,7 @@ function Planning({ isMobile }) {
       .then(({ data: coaches }) => {
         if (coaches) setCoachesList(coaches.map(c => ({ id: c.id, name: `${c.first_name || ""} ${c.last_name || ""}`.trim() })));
       });
-  }, []);
+  }, [studioId]);
 
   // Charger les sessions dès que studioId est disponible dans le context
   useEffect(() => {
@@ -172,6 +172,39 @@ function Planning({ isMobile }) {
         setDbLoading(false);
       });
   }, [studioId]);
+
+  // Charger les bookings de toutes les sessions du studio
+  useEffect(() => {
+    if (!studioId || sessions.length === 0) return;
+    const sessionIds = sessions.map(s => s.id);
+    createClient().from("bookings")
+      .select("id, session_id, member_id, status, attended, members(first_name, last_name, email, phone)")
+      .in("session_id", sessionIds)
+      .then(({ data, error }) => {
+        if (error) { console.error("load bookings", error); return; }
+        if (!data) return;
+        const map = {};
+        data.forEach(b => {
+          if (!map[b.session_id]) map[b.session_id] = [];
+          map[b.session_id].push({
+            id: b.id,
+            memberId: b.member_id,
+            st: b.status,
+            attended: b.attended ?? null,
+            name: b.members ? `${b.members.first_name || ""} ${b.members.last_name || ""}`.trim() : "—",
+            email: b.members?.email || "",
+            phone: b.members?.phone || "",
+          });
+        });
+        setBookings(map);
+        // Mettre à jour le count booked/waitlist sur les sessions
+        setSessions(prev => prev.map(s => ({
+          ...s,
+          booked: (map[s.id] || []).filter(b => b.st === "confirmed").length,
+          waitlist: (map[s.id] || []).filter(b => b.st === "waitlist").length,
+        })));
+      });
+  }, [studioId, sessions.length]);
 
   // Recalcule le preview quand les paramètres récurrence changent
   useEffect(() => {

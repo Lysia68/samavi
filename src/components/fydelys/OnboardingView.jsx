@@ -72,6 +72,11 @@ function OnboardingView({ studioName = "", onComplete }) {
 
       if (error) { showToast("Erreur lors de l'enregistrement", false); setSaving(false); return; }
 
+      // Synchroniser profiles avec le même prénom/nom
+      await sb.from("profiles")
+        .update({ first_name: form.first_name.trim(), last_name: form.last_name.trim() })
+        .eq("id", user.id);
+
       // Mettre à jour aussi le profil auth (prénom/nom)
       await sb.auth.updateUser({ data: { first_name: form.first_name.trim(), last_name: form.last_name.trim() } });
 

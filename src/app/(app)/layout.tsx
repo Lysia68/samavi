@@ -71,7 +71,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         .eq("id", user.id)
         .single()
 
-      console.log("LAYOUT profile:", JSON.stringify(profile))
       const role = profile?.role || "adherent"
 
       // Nom + disciplines pour les coachs
@@ -108,10 +107,27 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           window.location.href = "https://fydelys.fr/dashboard"
           return
         }
-        // Nom de l'utilisateur
-        const fullName = `${profile?.first_name || ""} ${profile?.last_name || ""}`.trim()
+        // Nom de l'utilisateur — fallback sur members si profiles vide
+        let fullName = `${profile?.first_name || ""} ${profile?.last_name || ""}`.trim()
         setUserName(fullName)
         setUserRole(role)
+
+        // Si nom vide, charger depuis members
+        if (!fullName && profile?.studio_id) {
+          const { data: { user } } = await supabase.auth.getUser()
+          if (user?.email) {
+            const { data: member } = await supabase
+              .from("members")
+              .select("first_name, last_name")
+              .eq("email", user.email)
+              .eq("studio_id", profile.studio_id)
+              .maybeSingle()
+            if (member) {
+              fullName = `${member.first_name || ""} ${member.last_name || ""}`.trim()
+              setUserName(fullName)
+            }
+          }
+        }
 
         // Charger les données studio pour admin/coach/adhérent
         if (profile?.studio_id) {
