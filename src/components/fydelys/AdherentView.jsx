@@ -564,7 +564,7 @@ function AdherentView({ onSwitch, isMobile, studioName = "", impersonateUserId =
             {me && (
               <div style={{ display:"flex", alignItems:"center", gap:8 }}>
                 <div style={{ width:30, height:30, borderRadius:"50%", background:C.accentBg, border:`1.5px solid ${C.accent}`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:11, fontWeight:700, color:C.accent, flexShrink:0 }}>
-                  {`${me.first_name?.[0]||\"\"}${me.last_name?.[0]||\"\"}`.toUpperCase()||"?"}
+                  {`${me.first_name?.[0]||""}${me.last_name?.[0]||""}`.toUpperCase()||"?"}
                 </div>
                 <div style={{ fontSize:13, fontWeight:600, color:C.text }}>{me.first_name} {me.last_name}</div>
               </div>
@@ -579,7 +579,7 @@ function AdherentView({ onSwitch, isMobile, studioName = "", impersonateUserId =
               <div style={{ display:"flex", alignItems:"center", gap:7 }}>
                 <div style={{ fontSize:13, fontWeight:600, color:C.textSoft }}>{me.first_name} {me.last_name}</div>
                 <div style={{ width:28, height:28, borderRadius:"50%", background:C.accentBg, border:`1.5px solid ${C.accent}`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:11, fontWeight:700, color:C.accent }}>
-                  {`${me.first_name?.[0]||\"\"}${me.last_name?.[0]||\"\"}`.toUpperCase()||"?"}
+                  {`${me.first_name?.[0]||""}${me.last_name?.[0]||""}`.toUpperCase()||"?"}
                 </div>
               </div>
             )}
