@@ -478,7 +478,7 @@ function Settings({ isMobile, onImpersonate }) {
       <Card noPad style={{ marginBottom:14, overflow:"hidden" }}>
         <SectionHead action={
           slug && (
-            <a href={`https://${slug}.fydelys.fr`} target="_blank" rel="noopener noreferrer"
+            <a href={`https://${slug}.fydelys.fr/?preview=1`} target="_blank" rel="noopener noreferrer"
               style={{ fontSize:11, fontWeight:700, color:accent, textDecoration:"none", display:"flex", alignItems:"center", gap:4 }}>
               Ouvrir ↗
             </a>
@@ -640,9 +640,9 @@ function Settings({ isMobile, onImpersonate }) {
             {studioForm.slug && studioForm.public_page_enabled && (
               <div style={{ display:"flex", alignItems:"center", gap:10, padding:"10px 14px", background:C.accentBg, borderRadius:9, border:`1px solid ${C.border}` }}>
                 <span style={{ fontSize:12, color:C.textMuted }}>🌐 Votre page :</span>
-                <a href={`https://${studioForm.slug}.fydelys.fr`} target="_blank" rel="noopener noreferrer"
+                <a href={`https://${studioForm.slug}.fydelys.fr/?preview=1`} target="_blank" rel="noopener noreferrer"
                   style={{ fontSize:13, fontWeight:700, color:C.accent, textDecoration:"none" }}>
-                  {studioForm.slug}.fydelys.fr
+                  {studioForm.slug}.fydelys.fr ↗
                 </a>
               </div>
             )}

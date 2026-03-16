@@ -127,7 +127,9 @@ export async function middleware(request: NextRequest) {
 
   // Sur fydelys.fr : / = landing publique, /login = auth
   // Sur slug.fydelys.fr : / redirige vers /dashboard si connecté
-  if (user && pathname === "/" && isTenant) {
+  // Sauf si ?preview=1 (aperçu site vitrine depuis Settings)
+  const isPreview = searchParams.get("preview") === "1"
+  if (user && pathname === "/" && isTenant && !isPreview) {
     return NextResponse.redirect(new URL("/dashboard", request.url))
   }
   // Sur fydelys.fr : si connecté et va sur /login → redirect /dashboard
