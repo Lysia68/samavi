@@ -48,8 +48,7 @@ export async function POST(req: NextRequest) {
         },
         business_profile: {
           name: studio.name,
-          url: `https://${studioId}.fydelys.fr`,
-          mcc: "7941", // Sports clubs
+          // mcc et url optionnels — Stripe les demande pendant l'onboarding
         },
         metadata: { studioId, platform: "fydelys" },
       })
@@ -74,7 +73,11 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ url: accountLink.url })
   } catch (err: any) {
-    console.error("Connect onboard error:", err)
-    return NextResponse.json({ error: err.message }, { status: 500 })
+    console.error("Connect onboard error:", err?.message, err?.raw || err)
+    return NextResponse.json({ 
+      error: err.message,
+      stripe_code: err?.raw?.code,
+      stripe_type: err?.raw?.type,
+    }, { status: 500 })
   }
 }
