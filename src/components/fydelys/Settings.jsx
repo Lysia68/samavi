@@ -89,6 +89,7 @@ function Settings({ isMobile, onImpersonate }) {
   // ── Données studio depuis Supabase
   const [studioForm, setStudioForm] = useState({ name:"", address:"", city:"", phone:"", email:"", website:"", cancel_delay_hours:12, booking_days_ahead:7, waitlist_max:10, timezone:"Europe/Paris", reminder_hours_default:24, description:"", cover_photo_url:"", accent_color:"#B07848", public_page_enabled:false });
   const [studioSaving, setStudioSaving] = useState(false);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [studioToast, setStudioToast] = useState(null);
   const showStudioToast = (msg, ok=true) => { setStudioToast({msg,ok}); setTimeout(()=>setStudioToast(null),3000); };
 
@@ -110,7 +111,7 @@ function Settings({ isMobile, onImpersonate }) {
           waitlist_max: data.waitlist_max ?? 10,
           timezone: data.timezone || "Europe/Paris",
           reminder_hours_default: data.reminder_hours_default ?? 24,
-          description: data.description || "",
+          description: data.description || (data.name ? `Bienvenue chez ${data.name}${data.city?" à "+data.city:""}. Réservez vos séances en ligne.` : ""),
           cover_photo_url: data.cover_photo_url || "",
           accent_color: data.accent_color || "#B07848",
           slug: data.slug || "",
@@ -556,18 +557,26 @@ function Settings({ isMobile, onImpersonate }) {
           <SectionHead>Page publique</SectionHead>
           <div style={{ padding:"16px 18px", display:"flex", flexDirection:"column", gap:14 }}>
             {/* Toggle activation */}
-            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"12px 14px", background:studioForm.public_page_enabled?C.okBg:C.bg, borderRadius:10, border:`1.5px solid ${studioForm.public_page_enabled?C.ok:C.border}`, transition:"all .2s" }}>
-              <div>
-                <div style={{ fontSize:13, fontWeight:700, color:C.text }}>Page vitrine publique</div>
-                <div style={{ fontSize:12, color:C.textSoft, marginTop:2 }}>
-                  {studioForm.public_page_enabled ? "Activée — visible sur votre sous-domaine" : "Désactivée — redirige vers la connexion"}
+            {(() => {
+              const canEnable = !!(studioForm.cover_photo_url && studioForm.description?.trim());
+              return (
+                <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"12px 14px", background:studioForm.public_page_enabled?C.okBg:C.bg, borderRadius:10, border:`1.5px solid ${studioForm.public_page_enabled?C.ok:C.border}`, transition:"all .2s" }}>
+                  <div>
+                    <div style={{ fontSize:13, fontWeight:700, color:C.text }}>Page vitrine publique</div>
+                    <div style={{ fontSize:12, color:C.textSoft, marginTop:2 }}>
+                      {studioForm.public_page_enabled
+                        ? "Activée — visible sur votre sous-domaine"
+                        : canEnable ? "Désactivée — redirige vers la connexion" : "Ajoutez une photo et une description pour activer"}
+                    </div>
+                  </div>
+                  <button disabled={!isAdmin || (!studioForm.public_page_enabled && !canEnable)}
+                    onClick={()=>{ if(!canEnable && !studioForm.public_page_enabled){ showStudioToast("Ajoutez une photo de couverture et une description avant d'activer la page.", false); return; } setStudioForm(f=>({...f,public_page_enabled:!f.public_page_enabled})); }}
+                    style={{ width:44, height:24, borderRadius:12, border:"none", background:studioForm.public_page_enabled?C.ok:(!canEnable?"#E0D8D0":"#D0C8C0"), cursor:(isAdmin&&(canEnable||studioForm.public_page_enabled))?"pointer":"not-allowed", position:"relative", transition:"background .2s", flexShrink:0, opacity:(!isAdmin||(!canEnable&&!studioForm.public_page_enabled))?.6:1 }}>
+                    <div style={{ position:"absolute", top:3, left:studioForm.public_page_enabled?22:3, width:18, height:18, borderRadius:"50%", background:"white", transition:"left .2s", boxShadow:"0 1px 4px rgba(0,0,0,.2)" }}/>
+                  </button>
                 </div>
-              </div>
-              <button disabled={!isAdmin} onClick={()=>setStudioForm(f=>({...f,public_page_enabled:!f.public_page_enabled}))}
-                style={{ width:44, height:24, borderRadius:12, border:"none", background:studioForm.public_page_enabled?C.ok:"#D0C8C0", cursor:isAdmin?"pointer":"default", position:"relative", transition:"background .2s", flexShrink:0 }}>
-                <div style={{ position:"absolute", top:3, left:studioForm.public_page_enabled?22:3, width:18, height:18, borderRadius:"50%", background:"white", transition:"left .2s", boxShadow:"0 1px 4px rgba(0,0,0,.2)" }}/>
-              </button>
-            </div>
+              );
+            })()}
 
             {/* Lien de la page — seulement si activée */}
             {studioForm.slug && studioForm.public_page_enabled && (
@@ -598,20 +607,96 @@ function Settings({ isMobile, onImpersonate }) {
               <div style={{ fontSize:11, color:C.textMuted, marginTop:4 }}>{(studioForm.description||"").length}/300 caractères</div>
             </div>
 
-            {/* Photo de couverture */}
+            {/* Photo de couverture — upload */}
             <div>
-              <FieldLabel>URL photo de couverture</FieldLabel>
-              <input value={studioForm.cover_photo_url} disabled={!isAdmin}
-                onChange={e=>setStudioForm(f=>({...f,cover_photo_url:e.target.value}))}
-                placeholder="https://monsite.fr/photo-studio.jpg"
-                style={{ width:"100%", padding:"9px 12px", border:`1.5px solid ${C.border}`, borderRadius:8, fontSize:14, outline:"none", boxSizing:"border-box", color:C.text, background:isAdmin?C.surfaceWarm:"#F8F5F2", opacity:isAdmin?1:0.7 }}
-                onFocus={e=>{ if(isAdmin) e.target.style.borderColor=C.accent; }}
-                onBlur={e=>e.target.style.borderColor=C.border}/>
-              {studioForm.cover_photo_url && (
-                <div style={{ marginTop:8, borderRadius:8, overflow:"hidden", maxHeight:120, border:`1px solid ${C.border}` }}>
-                  <img src={studioForm.cover_photo_url} alt="Aperçu" style={{ width:"100%", objectFit:"cover", height:120 }}
-                    onError={e=>{ e.target.style.display="none"; }}/>
+              <FieldLabel>Photo de couverture</FieldLabel>
+              {/* Photos par défaut */}
+              {!studioForm.cover_photo_url && isAdmin && (
+                <div style={{ marginBottom:10 }}>
+                  <div style={{ fontSize:11, color:C.textMuted, marginBottom:6 }}>Choisir une photo de départ :</div>
+                  <div style={{ display:"flex", gap:6, overflowX:"auto", paddingBottom:4 }}>
+                    {[
+                      { url:"https://images.unsplash.com/photo-1588286840104-8957b019727f?w=800&q=80&auto=format&fit=crop", label:"Yoga" },
+                      { url:"https://images.unsplash.com/photo-1518611012118-696072aa579a?w=800&q=80&auto=format&fit=crop", label:"Pilates" },
+                      { url:"https://images.unsplash.com/photo-1506126613408-eca07ce68773?w=800&q=80&auto=format&fit=crop", label:"Méditation" },
+                      { url:"https://images.unsplash.com/photo-1547153760-18fc86324498?w=800&q=80&auto=format&fit=crop", label:"Danse" },
+                      { url:"https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=800&q=80&auto=format&fit=crop", label:"Fitness" },
+                      { url:"https://images.unsplash.com/photo-1552196563-55cd4e45efb3?w=800&q=80&auto=format&fit=crop", label:"Stretching" },
+                    ].map(p => (
+                      <button key={p.label} onClick={()=>setStudioForm(f=>({...f,cover_photo_url:p.url}))}
+                        style={{ flexShrink:0, border:`2px solid ${C.border}`, borderRadius:8, overflow:"hidden", cursor:"pointer", padding:0, background:"none", position:"relative" }}
+                        onMouseEnter={e=>e.currentTarget.style.borderColor=C.accent}
+                        onMouseLeave={e=>e.currentTarget.style.borderColor=C.border}>
+                        <img src={p.url} alt={p.label} style={{ width:64, height:44, objectFit:"cover", display:"block" }}/>
+                        <div style={{ position:"absolute", bottom:0, left:0, right:0, background:"rgba(0,0,0,.45)", color:"white", fontSize:9, fontWeight:700, textAlign:"center", padding:"2px 0" }}>{p.label}</div>
+                      </button>
+                    ))}
+                  </div>
                 </div>
+              )}
+              {studioForm.cover_photo_url ? (
+                <div style={{ position:"relative", borderRadius:10, overflow:"hidden", border:`1.5px solid ${C.border}` }}>
+                  <img src={studioForm.cover_photo_url} alt="Couverture" style={{ width:"100%", height:140, objectFit:"cover", display:"block" }}
+                    onError={e=>{ e.target.style.display="none"; }}/>
+                  {isAdmin && (
+                    <button onClick={()=>setStudioForm(f=>({...f,cover_photo_url:"", public_page_enabled:false}))}
+                      style={{ position:"absolute", top:8, right:8, background:"rgba(0,0,0,.55)", border:"none", borderRadius:6, padding:"4px 8px", color:"white", fontSize:11, fontWeight:600, cursor:"pointer" }}>
+                      ✕ Supprimer
+                    </button>
+                  )}
+                  {isAdmin && (
+                    <label style={{ position:"absolute", bottom:8, right:8, background:C.accent, border:"none", borderRadius:6, padding:"5px 10px", color:"white", fontSize:11, fontWeight:700, cursor:"pointer" }}>
+                      ✏ Changer
+                      <input type="file" accept="image/*" style={{ display:"none" }} onChange={async e=>{
+                        const file = e.target.files?.[0]; if(!file||!studioId) return;
+                        if(file.size > 5*1024*1024) { showStudioToast("Image trop lourde (max 5 Mo)", false); return; }
+                        setUploadingPhoto(true);
+                        try {
+                          const sb = createClient();
+                          const ext = file.name.split(".").pop();
+                          const path = `studios/${studioId}/cover.${ext}`;
+                          const { error } = await sb.storage.from("studio-assets").upload(path, file, { upsert:true, contentType:file.type });
+                          if(error) throw error;
+                          const { data:{ publicUrl } } = sb.storage.from("studio-assets").getPublicUrl(path);
+                          setStudioForm(f=>({...f, cover_photo_url: publicUrl+"?t="+Date.now()}));
+                          showStudioToast("Photo mise à jour !");
+                        } catch(err) { showStudioToast("Erreur upload : "+err.message, false); }
+                        setUploadingPhoto(false);
+                      }}/>
+                    </label>
+                  )}
+                  {uploadingPhoto && (
+                    <div style={{ position:"absolute", inset:0, background:"rgba(255,255,255,.7)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:13, fontWeight:600, color:C.accent }}>
+                      Envoi en cours…
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <label style={{ display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:8, padding:"28px 16px", border:`2px dashed ${C.border}`, borderRadius:10, cursor:isAdmin?"pointer":"default", background:C.bg, transition:"border-color .15s" }}
+                  onMouseEnter={e=>{ if(isAdmin) e.currentTarget.style.borderColor=C.accent; }}
+                  onMouseLeave={e=>{ e.currentTarget.style.borderColor=C.border; }}>
+                  <span style={{ fontSize:28 }}>🖼</span>
+                  <span style={{ fontSize:13, fontWeight:600, color:C.textMid }}>
+                    {uploadingPhoto ? "Envoi en cours…" : "Cliquer pour ajouter une photo"}
+                  </span>
+                  <span style={{ fontSize:11, color:C.textMuted }}>JPG, PNG, WEBP — max 5 Mo</span>
+                  <input type="file" accept="image/*" disabled={!isAdmin} style={{ display:"none" }} onChange={async e=>{
+                    const file = e.target.files?.[0]; if(!file||!studioId) return;
+                    if(file.size > 5*1024*1024) { showStudioToast("Image trop lourde (max 5 Mo)", false); return; }
+                    setUploadingPhoto(true);
+                    try {
+                      const sb = createClient();
+                      const ext = file.name.split(".").pop();
+                      const path = `studios/${studioId}/cover.${ext}`;
+                      const { error } = await sb.storage.from("studio-assets").upload(path, file, { upsert:true, contentType:file.type });
+                      if(error) throw error;
+                      const { data:{ publicUrl } } = sb.storage.from("studio-assets").getPublicUrl(path);
+                      setStudioForm(f=>({...f, cover_photo_url: publicUrl+"?t="+Date.now()}));
+                      showStudioToast("Photo ajoutée !");
+                    } catch(err) { showStudioToast("Erreur upload : "+err.message, false); }
+                    setUploadingPhoto(false);
+                  }}/>
+                </label>
               )}
             </div>
 
