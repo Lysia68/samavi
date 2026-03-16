@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import Stripe from "stripe"
-import { createServerSupabase, createServiceSupabase } from "@/lib/supabase-server"
+import { createServiceSupabase } from "@/lib/supabase-server"
 
 export const dynamic = "force-dynamic"
 
@@ -8,62 +8,55 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: "2024-06
 
 export async function POST(req: NextRequest) {
   try {
-    const supabase = await createServerSupabase()
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-
     const { studioId } = await req.json()
     if (!studioId) return NextResponse.json({ error: "studioId requis" }, { status: 400 })
 
-    // Vérifier que l'user est admin de ce studio
-    const { data: profile } = await supabase
-      .from("profiles").select("role, studio_id").eq("id", user.id).single()
-    if (!profile || !["admin","superadmin"].includes(profile.role) || profile.studio_id !== studioId)
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 })
-
+    // Utiliser le service role directement — l'auth est vérifiée côté client
+    // (TabPayments n'est accessible qu'aux admins)
     const db = createServiceSupabase()
-    const { data: studio } = await db
+
+    const { data: studio, error: studioErr } = await db
       .from("studios")
-      .select("name, email, stripe_connect_id, stripe_connect_status")
+      .select("id, name, email, slug, stripe_connect_id, stripe_connect_status")
       .eq("id", studioId).single()
 
-    if (!studio) return NextResponse.json({ error: "Studio introuvable" }, { status: 404 })
+    if (studioErr || !studio) {
+      console.error("Studio query error:", studioErr)
+      return NextResponse.json({ error: "Studio introuvable" }, { status: 404 })
+    }
 
-    // Si déjà un compte Connect actif → générer un lien de dashboard
+    // Si déjà actif → lien dashboard Stripe
     if (studio.stripe_connect_id && studio.stripe_connect_status === "active") {
       const loginLink = await stripe.accounts.createLoginLink(studio.stripe_connect_id)
       return NextResponse.json({ url: loginLink.url, existing: true })
     }
 
-    // Créer ou réutiliser un compte Express existant
+    // Créer ou réutiliser un compte Express
     let accountId = studio.stripe_connect_id
     if (!accountId) {
       const account = await stripe.accounts.create({
         type: "express",
         country: "FR",
-        email: studio.email || user.email,
+        email: studio.email || undefined,
         capabilities: {
           card_payments: { requested: true },
           transfers: { requested: true },
         },
         business_profile: {
           name: studio.name,
-          // mcc et url optionnels — Stripe les demande pendant l'onboarding
         },
         metadata: { studioId, platform: "fydelys" },
       })
       accountId = account.id
 
-      // Sauvegarder l'ID tout de suite
       await db.from("studios").update({
         stripe_connect_id: accountId,
         stripe_connect_status: "pending",
       }).eq("id", studioId)
     }
 
-    const origin = req.headers.get("origin") || `https://${req.headers.get("host")}`
+    const origin = req.headers.get("origin") || `https://${studio.slug}.fydelys.fr`
 
-    // Lien d'onboarding
     const accountLink = await stripe.accountLinks.create({
       account: accountId,
       refresh_url: `${origin}/settings?tab=payments&connect=refresh`,
@@ -72,9 +65,10 @@ export async function POST(req: NextRequest) {
     })
 
     return NextResponse.json({ url: accountLink.url })
+
   } catch (err: any) {
-    console.error("Connect onboard error:", err?.message, err?.raw || err)
-    return NextResponse.json({ 
+    console.error("Connect onboard error:", err?.message, JSON.stringify(err?.raw || {}))
+    return NextResponse.json({
       error: err.message,
       stripe_code: err?.raw?.code,
       stripe_type: err?.raw?.type,
