@@ -419,13 +419,10 @@ function AdherentView({ onSwitch, isMobile, studioName = "", impersonateUserId =
 
   // ── Paiement / Abonnement ───────────────────────────────────────────────────
   function AdhPayment() {
-    const [step, setStep] = useState("choose");
-    const [chosen, setChosen] = useState(null);
-    const [cardNum, setCardNum] = useState("");
-    const [expiry, setExpiry]   = useState("");
-    const [cvv, setCvv]         = useState("");
-    const [subs, setSubs]       = useState([]);
+    const [subs, setSubs]               = useState([]);
+    const [packs, setPacks]             = useState([]);
     const [subsLoading, setSubsLoading] = useState(true);
+    const [redirecting, setRedirecting] = useState(null);
 
     useEffect(() => {
       if (!studioId) return;
@@ -436,75 +433,97 @@ function AdherentView({ onSwitch, isMobile, studioName = "", impersonateUserId =
           setSubs(data?.length ? data.map(s => ({ ...s, color: s.color || "#B8936A" })) : SUBSCRIPTIONS_INIT);
           setSubsLoading(false);
         });
+      createClient().from("credits_packs")
+        .select("id, name, credits_amount, price")
+        .eq("studio_id", studioId).eq("active", true).order("price")
+        .then(({ data }) => { if (data?.length) setPacks(data); });
     }, [studioId]);
 
-    if(step==="done") return (
-      <div style={{ padding:p, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", minHeight:300 }}>
-        <div style={{ fontSize:56, marginBottom:16 }}>🎉</div>
-        <div style={{ fontSize:22, fontWeight:800, color:C.ok, marginBottom:8 }}>Paiement réussi !</div>
-        <div style={{ fontSize:14, color:C.textSoft, marginBottom:24, textAlign:"center" }}>Abonnement <strong>{chosen?.name}</strong> activé</div>
-        <Button sm onClick={()=>{setStep("choose");setChosen(null);}}>Retour</Button>
-      </div>
-    );
-
-    if(step==="stripe") return (
-      <div style={{ padding:p }}>
-        <div style={{ maxWidth:440, margin:"0 auto" }}>
-          <button onClick={()=>setStep("choose")} style={{ fontSize:13, color:C.textSoft, background:"none", border:"none", cursor:"pointer", marginBottom:16, display:"flex", alignItems:"center", gap:4 }}>
-            <IcoChevron s={14} c={C.textSoft}/> Retour
-          </button>
-          <Card>
-            <div style={{ padding:"12px 16px", background:C.accentLight, borderRadius:10, marginBottom:20, border:`1px solid ${C.accentBg}` }}>
-              <div style={{ fontSize:15, fontWeight:700, color:C.text }}>{chosen?.name}</div>
-              <div style={{ fontSize:24, fontWeight:800, color:C.accent }}>{chosen?.price} € <span style={{ fontSize:13, fontWeight:400, color:C.textSoft }}>/ {chosen?.period}</span></div>
-            </div>
-            <div style={{ display:"flex", flexDirection:"column", gap:14, marginBottom:18 }}>
-              <Field label="Numéro de carte" value={cardNum} onChange={v=>setCardNum(v.replace(/\D/g,"").slice(0,16))} placeholder="1234 5678 9012 3456"/>
-              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
-                <Field label="Expiration" value={expiry} onChange={v=>setExpiry(v)} placeholder="MM/AA"/>
-                <Field label="CVV" value={cvv} onChange={v=>setCvv(v.slice(0,3))} placeholder="123"/>
-              </div>
-            </div>
-            <div style={{ padding:"10px 14px", background:C.infoBg, borderRadius:8, display:"flex", gap:8, alignItems:"center", marginBottom:16 }}>
-              <span>🔒</span><span style={{ fontSize:13, color:C.info }}>Paiement sécurisé par Stripe</span>
-            </div>
-            <Button block onClick={()=>{ if(cardNum.length<16){showToast("Numéro de carte invalide",false);return;} setStep("done"); }}>
-              Payer {chosen?.price} €
-            </Button>
-          </Card>
-        </div>
-      </div>
-    );
+    const handleCheckout = async (type, id) => {
+      setRedirecting(id);
+      try {
+        const body = { studioId, memberId: me?.id, type };
+        if (type === "subscription") body.subscriptionId = id;
+        if (type === "credits")      body.creditsPackId  = id;
+        const res = await fetch("/api/connect/checkout", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        });
+        const { url, error } = await res.json();
+        if (error) { showToast(error, false); setRedirecting(null); return; }
+        if (url) window.location.href = url;
+      } catch(e) { showToast("Erreur de paiement", false); setRedirecting(null); }
+    };
 
     return (
       <div style={{ padding:p }}>
-        {me?.credits > 0 && (
-          <Card style={{ marginBottom:20, borderTop:`3px solid ${C.accent}` }}>
-            <div style={{ fontSize:14, fontWeight:700, color:C.textMid, marginBottom:12 }}>Crédits actuels</div>
+        {/* Crédits actuels */}
+        {me?.credits_total > 0 && (
+          <Card style={{ marginBottom:16, borderLeft:`3px solid ${me.credits<=0?C.warn:C.accent}` }}>
             <div style={{ display:"flex", alignItems:"center", gap:14 }}>
-              <IcoCreditCard2 s={28} c={C.accent}/>
-              <div>
-                <div style={{ fontSize:15, fontWeight:700, color:C.text }}>{me.credits} crédits restants</div>
-                <div style={{ fontSize:13, color:C.textSoft }}>sur {me.credits_total} au total</div>
+              <IcoCreditCard2 s={24} c={me.credits<=0?C.warn:C.accent}/>
+              <div style={{ flex:1 }}>
+                <div style={{ fontSize:14, fontWeight:700, color:C.text }}>
+                  {me.credits<=0 ? "⛔ Plus de crédits" : `${me.credits} crédit${me.credits>1?"s":""} restant${me.credits>1?"s":""}`}
+                </div>
+                <div style={{ height:5, background:C.bgDeep, borderRadius:3, marginTop:5, overflow:"hidden" }}>
+                  <div style={{ height:"100%", width:`${Math.min((me.credits/me.credits_total)*100,100)}%`, background:me.credits<=0?C.warn:C.accent, borderRadius:3, transition:"width .4s" }}/>
+                </div>
               </div>
+              <div style={{ fontSize:12, color:C.textMuted, flexShrink:0 }}>{me.credits}/{me.credits_total}</div>
             </div>
           </Card>
         )}
-        <div style={{ fontSize:16, fontWeight:700, color:C.text, marginBottom:16 }}>Changer d'abonnement</div>
-        <div style={{ display:"grid", gridTemplateColumns:`repeat(${isMobile?1:2},1fr)`, gap:14 }}>
-          {subsLoading ? <div style={{ color:C.textMuted, fontSize:14 }}>Chargement…</div> : subs.map(sub=>(
-            <div key={sub.id} onClick={()=>{setChosen(sub);setStep("stripe");}}
-              style={{ background:C.surface, borderRadius:12, border:`2px solid ${sub.popular?C.accent:C.border}`, padding:"18px 16px", cursor:"pointer", position:"relative" }}
-              onMouseEnter={e=>{e.currentTarget.style.borderColor=C.accent;}}
-              onMouseLeave={e=>{e.currentTarget.style.borderColor=sub.popular?C.accent:C.border;}}>
-              {sub.popular && <div style={{ position:"absolute", top:-1, right:14, background:C.accent, color:"white", fontSize:10, fontWeight:700, padding:"2px 8px", borderRadius:"0 0 6px 6px" }}>Populaire</div>}
-              <div style={{ fontSize:16, fontWeight:700, color:C.text, marginBottom:4 }}>{sub.name}</div>
-              <div style={{ fontSize:26, fontWeight:800, color:C.accent, lineHeight:1, marginBottom:8 }}>
-                {sub.price} €<span style={{ fontSize:14, fontWeight:400, color:C.textSoft }}> / {sub.period}</span>
+
+        {/* Abonnements */}
+        <div style={{ fontSize:15, fontWeight:700, color:C.text, marginBottom:12 }}>📋 Abonnements</div>
+        <div style={{ display:"grid", gridTemplateColumns:`repeat(${isMobile?1:2},1fr)`, gap:12, marginBottom:24 }}>
+          {subsLoading
+            ? <div style={{ color:C.textMuted, fontSize:14 }}>Chargement…</div>
+            : subs.filter(s=>s.price>0).map(sub => (
+              <div key={sub.id}
+                style={{ background:C.surface, borderRadius:12, border:`2px solid ${sub.popular?C.accent:C.border}`, padding:"18px 16px", position:"relative" }}>
+                {sub.popular && <div style={{ position:"absolute", top:-1, right:14, background:C.accent, color:"white", fontSize:10, fontWeight:700, padding:"2px 8px", borderRadius:"0 0 6px 6px" }}>Populaire</div>}
+                <div style={{ fontSize:15, fontWeight:700, color:C.text, marginBottom:4 }}>{sub.name}</div>
+                <div style={{ fontSize:24, fontWeight:800, color:C.accent, lineHeight:1, marginBottom:12 }}>
+                  {sub.price} €<span style={{ fontSize:13, fontWeight:400, color:C.textSoft }}> / {sub.period||"mois"}</span>
+                </div>
+                <Button sm block onClick={()=>handleCheckout("subscription", sub.id)} disabled={redirecting===sub.id}>
+                  {redirecting===sub.id ? "Redirection…" : "Souscrire →"}
+                </Button>
               </div>
-              <Button sm>Choisir →</Button>
+            ))
+          }
+          {!subsLoading && subs.filter(s=>s.price>0).length===0 && (
+            <div style={{ color:C.textMuted, fontSize:13, fontStyle:"italic" }}>Aucun abonnement disponible.</div>
+          )}
+        </div>
+
+        {/* Packs crédits */}
+        {packs.length > 0 && (
+          <>
+            <div style={{ fontSize:15, fontWeight:700, color:C.text, marginBottom:12 }}>🎟 Packs de crédits</div>
+            <div style={{ display:"grid", gridTemplateColumns:`repeat(${isMobile?1:2},1fr)`, gap:12 }}>
+              {packs.map(pack => (
+                <div key={pack.id} style={{ background:C.surface, borderRadius:12, border:`1.5px solid ${C.border}`, padding:"16px" }}>
+                  <div style={{ fontSize:15, fontWeight:700, color:C.text, marginBottom:2 }}>{pack.name}</div>
+                  <div style={{ fontSize:13, color:C.textSoft, marginBottom:10 }}>
+                    {pack.credits_amount} cours · {pack.price} €
+                  </div>
+                  <Button sm block onClick={()=>handleCheckout("credits", pack.id)} disabled={redirecting===pack.id}>
+                    {redirecting===pack.id ? "Redirection…" : `Acheter — ${pack.price} €`}
+                  </Button>
+                </div>
+              ))}
             </div>
-          ))}
+          </>
+        )}
+
+        {/* Note sécurité */}
+        <div style={{ marginTop:20, padding:"10px 14px", background:C.infoBg, borderRadius:8, display:"flex", gap:8, alignItems:"center" }}>
+          <span>🔒</span>
+          <span style={{ fontSize:12, color:C.info }}>Paiement sécurisé par Stripe — vous serez redirigé vers la page de paiement.</span>
         </div>
       </div>
     );
