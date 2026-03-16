@@ -81,6 +81,64 @@ function InviteCoachModal({ C, studioSlug, onClose, onSubmit }) {
   );
 }
 
+// ── Composant aperçu site vitrine — défini HORS de Settings pour éviter React error #300
+function VitrinPreview({ name, city, description, cover, accent, slug }) {
+  const borderSoft = "#EDE4D8";
+  const textMuted  = "#B0A090";
+  const text       = "#2A1F14";
+  const accentBg   = accent + "18";
+  return (
+    <div style={{ background:"#fff", border:"1px solid #DDD5C8", borderRadius:12, marginBottom:14, overflow:"hidden" }}>
+      <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"12px 16px", borderBottom:"1px solid #EDE4D8" }}>
+        <div style={{ fontSize:13, fontWeight:700, color:text }}>Aperçu du site</div>
+        {slug && (
+          <a href={`https://${slug}.fydelys.fr/?preview=1`} target="_blank" rel="noopener noreferrer"
+            style={{ fontSize:11, fontWeight:700, color:accent, textDecoration:"none" }}>
+            Ouvrir ↗
+          </a>
+        )}
+      </div>
+      <div style={{ position:"relative", overflow:"hidden" }}>
+        {cover
+          ? <img src={cover} alt="" style={{ width:"100%", height:140, objectFit:"cover", display:"block", filter:"brightness(.45)" }}/>
+          : <div style={{ height:140, background:"#2A1F14" }}/>
+        }
+        <div style={{ position:"absolute", inset:0, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:"16px 24px", textAlign:"center", gap:8 }}>
+          <div style={{ fontSize:18, fontWeight:800, color:"#fff", letterSpacing:-0.3 }}>{name||"Nom du studio"}</div>
+          {city && <div style={{ fontSize:12, color:"rgba(255,255,255,.65)" }}>📍 {city}</div>}
+          {description && (
+            <div style={{ fontSize:12, color:"rgba(255,255,255,.8)", lineHeight:1.5, maxWidth:340 }}>
+              {description.slice(0,100)}{description.length>100?"…":""}
+            </div>
+          )}
+          <div style={{ marginTop:4, padding:"6px 16px", borderRadius:8, background:accent, color:"#fff", fontSize:12, fontWeight:700 }}>
+            Je réserve →
+          </div>
+        </div>
+      </div>
+      <div style={{ padding:"12px 16px" }}>
+        <div style={{ fontSize:12, fontWeight:700, color:textMuted, marginBottom:8, textTransform:"uppercase", letterSpacing:.5 }}>📅 Prochaines séances</div>
+        {[
+          { icon:"🧘", name:"Yoga Hatha", time:"09:00", duration:60, places:5 },
+          { icon:"💪", name:"Pilates",    time:"11:00", duration:45, places:2 },
+        ].map((s,i) => (
+          <div key={i} style={{ display:"flex", alignItems:"center", gap:10, padding:"8px 0", borderBottom:i===0?`1px solid ${borderSoft}`:"none" }}>
+            <div style={{ width:36, height:36, borderRadius:8, background:accentBg, display:"flex", alignItems:"center", justifyContent:"center", fontSize:16, flexShrink:0 }}>{s.icon}</div>
+            <div style={{ flex:1 }}>
+              <div style={{ fontSize:13, fontWeight:700, color:text }}>{s.name}</div>
+              <div style={{ fontSize:11, color:textMuted }}>{s.time} · {s.duration} min</div>
+            </div>
+            <div style={{ fontSize:12, fontWeight:700, color:accent }}>{s.places} places</div>
+          </div>
+        ))}
+        <div style={{ fontSize:11, color:textMuted, textAlign:"center", marginTop:8, fontStyle:"italic" }}>
+          Les vraies séances s'afficheront sur le site publié.
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function Settings({ isMobile, onImpersonate }) {
   const { studioName, studioSlug, userName, userEmail, planName, membersCount, userRole, studioId, discs } = useContext(AppCtx);
   const p = isMobile?12:28;
@@ -471,62 +529,6 @@ function Settings({ isMobile, onImpersonate }) {
   );
 
   // ── Tab: Studio settings ──────────────────────────────────────────────────
-  // Composant aperçu site vitrine — défini hors TabStudio pour éviter les erreurs de hooks
-  const VitrinPreview = ({ name, city, description, cover, accent, slug }) => {
-    const accentBg = accent + "18";
-    return (
-      <Card noPad style={{ marginBottom:14, overflow:"hidden" }}>
-        <SectionHead action={
-          slug && (
-            <a href={`https://${slug}.fydelys.fr/?preview=1`} target="_blank" rel="noopener noreferrer"
-              style={{ fontSize:11, fontWeight:700, color:accent, textDecoration:"none", display:"flex", alignItems:"center", gap:4 }}>
-              Ouvrir ↗
-            </a>
-          )
-        }>Aperçu du site</SectionHead>
-
-        <div style={{ position:"relative", overflow:"hidden", minHeight:120 }}>
-          {cover
-            ? <img src={cover} alt="" style={{ width:"100%", height:140, objectFit:"cover", display:"block", filter:"brightness(.45)" }}/>
-            : <div style={{ height:140, background:"#2A1F14" }}/>
-          }
-          <div style={{ position:"absolute", inset:0, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:"16px 24px", textAlign:"center", gap:8 }}>
-            <div style={{ fontSize:18, fontWeight:800, color:"#fff", letterSpacing:-0.3 }}>{name||"Nom du studio"}</div>
-            {city && <div style={{ fontSize:12, color:"rgba(255,255,255,.65)" }}>📍 {city}</div>}
-            {description && (
-              <div style={{ fontSize:12, color:"rgba(255,255,255,.8)", lineHeight:1.5, maxWidth:340 }}>
-                {description.slice(0,100)}{description.length>100?"…":""}
-              </div>
-            )}
-            <div style={{ marginTop:4, padding:"6px 16px", borderRadius:8, background:accent, color:"#fff", fontSize:12, fontWeight:700 }}>
-              Je réserve →
-            </div>
-          </div>
-        </div>
-
-        <div style={{ padding:"12px 16px" }}>
-          <div style={{ fontSize:12, fontWeight:700, color:C.textMuted, marginBottom:8, textTransform:"uppercase", letterSpacing:.5 }}>📅 Prochaines séances</div>
-          {[
-            { icon:"🧘", name:"Yoga Hatha", time:"09:00", duration:60, places:5 },
-            { icon:"💪", name:"Pilates",    time:"11:00", duration:45, places:2 },
-          ].map((s,i) => (
-            <div key={i} style={{ display:"flex", alignItems:"center", gap:10, padding:"8px 0", borderBottom:i===0?`1px solid ${C.borderSoft}`:"none" }}>
-              <div style={{ width:36, height:36, borderRadius:8, background:accentBg, display:"flex", alignItems:"center", justifyContent:"center", fontSize:16, flexShrink:0 }}>{s.icon}</div>
-              <div style={{ flex:1 }}>
-                <div style={{ fontSize:13, fontWeight:700, color:C.text }}>{s.name}</div>
-                <div style={{ fontSize:11, color:C.textMuted }}>{s.time} · {s.duration} min</div>
-              </div>
-              <div style={{ fontSize:12, fontWeight:700, color:accent }}>{s.places} places</div>
-            </div>
-          ))}
-          <div style={{ fontSize:11, color:C.textMuted, textAlign:"center", marginTop:8, fontStyle:"italic" }}>
-            Les vraies séances s'afficheront sur le site publié.
-          </div>
-        </div>
-      </Card>
-    );
-  };
-
   const TabStudio = () => {
     const SI = ({ label, fkey, type="text", placeholder="" }) => (
       <div>
@@ -571,10 +573,10 @@ function Settings({ isMobile, onImpersonate }) {
 
         <Card noPad style={{ marginBottom:14 }}>
           <SectionHead>Paramètres de réservation</SectionHead>
-          <div style={{ padding:"16px 18px", display:"grid", gridTemplateColumns:isMobile?"1fr":"1fr 1fr 1fr", gap:12 }}>
-            <SI label="Délai annulation (h)" fkey="cancel_delay_hours" type="number"/>
-            <SI label="Ouverture résa (j avant)" fkey="booking_days_ahead" type="number"/>
-            <SI label="Liste d'attente max" fkey="waitlist_max" type="number"/>
+          <div style={{ padding:"16px 18px", display:"grid", gridTemplateColumns:isMobile?"1fr 1fr":"1fr 1fr 1fr", gap:12 }}>
+            <SI label="Annulation (h avant)" fkey="cancel_delay_hours" type="number"/>
+            <SI label="Résa ouverte (j avant)" fkey="booking_days_ahead" type="number"/>
+            <SI label="Attente max" fkey="waitlist_max" type="number"/>
           </div>
           <div style={{ padding:"0 18px 16px", borderTop:`1px solid ${C.borderSoft}`, paddingTop:16 }}>
             <div style={{ fontSize:11, fontWeight:800, color:C.accent, textTransform:"uppercase", letterSpacing:.6, marginBottom:12 }}>🔔 Notifications</div>
