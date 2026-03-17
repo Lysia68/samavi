@@ -321,8 +321,10 @@ function SuperAdminView({ onSwitch, isMobile, onSignOut, onImpersonateStudio }) 
       supabase.from("profiles")
         .select("studio_id, first_name, last_name, phone, is_coach, role")
         .eq("role", "admin")
-    ]).then(([{ data: studiosData, error }, { data: profilesData }]) => {
+    ]).then(([{ data: studiosData, error }, { data: profilesData, error: profErr }]) => {
       if (error) { console.error("Studios load error:", error); setLoading(false); return; }
+      console.log("[SA] studios:", studiosData?.length, "| profiles:", profilesData?.length, "| profErr:", profErr?.message);
+      if (profilesData?.length) console.log("[SA] sample profile:", JSON.stringify(profilesData[0]));
       const mois = ["Jan","Fév","Mar","Avr","Mai","Jun","Jul","Aoû","Sep","Oct","Nov","Déc"];
       const profileMap = {};
       (profilesData || []).forEach((p) => { if (p.studio_id) profileMap[p.studio_id] = p; });
