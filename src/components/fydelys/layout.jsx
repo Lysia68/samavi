@@ -43,7 +43,16 @@ const NAV = [
   {key:"aide",          label:"Aide"},
 ];
 
-function Sidebar({ active, onNav, studioName = "Mon studio", planName = "Essentiel", membersCount = 0, userName = "", userRole = "Admin" }) {
+function Sidebar({ active, onNav, studioName = "Mon studio", planName = "Essentiel", membersCount = 0, userName = "", userRole = "Admin", trialEndsAt = null, billingStatus = "active" }) {
+  const TRIAL_DAYS = 15;
+  const trialDaysLeft = trialEndsAt
+    ? Math.max(0, Math.ceil((new Date(trialEndsAt).getTime() - Date.now()) / 86400000))
+    : null;
+  const isTrialing  = billingStatus === "trialing" && trialDaysLeft !== null;
+  const isPastDue   = billingStatus === "past_due";
+  const trialPct    = isTrialing ? Math.max(0, Math.min(100, Math.round(((TRIAL_DAYS - trialDaysLeft) / TRIAL_DAYS) * 100))) : 0;
+  const trialColor  = trialDaysLeft !== null && trialDaysLeft <= 3 ? "#E05A38" : trialDaysLeft !== null && trialDaysLeft <= 7 ? "#C4922A" : "#4E8A58";
+
   return (
     <aside style={{ width:220, background:C.surface, borderRight:`1.5px solid ${C.border}`, minHeight:"100vh", display:"flex", flexDirection:"column", flexShrink:0 }}>
       <div style={{ padding:"24px 20px 18px" }}>
@@ -57,6 +66,35 @@ function Sidebar({ active, onNav, studioName = "Mon studio", planName = "Essenti
           <div style={{ fontSize:12, color:C.textSoft }}>{planName ? planName.charAt(0).toUpperCase()+planName.slice(1) : "Essentiel"} · {membersCount} membre{membersCount!==1?"s":""}</div>
         </div>
       </div>
+      {/* Barre de progression essai */}
+      {isTrialing && (
+        <div style={{ margin:"0 12px 10px", padding:"10px 12px", background:trialDaysLeft<=3?"#FEF0EC":"#FDFAF5", borderRadius:9, border:`1px solid ${trialDaysLeft<=3?"#F5C2B5":"rgba(196,146,42,.25)"}` }}>
+          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:6 }}>
+            <div style={{ fontSize:11, fontWeight:700, color:trialColor }}>
+              {trialDaysLeft > 0 ? `⏳ ${trialDaysLeft}j d'essai restant${trialDaysLeft>1?"s":""}` : "⚠ Essai terminé"}
+            </div>
+            <div style={{ fontSize:10, color:C.textMuted }}>{TRIAL_DAYS - trialDaysLeft}/{TRIAL_DAYS}j</div>
+          </div>
+          <div style={{ height:5, borderRadius:3, background:"#EAE4DA", overflow:"hidden" }}>
+            <div style={{ height:"100%", width:`${trialPct}%`, background:trialColor, borderRadius:3, transition:"width .3s" }}/>
+          </div>
+          <a href="/billing" style={{ display:"block", marginTop:7, fontSize:11, fontWeight:700, color:"#fff", background:trialColor, padding:"5px 0", borderRadius:6, textAlign:"center", textDecoration:"none" }}>
+            Activer mon abonnement
+          </a>
+        </div>
+      )}
+
+      {/* Bandeau période d'attente */}
+      {isPastDue && (
+        <div style={{ margin:"0 12px 10px", padding:"10px 12px", background:"#FEF0EC", borderRadius:9, border:"1px solid #F5C2B5" }}>
+          <div style={{ fontSize:11, fontWeight:700, color:"#E05A38", marginBottom:5 }}>⚠ Paiement en attente</div>
+          <div style={{ fontSize:11, color:C.textSoft, marginBottom:7, lineHeight:1.5 }}>Votre abonnement est en attente de paiement. Régularisez pour continuer.</div>
+          <a href="/billing" style={{ display:"block", fontSize:11, fontWeight:700, color:"#fff", background:"#E05A38", padding:"5px 0", borderRadius:6, textAlign:"center", textDecoration:"none" }}>
+            Régulariser
+          </a>
+        </div>
+      )}
+
       <nav style={{ flex:1 }}>
         {NAV.map(item => (
           <button key={item.key} onClick={()=>onNav(item.key)}

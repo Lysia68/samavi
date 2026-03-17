@@ -232,7 +232,7 @@ const PAGE_TITLES = {
           ::-webkit-scrollbar-thumb { background:#D0C4B8; border-radius:3px; }
           ::-webkit-scrollbar-track { background:transparent; }
         `}</style>
-        {!isMobile && <Sidebar active={page} onNav={handleNav} studioName={activeStudioName} planName={planName} membersCount={dynamicMembersCount !== null ? dynamicMembersCount : membersCount} userName={userName} userRole={userRole}/>}
+        {!isMobile && <Sidebar active={page} onNav={handleNav} studioName={activeStudioName} planName={planName} membersCount={dynamicMembersCount !== null ? dynamicMembersCount : membersCount} userName={userName} userRole={userRole} trialEndsAt={trialEndsAt} billingStatus={billingStatus}/>}
         <div style={{ flex:1, display:"flex", flexDirection:"column", minWidth:0, paddingBottom:isMobile?60:0 }}>
           <TopBar title={PAGE_TITLES[page]} isMobile={isMobile} onSignOut={onSignOut} isSuperAdmin={initialRole==="superadmin" && !isImpersonatingAdmin} studioName={activeStudioName}/>
           {showTrialBanner && (
