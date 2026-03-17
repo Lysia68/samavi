@@ -312,19 +312,11 @@ function SuperAdminView({ onSwitch, isMobile, onSignOut, onImpersonateStudio }) 
 
   // Charger les vrais studios depuis Supabase
   useEffect(() => {
-    const supabase = createClient();
-    // Deux queries séparées — le join FK est instable selon la version Supabase
-    Promise.all([
-      supabase.from("studios")
-        .select("id, name, slug, city, address, email, phone, status, billing_status, plan_slug, created_at, notes")
-        .order("created_at", { ascending: false }),
-      supabase.from("profiles")
-        .select("studio_id, first_name, last_name, phone, is_coach, role")
-        .eq("role", "admin")
-    ]).then(([{ data: studiosData, error }, { data: profilesData, error: profErr }]) => {
+    // Utiliser l'API service role pour contourner la RLS sur profiles
+    fetch("/api/sa/studios")
+      .then(r => r.json())
+      .then(({ studios: studiosData, profiles: profilesData, error }) => {
       if (error) { console.error("Studios load error:", error); setLoading(false); return; }
-      console.log("[SA] studios:", studiosData?.length, "| profiles:", profilesData?.length, "| profErr:", profErr?.message);
-      if (profilesData?.length) console.log("[SA] sample profile:", JSON.stringify(profilesData[0]));
       const mois = ["Jan","Fév","Mar","Avr","Mai","Jun","Jul","Aoû","Sep","Oct","Nov","Déc"];
       const profileMap = {};
       (profilesData || []).forEach((p) => { if (p.studio_id) profileMap[p.studio_id] = p; });
@@ -354,7 +346,7 @@ function SuperAdminView({ onSwitch, isMobile, onSignOut, onImpersonateStudio }) 
       });
       setTenants(mapped);
       setLoading(false);
-    });
+    }).catch(e => { console.error("SA load error:", e); setLoading(false); });
   }, []);
 
   const filtered = tenants
