@@ -16,7 +16,7 @@ async function checkSA() {
 export async function GET() {
   const db = await checkSA()
   if (!db) return NextResponse.json({ error: "Accès refusé" }, { status: 403 })
-  const { data: plans } = await db.from("plans").select("slug, name, price, stripe_price_id").order("price")
+  const { data: plans } = await db.from("plans").select("slug, name, price_monthly, stripe_price_id").order("price_monthly")
   return NextResponse.json({ plans: plans || [] })
 }
 
@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
 
   for (const plan of plans) {
     await db.from("plans").upsert({
-      slug: plan.slug, name: plan.name, price: plan.price,
+      slug: plan.slug, name: plan.name, price_monthly: plan.price,
       stripe_price_id: plan.stripe_price_id || null,
     }, { onConflict: "slug" })
   }

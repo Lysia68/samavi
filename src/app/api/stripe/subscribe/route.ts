@@ -45,7 +45,7 @@ export async function POST(req: NextRequest) {
       })
       priceId = stripePrice.id
       // Sauvegarder pour la prochaine fois
-      await supabase.from("plans").upsert({ slug: planSlug, name: planInfo.name, price: planInfo.price, stripe_price_id: priceId }, { onConflict: "slug" })
+      await supabase.from("plans").upsert({ slug: planSlug, name: planInfo.name, price_monthly: planInfo.price, stripe_price_id: priceId }, { onConflict: "slug" })
     }
 
     const { data: studio } = await supabase

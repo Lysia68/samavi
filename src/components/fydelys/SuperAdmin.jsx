@@ -330,9 +330,9 @@ function SuperAdminView({ onSwitch, isMobile, onSignOut, onImpersonateStudio }) 
   const [filter, setFilter]   = useState("tous");
   const [modal, setModal]     = useState(null);
   const [plans, setPlans]     = useState([
-    { slug:"essentiel", name:"Essentiel", price:9,  stripe_price_id:"" },
-    { slug:"standard",  name:"Standard",  price:29, stripe_price_id:"" },
-    { slug:"pro",       name:"Pro",       price:69, stripe_price_id:"" },
+    { slug:"essentiel", name:"Essentiel", price:9,  price_monthly:9,  stripe_price_id:"" },
+    { slug:"standard",  name:"Standard",  price:29, price_monthly:29, stripe_price_id:"" },
+    { slug:"pro",       name:"Pro",       price:69, price_monthly:69, stripe_price_id:"" },
   ]);
   const [savingPlans, setSavingPlans] = useState(false);
   const [showPlans, setShowPlans]     = useState(false);
