@@ -52,6 +52,7 @@ const PAGE_TITLES = {
   const [role, setRole] = useState(initialRole);
   const [impersonating, setImpersonating] = useState(null);
   const [impersonatedCoach, setImpersonatedCoach] = useState({ name:"", disciplines:[] });
+  const [impersonatedStudioName, setImpersonatedStudioName] = useState("");
 
   const startImpersonate = React.useCallback(async (asRole, userId=null, nameHint="") => {
     if (asRole === "coach" && userId) {
@@ -86,7 +87,8 @@ const PAGE_TITLES = {
     if (!impersonating) return;
     setRole(impersonating.fromRole);
     setImpersonating(null);
-    setSharedStudioId(propStudioId || null); // Réinitialiser au retour SA
+    setSharedStudioId(propStudioId || null);
+    setImpersonatedStudioName("");
   }, [impersonating, propStudioId]);
 
   const startImpersonateStudio = React.useCallback(async (studioSlugTarget) => {
@@ -97,7 +99,10 @@ const PAGE_TITLES = {
       const res = await fetch("/api/sa/studios");
       const { studios } = await res.json();
       const target = (studios || []).find((s: any) => s.slug === studioSlugTarget);
-      if (target) setSharedStudioId(target.id);
+      if (target) {
+        setSharedStudioId(target.id);
+        setImpersonatedStudioName(target.name || studioSlugTarget);
+      }
     } catch(e) { console.error("impersonate studioId load error", e); }
   }, []);
 
@@ -174,8 +179,9 @@ const PAGE_TITLES = {
       </div>
     </>
   );
+  const activeStudioName = (impersonating?.as === "admin" && impersonatedStudioName) ? impersonatedStudioName : studioName;
   const appCtxValue = {
-    studioName, studioSlug, userName, planName, membersCount,
+    studioName: activeStudioName, studioSlug, userName, planName, membersCount,
     userRole, userEmail: "", discs, setDiscs,
     studioId: sharedStudioId, setStudioId: setSharedStudioId,
   };
@@ -203,7 +209,7 @@ const PAGE_TITLES = {
     <AppCtx.Provider value={appCtxValue}>
       {isImpersonatingAdmin && (
         <div style={{ position:"fixed", top:0, left:0, right:0, zIndex:9999, background:"#4C1D95", color:"white", padding:"8px 16px", display:"flex", alignItems:"center", justifyContent:"space-between", gap:12, fontSize:13, fontWeight:600 }}>
-          <span>👁 Vue Studio : {studioName || studioSlug}</span>
+          <span>👁 Vue Studio : {activeStudioName || studioSlug}</span>
           <button onClick={stopImpersonate} style={{ background:"rgba(255,255,255,.15)", border:"1px solid rgba(255,255,255,.3)", color:"white", padding:"4px 14px", borderRadius:6, cursor:"pointer", fontWeight:700, fontSize:12 }}>
             ← Retour Super Admin
           </button>
@@ -220,9 +226,9 @@ const PAGE_TITLES = {
           ::-webkit-scrollbar-thumb { background:#D0C4B8; border-radius:3px; }
           ::-webkit-scrollbar-track { background:transparent; }
         `}</style>
-        {!isMobile && <Sidebar active={page} onNav={handleNav} studioName={studioName} planName={planName} membersCount={membersCount} userName={userName} userRole={userRole}/>}
+        {!isMobile && <Sidebar active={page} onNav={handleNav} studioName={activeStudioName} planName={planName} membersCount={membersCount} userName={userName} userRole={userRole}/>}
         <div style={{ flex:1, display:"flex", flexDirection:"column", minWidth:0, paddingBottom:isMobile?60:0 }}>
-          <TopBar title={PAGE_TITLES[page]} isMobile={isMobile} onSignOut={onSignOut} isSuperAdmin={initialRole==="superadmin"} studioName={studioName}/>
+          <TopBar title={PAGE_TITLES[page]} isMobile={isMobile} onSignOut={onSignOut} isSuperAdmin={initialRole==="superadmin"} studioName={activeStudioName}/>
           {showTrialBanner && (
             <div style={{ background:trialDaysLeft<=3?"#F5EAE6":"#FDF4E3", borderBottom:`1px solid ${trialDaysLeft<=3?"#F5C2B5":"rgba(196,146,42,.25)"}`, padding:"10px 20px", display:"flex", alignItems:"center", justifyContent:"space-between", gap:12, flexWrap:"wrap" }}>
               <div style={{ fontSize:13, color:trialDaysLeft<=3?"#A85030":"#C4922A", fontWeight:600 }}>

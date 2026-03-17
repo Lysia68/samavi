@@ -17,13 +17,27 @@ function Subscriptions({ isMobile }) {
   const [editId, setEditId] = useState(null);
   const [nSub, setNSub] = useState({ name:"", price:"", period:"mois", description:"" });
   const [editData, setEditData] = useState({});
+  const [stripeEnabled, setStripeEnabled] = useState(false);
   const p = isMobile?12:28;
+
+  useEffect(() => {
+    if (!studioId) return;
+    // Charger le flag stripe_connect_enabled du studio
+    createClient().from("studios")
+      .select("stripe_connect_enabled, payment_mode")
+      .eq("id", studioId).single()
+      .then(({ data }) => {
+        // Product/Price IDs visibles seulement en mode "direct" (le studio gère ses propres produits Stripe)
+        // En mode "connect", Fydelys crée les prix automatiquement via l'API Connect
+        setStripeEnabled(data?.payment_mode === "direct");
+      });
+  }, [studioId]);
 
   useEffect(() => {
     if (!studioId) return;
     setDbLoading(true);
     createClient().from("subscriptions")
-      .select("id, name, price, period, description, popular, color")
+      .select("id, name, price, period, description, popular, color, stripe_price_id, stripe_product_id")
       .eq("studio_id", studioId).eq("active", true).order("price")
       .then(({ data, error }) => {
         if (error) { console.error("load subs", error); setDbLoading(false); return; }
@@ -101,7 +115,7 @@ function Subscriptions({ isMobile }) {
                     <Field label="Période" value={editData.period} onChange={v=>setEditData({...editData,period:v})} opts={["mois","séance","carnet","trimestre","année"]}/>
                   </div>
                   <div><FieldLabel>Description</FieldLabel><input value={editData.description} onChange={e=>setEditData({...editData,description:e.target.value})} style={{ width:"100%", padding:"8px 11px", border:`1.5px solid ${C.border}`, borderRadius:8, fontSize:14, outline:"none", boxSizing:"border-box", color:C.text, background:C.surfaceWarm }} onFocus={e=>e.target.style.borderColor=C.accent} onBlur={e=>e.target.style.borderColor=C.border}/></div>
-                  <div style={{ borderTop:`1px solid ${C.borderSoft}`, paddingTop:10 }}>
+                  {stripeEnabled && <div style={{ borderTop:`1px solid ${C.borderSoft}`, paddingTop:10 }}>
                     <div style={{ fontSize:11, fontWeight:700, color:C.textMuted, textTransform:"uppercase", letterSpacing:.5, marginBottom:8 }}>🔗 Stripe (optionnel)</div>
                     <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
                       <div>
@@ -127,7 +141,7 @@ function Subscriptions({ isMobile }) {
                         ⚠ Ce sont les IDs de votre compte Stripe, pas ceux de Fydelys.
                       </span>
                     </div>
-                  </div>
+                  </div>}
                   <label style={{ display:"flex", alignItems:"center", gap:8, cursor:"pointer", fontSize:13, color:C.text }}>
                     <input type="checkbox" checked={editData.popular||false} onChange={e=>setEditData({...editData,popular:e.target.checked})} style={{ width:15, height:15, cursor:"pointer" }}/>
                     Marquer comme populaire
