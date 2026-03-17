@@ -53,8 +53,8 @@ const validateSlug = (s) => /^[a-z0-9]+$/.test(s);
 
 function TenantFormModal({ editing, setModal, showToast, setTenants, createClient, FYDELYS_PLANS }) {
   const emptyF = editing
-    ? { name:editing.name, slug:editing.slug||"", email:editing.email||"", firstName:editing.firstName||"", lastName:editing.lastName||"", phone:editing.phone||"", city:editing.city||"", zip:editing.zip||"", address:editing.address||"", plan:editing.plan||"Essentiel", type:editing.type||"Yoga", notes:editing.notes||"", isCoach:editing.isCoach||false }
-    : { name:"", slug:"", email:"", firstName:"", lastName:"", phone:"", city:"", zip:"", address:"", plan:"Essentiel", type:"Yoga", notes:"", isCoach:false };
+    ? { name:editing.name, slug:editing.slug||"", email:editing.email||"", firstName:editing.firstName||"", lastName:editing.lastName||"", phone:editing.phone||"", city:editing.city||"", zip:editing.zip||"", address:editing.address||"", plan:editing.plan||"Essentiel", type:editing.type||"Yoga", notes:editing.notes||"", isCoach:editing.isCoach||false, paymentMode:editing.paymentMode||"none" }
+    : { name:"", slug:"", email:"", firstName:"", lastName:"", phone:"", city:"", zip:"", address:"", plan:"Essentiel", type:"Yoga", notes:"", isCoach:false, paymentMode:"none" };
   const [f, setF] = useState(emptyF);
   const [step, setStep] = useState(1);
   const [errors, setErrors] = useState({});
@@ -101,6 +101,8 @@ function TenantFormModal({ editing, setModal, showToast, setTenants, createClien
       const { error } = await supabase.from("studios").update({
         name: f.name, slug: f.slug, city: f.city, address: f.address || null,
         phone: f.phone || null, email: f.email, notes: f.notes || null,
+        payment_mode: f.paymentMode || "none",
+        stripe_connect_enabled: f.paymentMode === "connect",
       }).eq("id", editing.id);
       if(error) { showToast(`Erreur : ${error.message}`, false); return; }
 
@@ -127,6 +129,8 @@ function TenantFormModal({ editing, setModal, showToast, setTenants, createClien
           address: f.address||null, type: f.type, email: f.email, phone: f.phone||null,
           firstName: f.firstName, lastName: f.lastName, isCoach: f.isCoach||false,
           plan: f.plan,
+          payment_mode: f.paymentMode || "none",
+          stripe_connect_enabled: f.paymentMode === "connect",
         }),
       });
       const result = await res.json();
@@ -249,6 +253,27 @@ function TenantFormModal({ editing, setModal, showToast, setTenants, createClien
                 </div>
               ))}
             </div>
+            {/* Switch Stripe Connect */}
+            <div style={{padding:"14px 16px",background:"rgba(124,58,237,.04)",borderRadius:10,border:"1px solid rgba(124,58,237,.2)"}}>
+              <div style={{fontSize:12,fontWeight:700,color:"#7C3AED",marginBottom:10,textTransform:"uppercase",letterSpacing:.5}}>⚡ Paiement en ligne</div>
+              <div style={{display:"flex",flexDirection:"column",gap:8}}>
+                {[
+                  {key:"none",    label:"🚫 Désactivé",     desc:"Encaissement manuel uniquement"},
+                  {key:"connect", label:"⚡ Stripe Connect", desc:"Compte Express + commission Fydelys"},
+                  {key:"direct",  label:"🔑 Clés directes",  desc:"Le studio fournit ses propres clés Stripe"},
+                ].map(m=>(
+                  <div key={m.key} onClick={()=>upd("paymentMode",m.key)}
+                    style={{display:"flex",alignItems:"center",gap:10,padding:"8px 12px",borderRadius:8,border:`1.5px solid ${f.paymentMode===m.key?"#7C3AED":"#DDD5C8"}`,background:f.paymentMode===m.key?"rgba(124,58,237,.06)":"#FAFAF8",cursor:"pointer"}}>
+                    <div style={{width:16,height:16,borderRadius:"50%",border:`2px solid ${f.paymentMode===m.key?"#7C3AED":"#DDD5C8"}`,background:f.paymentMode===m.key?"#7C3AED":"transparent",flexShrink:0}}/>
+                    <div>
+                      <div style={{fontSize:12,fontWeight:700,color:f.paymentMode===m.key?"#7C3AED":"#2A1F14"}}>{m.label}</div>
+                      <div style={{fontSize:11,color:"#8C7B6C"}}>{m.desc}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
             {!editing&&(
               <div style={{padding:"12px 16px",background:"#FBF6EE",borderRadius:10,border:"1px solid rgba(160,104,56,.2)",fontSize:12,color:"#8C7B6C",lineHeight:1.6}}>
                 🌱 <strong>Seed automatique :</strong> disciplines, créneaux du soir, abonnements et salle principale seront créés automatiquement.
@@ -338,8 +363,9 @@ function SuperAdminView({ onSwitch, isMobile, onSignOut, onImpersonateStudio }) 
           lastName:  admin?.last_name  || "",
           isCoach:   admin?.is_coach   || false,
           contact:   admin ? `${admin.first_name||""} ${admin.last_name||""}`.trim() : "",
-          notes:     s.notes || "",
-          members:   0,
+          notes:       s.notes || "",
+          paymentMode: s.payment_mode || "none",
+          members:     0,
           revenue:   0,
           growth:    0,
         };

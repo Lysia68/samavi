@@ -10,7 +10,7 @@ export async function GET() {
 
     const [{ data: studios }, { data: profiles }] = await Promise.all([
       db.from("studios")
-        .select("id, name, slug, city, address, email, phone, status, billing_status, plan_slug, created_at, notes")
+        .select("id, name, slug, city, address, email, phone, status, billing_status, plan_slug, created_at, notes, payment_mode, stripe_connect_enabled")
         .order("created_at", { ascending: false }),
       db.from("profiles")
         .select("studio_id, first_name, last_name, phone, is_coach, role")
