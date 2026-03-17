@@ -1343,7 +1343,8 @@ function Settings({ isMobile, onImpersonate }) {
     const [commission] = React.useState(2);
     // Config SA : mode paiement du studio
     const [paymentMode, setPaymentMode] = React.useState(null); // null=loading, "connect"|"direct"
-    const [directKeys, setDirectKeys] = React.useState({ pk:"", sk_hint:"" });
+    const [directKeys, setDirectKeys] = React.useState({ pk:"", sk:"" });
+    const [savingKeys, setSavingKeys] = React.useState(false);
     const [savingMode, setSavingMode] = React.useState(false);
 
     React.useEffect(() => {
@@ -1359,7 +1360,7 @@ function Settings({ isMobile, onImpersonate }) {
         .eq("id", studioId).single()
         .then(({ data }) => {
           setPaymentMode(data?.payment_mode || "connect");
-          setDirectKeys(k => ({ ...k, pk: data?.stripe_pk || "" }));
+          setDirectKeys({ pk: data?.stripe_pk || "", sk: "" }); // sk jamais retourné (sécurité)
         })
         .catch(() => setPaymentMode("connect"));
 
@@ -1423,6 +1424,7 @@ function Settings({ isMobile, onImpersonate }) {
       setSavingMode(true);
       await createClient().from("studios").update({
         payment_mode: mode,
+        stripe_connect_enabled: mode === "connect",
         ...(mode === "direct" ? { stripe_pk: directKeys.pk } : {}),
       }).eq("id", studioId);
       setPaymentMode(mode);
@@ -1440,13 +1442,14 @@ function Settings({ isMobile, onImpersonate }) {
             <div style={{ fontSize:12, color:C.textSoft, marginBottom:14 }}>
               Choisissez le mode de paiement pour ce studio.
             </div>
-            <div style={{ display:"flex", gap:10, marginBottom:14 }}>
+            <div style={{ display:"flex", gap:10, marginBottom:14, flexWrap:"wrap" }}>
               {[
-                { key:"connect", label:"⚡ Stripe Connect", desc:"Compte Express du studio, commission Fydelys" },
-                { key:"direct",  label:"🔑 Clés directes",  desc:"Le studio fournit ses propres clés Stripe" },
+                { key:"none",    label:"🚫 Désactivé",      desc:"Pas de paiement en ligne — encaissement manuel" },
+                { key:"connect", label:"⚡ Stripe Connect",  desc:"Compte Express du studio, commission Fydelys" },
+                { key:"direct",  label:"🔑 Clés directes",   desc:"Le studio fournit ses propres clés Stripe" },
               ].map(m => (
                 <div key={m.key} onClick={()=>setPaymentMode(m.key)}
-                  style={{ flex:1, padding:"12px", borderRadius:10, border:`2px solid ${paymentMode===m.key?"#7C3AED":C.border}`, background:paymentMode===m.key?"#F3EEFF":C.bg, cursor:"pointer" }}>
+                  style={{ flex:1, minWidth:140, padding:"12px", borderRadius:10, border:`2px solid ${paymentMode===m.key?"#7C3AED":C.border}`, background:paymentMode===m.key?"#F3EEFF":C.bg, cursor:"pointer" }}>
                   <div style={{ fontSize:13, fontWeight:700, color:paymentMode===m.key?"#7C3AED":C.text }}>{m.label}</div>
                   <div style={{ fontSize:11, color:C.textSoft, marginTop:3 }}>{m.desc}</div>
                 </div>
@@ -1473,15 +1476,50 @@ function Settings({ isMobile, onImpersonate }) {
         {/* Bloc Connect Stripe — affiché seulement si mode=connect */}
         {paymentMode === "direct" && (
           <Card style={{ borderLeft:`3px solid ${C.ok}` }}>
-            <div style={{ fontSize:14, fontWeight:700, color:C.text, marginBottom:4 }}>🔑 Mode clés directes</div>
-            <div style={{ fontSize:12, color:C.textSoft }}>
-              Ce studio utilise ses propres clés Stripe. Les paiements sont traités directement sur son compte sans commission Fydelys.
+            <div style={{ fontSize:14, fontWeight:700, color:C.text, marginBottom:4 }}>🔑 Clés Stripe directes</div>
+            <div style={{ fontSize:12, color:C.textSoft, marginBottom:14 }}>
+              Les paiements sont traités sur le compte Stripe du studio, sans commission Fydelys.
             </div>
-            {directKeys.pk && (
-              <div style={{ marginTop:12, padding:"8px 12px", background:C.bg, borderRadius:8, fontFamily:"monospace", fontSize:12, color:C.textMid, border:`1px solid ${C.border}` }}>
-                {directKeys.pk.slice(0,12)}…
+            <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
+              <div>
+                <FieldLabel>Clé publique (pk_live_… ou pk_test_…)</FieldLabel>
+                <input value={directKeys.pk}
+                  onChange={e=>setDirectKeys(k=>({...k,pk:e.target.value}))}
+                  placeholder="pk_live_…"
+                  style={{ width:"100%", padding:"9px 12px", border:`1.5px solid ${C.border}`, borderRadius:8, fontSize:13, outline:"none", boxSizing:"border-box", color:C.text, background:C.surfaceWarm, fontFamily:"monospace" }}
+                  onFocus={e=>e.target.style.borderColor=C.accent}
+                  onBlur={e=>e.target.style.borderColor=C.border}/>
               </div>
-            )}
+              <div>
+                <FieldLabel>Clé secrète (sk_live_… ou sk_test_…)</FieldLabel>
+                <input type="password" value={directKeys.sk}
+                  onChange={e=>setDirectKeys(k=>({...k,sk:e.target.value}))}
+                  placeholder="sk_live_… (saisir pour modifier)"
+                  style={{ width:"100%", padding:"9px 12px", border:`1.5px solid ${C.border}`, borderRadius:8, fontSize:13, outline:"none", boxSizing:"border-box", color:C.text, background:C.surfaceWarm, fontFamily:"monospace" }}
+                  onFocus={e=>e.target.style.borderColor=C.accent}
+                  onBlur={e=>e.target.style.borderColor=C.border}/>
+                <div style={{ fontSize:11, color:C.textMuted, marginTop:4 }}>
+                  ⚠ La clé secrète est stockée chiffrée — elle ne sera jamais affichée en clair.
+                </div>
+              </div>
+              <div style={{ display:"flex", gap:8, marginTop:4 }}>
+                <Button sm variant="primary" onClick={async () => {
+                  setSavingKeys(true);
+                  try {
+                    const res = await fetch("/api/sa/stripe-keys", {
+                      method: "POST",
+                      headers: {"Content-Type":"application/json"},
+                      body: JSON.stringify({ studioId, pk: directKeys.pk, sk: directKeys.sk || null }),
+                    });
+                    if (res.ok) { showToast("Clés Stripe enregistrées"); setDirectKeys(k=>({...k, sk:""})); }
+                    else showToast("Erreur lors de l'enregistrement", false);
+                  } catch { showToast("Erreur réseau", false); }
+                  setSavingKeys(false);
+                }} disabled={savingKeys || !directKeys.pk}>
+                  {savingKeys ? "Enregistrement…" : "💾 Enregistrer les clés"}
+                </Button>
+              </div>
+            </div>
           </Card>
         )}
 
