@@ -163,7 +163,7 @@ function PlanningSessionCard({ sess, expandedId, bookings, discs, onToggle, onCh
             {sess.teacher && <><span style={{ fontWeight: 600 }}>{sess.teacher}</span> · </>}{sess.room} · {sess.duration}min
           </div>
           {(() => {
-            const rd = roomsList.find(r => r.name === sess.room);
+            const rd = (roomsList||[]).find(r => r.name === sess.room);
             if (!rd?.location && !rd?.address) return null;
             const loc = rd.location || rd.address;
             return (
@@ -291,13 +291,15 @@ function BookingModal({ sessId, sessions, studioId, bookings, setBookings, setSe
     if (!sess || !member) return;
     const already = (bookings[sessId] || []).some(b => b.memberId === member.id && b.st !== "cancelled");
     if (already) { setDone("already"); return; }
-    const isFull = (bookings[sessId] || []).filter(b => b.st === "confirmed").length >= sess.spots;
-    const { data, error } = await createClient().from("bookings").insert({
-      session_id: sessId, member_id: member.id,
-      status: isFull ? "waitlist" : "confirmed",
-    }).select().single();
-    if (!error && data) {
-      const nb = { id: data.id, memberId: member.id, st: data.status, attended: null,
+    const res = await fetch("/api/bookings", {
+      method: "POST",
+      headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({ sessionId: sessId, memberId: member.id, studioId }),
+    });
+    const data = await res.json();
+    if (data.already) { setDone("already"); return; }
+    if (data.ok) {
+      const nb = { id: data.bookingId, memberId: member.id, st: data.status, attended: null,
         name: `${member.first_name || ""} ${member.last_name || ""}`.trim(),
         email: member.email || "", phone: member.phone || "" };
       setBookings(prev => ({ ...prev, [sessId]: [...(prev[sessId] || []), nb] }));
