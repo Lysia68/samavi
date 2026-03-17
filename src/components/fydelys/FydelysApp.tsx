@@ -98,13 +98,13 @@ const PAGE_TITLES = {
     // Charger le studioId via l'API service role (bypass RLS depuis fydelys.fr)
     try {
       const res = await fetch("/api/sa/studios");
-      const { studios } = await res.json();
+      const { studios, memberCounts } = await res.json();
       const target = (studios || []).find((s: any) => s.slug === studioSlugTarget);
       if (target) {
         setSharedStudioId(target.id);
         setImpersonatedStudioName(target.name || studioSlugTarget);
         const count = (memberCounts || {})[target.id] ?? null;
-        setDynamicMembersCount(count);
+        setDynamicMembersCount(count !== null ? Number(count) : null);
       }
     } catch(e) { console.error("impersonate studioId load error", e); }
   }, []);
