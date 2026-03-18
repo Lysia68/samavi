@@ -515,7 +515,7 @@ function Planning({ isMobile }) {
           status: s.status || "scheduled", booked: 0, waitlist: 0,
         }));
         const { data: bkData } = await sb.from("bookings")
-          .select("id, session_id, member_id, status, attended, members(id, first_name, last_name, email, phone, credits, credits_total)")
+          .select("id, session_id, member_id, status, attended, members(id, first_name, last_name, email, phone, credits, credits_total, subscription_id, subscriptions(period))")
           .in("session_id", mapped.map(s => s.id));
         const map = {};
         (bkData || []).forEach(b => {
@@ -525,6 +525,7 @@ function Planning({ isMobile }) {
             name: b.members ? `${b.members.first_name || ""} ${b.members.last_name || ""}`.trim() : "—",
             email: b.members?.email || "", phone: b.members?.phone || "",
             credits: b.members?.credits ?? null, total: b.members?.credits_total ?? null,
+            subPeriod: b.members?.subscriptions?.period || null,
           });
         });
         setBookings(map);
