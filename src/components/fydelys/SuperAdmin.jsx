@@ -330,14 +330,18 @@ function SuperAdminView({ onSwitch, isMobile, onSignOut, onImpersonateStudio }) 
   const [filter, setFilter]   = useState("tous");
   const [modal, setModal]     = useState(null);
   const [plans, setPlans]     = useState([
-    { slug:"essentiel", name:"Essentiel", price:9,  stripe_price_id:"" },
-    { slug:"standard",  name:"Standard",  price:29, stripe_price_id:"" },
-    { slug:"pro",       name:"Pro",       price:69, stripe_price_id:"" },
+    { slug:"essentiel", name:"Essentiel", price:9,  price_monthly:9,  stripe_price_id:"" },
+    { slug:"standard",  name:"Standard",  price:29, price_monthly:29, stripe_price_id:"" },
+    { slug:"pro",       name:"Pro",       price:69, price_monthly:69, stripe_price_id:"" },
   ]);
   const [savingPlans, setSavingPlans] = useState(false);
   const [showPlans, setShowPlans]     = useState(false);
   const [envStatus, setEnvStatus]     = useState(null);
-  const [showConfig, setShowConfig]   = useState(false); // null | {type:"new"} | {type:"edit",tenant} | {type:"delete",tenant}
+  const [showConfig, setShowConfig]   = useState(false);
+  const [testEmail, setTestEmail]     = useState("");
+  const [testPhone, setTestPhone]     = useState("");
+  const [testResult, setTestResult]   = useState(null);
+  const [testLoading, setTestLoading] = useState(false); // null | {type:"new"} | {type:"edit",tenant} | {type:"delete",tenant}
   const [toast, setToast]     = useState(null);
   const [confirmLogout, setConfirmLogout] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -492,6 +496,40 @@ function SuperAdminView({ onSwitch, isMobile, onSignOut, onImpersonateStudio }) 
                   ))}
                   <div style={{fontSize:11,color:"#8C7B6C",marginTop:6,padding:"8px 10px",background:"#F8F5F0",borderRadius:7}}>
                     ⚠ Pour modifier ces variables, rendez-vous sur <strong>Vercel → Settings → Environment Variables</strong> puis redéployez.
+                  </div>
+
+                  {/* Zone de test */}
+                  <div style={{marginTop:14,padding:"12px 14px",background:"#F0F4FF",borderRadius:9,border:"1px solid rgba(99,102,241,.2)"}}>
+                    <div style={{fontSize:12,fontWeight:700,color:"#3730A3",marginBottom:10}}>🧪 Tester les notifications</div>
+                    <div style={{display:"flex",gap:8,marginBottom:8,flexWrap:"wrap"}}>
+                      <input value={testEmail} onChange={e=>setTestEmail(e.target.value)} placeholder="Email de test" type="email"
+                        style={{flex:1,minWidth:160,padding:"7px 10px",border:"1.5px solid #C7D2FE",borderRadius:7,fontSize:12,outline:"none"}}/>
+                      <input value={testPhone} onChange={e=>setTestPhone(e.target.value)} placeholder="+33612345678" type="tel"
+                        style={{flex:1,minWidth:140,padding:"7px 10px",border:"1.5px solid #C7D2FE",borderRadius:7,fontSize:12,outline:"none"}}/>
+                    </div>
+                    <button onClick={async()=>{
+                      if(!testEmail && !testPhone) return;
+                      setTestLoading(true); setTestResult(null);
+                      try {
+                        const res = await fetch("/api/sa/test-notifications",{
+                          method:"POST",headers:{"Content-Type":"application/json"},
+                          body:JSON.stringify({email:testEmail||null,phone:testPhone||null})
+                        });
+                        const data = await res.json();
+                        setTestResult(data.results || {error: data.error});
+                      } catch(e) { setTestResult({error:e.message}); }
+                      setTestLoading(false);
+                    }} disabled={testLoading||(!testEmail&&!testPhone)}
+                      style={{padding:"7px 16px",borderRadius:7,border:"none",background:"#4F46E5",color:"#fff",fontSize:12,fontWeight:700,cursor:"pointer",opacity:testLoading?0.6:1}}>
+                      {testLoading?"Envoi…":"🚀 Envoyer le test"}
+                    </button>
+                    {testResult && (
+                      <div style={{marginTop:10,display:"flex",flexDirection:"column",gap:5}}>
+                        {testResult.error && <div style={{fontSize:11,color:"#DC2626",padding:"5px 8px",background:"#FEF2F2",borderRadius:5}}>✗ {testResult.error}</div>}
+                        {testResult.email && <div style={{fontSize:11,color:testResult.email.ok?"#065F46":"#DC2626",padding:"5px 8px",background:testResult.email.ok?"#F0FDF4":"#FEF2F2",borderRadius:5}}>{testResult.email.ok?"✓":"✗"} Email : {testResult.email.message}</div>}
+                        {testResult.sms && <div style={{fontSize:11,color:testResult.sms.ok?"#065F46":"#DC2626",padding:"5px 8px",background:testResult.sms.ok?"#F0FDF4":"#FEF2F2",borderRadius:5}}>{testResult.sms.ok?"✓":"✗"} SMS : {testResult.sms.message||testResult.sms.error||"OK"}</div>}
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
