@@ -1,10 +1,11 @@
 "use client";
 import { getFieldStyle } from "./fieldStyles";
 
-import React, { useState } from "react";
+import React
 
 // Helper pour éviter les erreurs TypeScript sur les styles CSS
 const css = (/** @type {import("react").CSSProperties} */ s) => s;
+, { useState } from "react";
 import { C, statusMap } from "./theme";
 import { DISCIPLINES } from "./demoData";
 import { IcoLogOut } from "./icons";
