@@ -12,7 +12,7 @@ const saInp = (f=false,err=false) => ({
   border:`1.5px solid ${err?"#F87171":f?"#A06838":"#DDD5C8"}`,
   borderRadius:9, fontSize:13, outline:"none",
   color:"#2A1F14", background:"#FDFAF7",
-  boxSizing:/** @type {"border-box"} */ ("border-box"),
+  boxSizing:"border-box",
   boxShadow: f?"0 0 0 3px rgba(160,104,56,.07)":"none"
 });
 
@@ -330,18 +330,14 @@ function SuperAdminView({ onSwitch, isMobile, onSignOut, onImpersonateStudio }) 
   const [filter, setFilter]   = useState("tous");
   const [modal, setModal]     = useState(null);
   const [plans, setPlans]     = useState([
-    { slug:"essentiel", name:"Essentiel", price:9,  price_monthly:9,  stripe_price_id:"", sms:0   },
-    { slug:"standard",  name:"Standard",  price:29, price_monthly:29, stripe_price_id:"", sms:50  },
-    { slug:"pro",       name:"Pro",       price:69, price_monthly:69, stripe_price_id:"", sms:100 },
+    { slug:"essentiel", name:"Essentiel", price:9,  stripe_price_id:"" },
+    { slug:"standard",  name:"Standard",  price:29, stripe_price_id:"" },
+    { slug:"pro",       name:"Pro",       price:69, stripe_price_id:"" },
   ]);
   const [savingPlans, setSavingPlans] = useState(false);
   const [showPlans, setShowPlans]     = useState(false);
   const [envStatus, setEnvStatus]     = useState(null);
-  const [showConfig, setShowConfig]   = useState(false);
-  const [testEmail, setTestEmail]     = useState("");
-  const [testPhone, setTestPhone]     = useState("");
-  const [testResult, setTestResult]   = useState(null);
-  const [testLoading, setTestLoading] = useState(false); // null | {type:"new"} | {type:"edit",tenant} | {type:"delete",tenant}
+  const [showConfig, setShowConfig]   = useState(false); // null | {type:"new"} | {type:"edit",tenant} | {type:"delete",tenant}
   const [toast, setToast]     = useState(null);
   const [confirmLogout, setConfirmLogout] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -497,40 +493,6 @@ function SuperAdminView({ onSwitch, isMobile, onSignOut, onImpersonateStudio }) 
                   <div style={{fontSize:11,color:"#8C7B6C",marginTop:6,padding:"8px 10px",background:"#F8F5F0",borderRadius:7}}>
                     ⚠ Pour modifier ces variables, rendez-vous sur <strong>Vercel → Settings → Environment Variables</strong> puis redéployez.
                   </div>
-
-                  {/* Zone de test */}
-                  <div style={{marginTop:14,padding:"12px 14px",background:"#F0F4FF",borderRadius:9,border:"1px solid rgba(99,102,241,.2)"}}>
-                    <div style={{fontSize:12,fontWeight:700,color:"#3730A3",marginBottom:10}}>🧪 Tester les notifications</div>
-                    <div style={{display:"flex",gap:8,marginBottom:8,flexWrap:"wrap"}}>
-                      <input value={testEmail} onChange={e=>setTestEmail(e.target.value)} placeholder="Email de test" type="email"
-                        style={{flex:1,minWidth:160,padding:"7px 10px",border:"1.5px solid #C7D2FE",borderRadius:7,fontSize:12,outline:"none"}}/>
-                      <input value={testPhone} onChange={e=>setTestPhone(e.target.value)} placeholder="+33612345678" type="tel"
-                        style={{flex:1,minWidth:140,padding:"7px 10px",border:"1.5px solid #C7D2FE",borderRadius:7,fontSize:12,outline:"none"}}/>
-                    </div>
-                    <button onClick={async()=>{
-                      if(!testEmail && !testPhone) return;
-                      setTestLoading(true); setTestResult(null);
-                      try {
-                        const res = await fetch("/api/sa/test-notifications",{
-                          method:"POST",headers:{"Content-Type":"application/json"},
-                          body:JSON.stringify({email:testEmail||null,phone:testPhone||null})
-                        });
-                        const data = await res.json();
-                        setTestResult(data.results || {error: data.error});
-                      } catch(e) { setTestResult({error:e.message}); }
-                      setTestLoading(false);
-                    }} disabled={testLoading||(!testEmail&&!testPhone)}
-                      style={{padding:"7px 16px",borderRadius:7,border:"none",background:"#4F46E5",color:"#fff",fontSize:12,fontWeight:700,cursor:"pointer",opacity:testLoading?0.6:1}}>
-                      {testLoading?"Envoi…":"🚀 Envoyer le test"}
-                    </button>
-                    {testResult && (
-                      <div style={{marginTop:10,display:"flex",flexDirection:"column",gap:5}}>
-                        {testResult.error && <div style={{fontSize:11,color:"#DC2626",padding:"5px 8px",background:"#FEF2F2",borderRadius:5}}>✗ {testResult.error}</div>}
-                        {testResult.email && <div style={{fontSize:11,color:testResult.email.ok?"#065F46":"#DC2626",padding:"5px 8px",background:testResult.email.ok?"#F0FDF4":"#FEF2F2",borderRadius:5}}>{testResult.email.ok?"✓":"✗"} Email : {testResult.email.message}</div>}
-                        {testResult.sms && <div style={{fontSize:11,color:testResult.sms.ok?"#065F46":"#DC2626",padding:"5px 8px",background:testResult.sms.ok?"#F0FDF4":"#FEF2F2",borderRadius:5}}>{testResult.sms.ok?"✓":"✗"} SMS : {testResult.sms.message||testResult.sms.error||"OK"}</div>}
-                      </div>
-                    )}
-                  </div>
                 </div>
               )}
             </div>
@@ -553,26 +515,21 @@ function SuperAdminView({ onSwitch, isMobile, onSignOut, onImpersonateStudio }) 
                 {plans.map((plan,i)=>(
                   <div key={plan.slug} style={{display:"grid",gridTemplateColumns:"100px 60px 1fr",gap:10,alignItems:"center"}}>
                     <div style={{fontSize:13,fontWeight:700,color:"#2A1F14"}}>{plan.name}</div>
-                    <div style={{fontSize:12,color:"#8C7B6C"}}>{plan.price}€/mois · 📱 {plan.sms} SMS</div>
+                    <div style={{fontSize:12,color:"#8C7B6C"}}>{plan.price}€/mois</div>
                     <input
                       value={plan.stripe_price_id}
                       onChange={e=>setPlans(p=>p.map((pl,j)=>j===i?{...pl,stripe_price_id:e.target.value}:pl))}
-                      placeholder="price_live_… (pas prod_…)"
-                      style={{padding:"7px 10px",border:`1.5px solid ${plan.stripe_price_id&&!plan.stripe_price_id.startsWith("price_")?"#F87171":"#DDD5C8"}`,borderRadius:7,fontSize:12,outline:"none",color:"#2A1F14",background:"#FDFAF7",fontFamily:"monospace",boxSizing:/** @type {"border-box"} */("border-box")}}/>
+                      placeholder="price_live_…"
+                      style={{padding:"7px 10px",border:"1.5px solid #DDD5C8",borderRadius:7,fontSize:12,outline:"none",color:"#2A1F14",background:"#FDFAF7",fontFamily:"monospace",boxSizing:"border-box"}}/>
                   </div>
                 ))}
-              </div>
-              <div style={{fontSize:11,color:"#8C7B6C",marginBottom:10,padding:"7px 10px",background:"#FEF3C7",borderRadius:6,border:"1px solid rgba(196,146,42,.3)"}}>
-                ⚠ Stripe Dashboard → Produits → [Plan] → <strong>Ajouter un prix</strong> → copier l'ID <code>price_live_…</code><br/>
-                Ne pas confondre avec le Product ID (<code>prod_…</code>) affiché en haut de la page produit.
               </div>
               <button onClick={async()=>{
                 setSavingPlans(true);
                 try {
                   const res = await fetch("/api/sa/plans",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({plans})});
-                  const data = await res.json();
                   if(res.ok) showToast("Plans enregistrés ✓");
-                  else showToast(data.errors?.[0]||"Erreur lors de la sauvegarde",false);
+                  else showToast("Erreur lors de la sauvegarde",false);
                 } catch { showToast("Erreur réseau",false); }
                 setSavingPlans(false);
               }} disabled={savingPlans}
@@ -587,7 +544,7 @@ function SuperAdminView({ onSwitch, isMobile, onSignOut, onImpersonateStudio }) 
         <div style={{background:"#FAFAF8",borderRadius:14,border:"1px solid #DDD5C8",overflow:"hidden"}}>
           <div style={{padding:"14px 18px",borderBottom:"1px solid #EAE4DA",display:"flex",gap:10,flexWrap:"wrap",alignItems:"center"}}>
             <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="🔍 Rechercher…"
-              style={{flex:1,minWidth:160,padding:"8px 14px",background:"#FDFAF7",border:"1px solid #DDD5C8",borderRadius:8,color:"#2A1F14",fontSize:13,outline:"none",boxSizing:/** @type {"border-box"} */("border-box")}}/>
+              style={{flex:1,minWidth:160,padding:"8px 14px",background:"#FDFAF7",border:"1px solid #DDD5C8",borderRadius:8,color:"#2A1F14",fontSize:13,outline:"none",boxSizing:"border-box"}}/>
             <div style={{display:"flex",gap:6}}>
               {["tous","actif","suspendu"].map(f=>(
                 <button key={f} onClick={()=>setFilter(f)} style={{fontSize:12,padding:"5px 12px",borderRadius:16,border:`1px solid ${filter===f?"#A06838":"#DDD5C8"}`,background:filter===f?"#A06838":"transparent",color:filter===f?"#fff":"#8C7B6C",fontWeight:600,cursor:"pointer"}}>
