@@ -264,5 +264,5 @@ function Dashboard({ isMobile }) {
 // ── CREDIT BADGE ─────────────────────────────────────────────────────────────
 // Affiche "X/Y" avec couleur dégradée rouge→orange→vert selon % restant
 // credits=null = forfait illimité (∞)
-
+//
 export { Dashboard, DashboardSessionCard };
