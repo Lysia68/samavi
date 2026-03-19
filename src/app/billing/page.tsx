@@ -179,6 +179,7 @@ function BillingPageContent() {
 
   useEffect(()=>{
     if(params.get("success")==="1") showToast("🎉 Abonnement activé !")
+    if(params.get("sms_success")==="1") showToast("📱 Crédits SMS ajoutés !")
     if(params.get("canceled")==="1") showToast("Paiement annulé.",false)
   },[params,showToast])
 
@@ -360,7 +361,7 @@ function BillingPageContent() {
                             body:JSON.stringify({studioId:studio.id,packId:pack.id})
                           })
                           const data = await res.json()
-                          if(data.clientSecret) setModal({plan:{...PLANS[0],name:pack.label,price:pack.price,color:C.accent,bg:C.accentBg,desc:"",features:[],smsCredits:0},clientSecret:data.clientSecret,intentType:"payment"})
+                          if(data.url) window.location.href = data.url
                           else showToast(data.error||"Erreur",false)
                         } catch { showToast("Erreur réseau",false) }
                         setBusy(null)

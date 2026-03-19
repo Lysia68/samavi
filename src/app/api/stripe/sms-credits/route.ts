@@ -46,17 +46,29 @@ export async function POST(req: NextRequest) {
       await db.from("studios").update({ stripe_customer_id: customerId }).eq("id", studioId)
     }
 
-    // PaymentIntent one-shot
-    const intent = await stripe.paymentIntents.create({
-      amount: pack.price * 100,
-      currency: "eur",
+    // Récupérer le slug pour l'URL de retour
+    const { data: studioData } = await db.from("studios").select("slug").eq("id", studioId).single()
+    const slug = studioData?.slug || "app"
+    const baseUrl = `https://${slug}.fydelys.fr`
+
+    // Stripe Checkout one-shot pour les SMS
+    const session = await stripe.checkout.sessions.create({
       customer: customerId,
-      description: `${pack.label} — ${studio.name}`,
+      mode: "payment",
+      line_items: [{
+        price_data: {
+          currency: "eur",
+          product_data: { name: pack.label, description: `${pack.credits} crédits SMS pour ${studio.name}` },
+          unit_amount: pack.price * 100,
+        },
+        quantity: 1,
+      }],
+      success_url: `${baseUrl}/billing?sms_success=1&pack=${packId}`,
+      cancel_url: `${baseUrl}/billing`,
       metadata: { studioId, packId, credits: pack.credits.toString() },
-      automatic_payment_methods: { enabled: true },
     })
 
-    return NextResponse.json({ clientSecret: intent.client_secret, type: "payment" })
+    return NextResponse.json({ url: session.url, type: "checkout" })
   } catch (err: any) {
     console.error("POST /api/stripe/sms-credits error:", err?.message)
     return NextResponse.json({ error: err.message }, { status: 500 })
