@@ -80,7 +80,12 @@ export function smsWaitlist({ studioName, discName, sessDate, sessTime }: {
 export function smsReminder({ studioName, discName, sessTime, reminderHours }: {
   studioName: string; discName: string; sessTime: string; reminderHours: number
 }) {
-  const when = reminderHours <= 2 ? "dans moins de 2h" : reminderHours <= 24 ? `demain à ${sessTime}` : `à ${sessTime}`
+  const timeStr = sessTime?.slice(0, 5) || ""
+  const when = reminderHours < 1 ? `dans ${Math.round(reminderHours * 60)} min à ${timeStr}`
+    : reminderHours === 1 ? `dans 1h à ${timeStr}`
+    : reminderHours <= 3 ? `dans ${reminderHours}h à ${timeStr}`
+    : reminderHours <= 20 ? `aujourd'hui à ${timeStr}`
+    : `demain à ${timeStr}`
   return `⏰ Rappel : ${discName} ${when} chez ${studioName}. À tout de suite !`
 }
 
