@@ -23,14 +23,25 @@ function AdherentView({ onSwitch, isMobile, studioName = "", impersonateUserId =
     if (payment === "success") {
       setPage("payment");
       showToast("✅ Paiement confirmé ! Votre compte a été mis à jour.");
-      // Nettoyer l'URL
       window.history.replaceState({}, "", window.location.pathname);
+      // Recharger les données du membre pour afficher les crédits/abonnement mis à jour
+      if (studioId) {
+        setTimeout(async () => {
+          const sb = createClient();
+          const { data: { user } } = await sb.auth.getUser();
+          if (!user) return;
+          const { data: member } = await sb.from("members")
+            .select("id, first_name, last_name, email, status, credits, credits_total, created_at, phone, address, postal_code, city, profile_complete")
+            .eq("studio_id", studioId).eq("auth_user_id", user.id).maybeSingle();
+          if (member) setMe(member);
+        }, 2000); // délai pour laisser le webhook Stripe traiter
+      }
     } else if (payment === "canceled") {
       setPage("payment");
       showToast("Paiement annulé.", false);
       window.history.replaceState({}, "", window.location.pathname);
     }
-  }, []);
+  }, [studioId]);
   const p = isMobile ? 16 : 28;
 
   const { studioId, discs } = useContext(AppCtx);
@@ -458,7 +469,12 @@ function AdherentView({ onSwitch, isMobile, studioName = "", impersonateUserId =
     const handleCheckout = async (type, id) => {
       setRedirecting(id);
       try {
-        const body = { studioId, memberId: me?.id, type };
+        const origin = window.location.origin;
+        const body = {
+          studioId, memberId: me?.id, type,
+          successUrl: `${origin}/?payment=success`,
+          cancelUrl:  `${origin}/?payment=canceled`,
+        };
         if (type === "subscription") body.subscriptionId = id;
         if (type === "credits")      body.creditsPackId  = id;
         const res = await fetch("/api/connect/checkout", {
