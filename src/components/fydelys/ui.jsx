@@ -220,7 +220,7 @@ function creditColor(credits, total) {
 
 function CreditBadge({ credits, total, sub, subPeriod }) {
   const UNLIMITED_PERIODS = ["mois", "trimestre", "année", "annuel", "annee"];
-  const isUnlimited = credits === null || (subPeriod && UNLIMITED_PERIODS.includes(subPeriod.toLowerCase()));
+  const isUnlimited = subPeriod && UNLIMITED_PERIODS.includes(subPeriod.toLowerCase());
   if (isUnlimited) {
     return (
       <div style={{ display:"flex", alignItems:"center", gap:5 }}>
