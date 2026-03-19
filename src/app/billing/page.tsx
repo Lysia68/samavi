@@ -250,6 +250,9 @@ function BillingPageContent() {
 
       <div style={{maxWidth:860,margin:"0 auto",padding:"40px 24px"}}>
         <div style={{marginBottom:32}}>
+          <a href="/dashboard" style={{display:"inline-flex",alignItems:"center",gap:6,fontSize:13,fontWeight:600,color:C.textMid,textDecoration:"none",marginBottom:16,opacity:0.8}}>
+            ← Retour au dashboard
+          </a>
           <h1 style={{fontSize:26,fontWeight:800,color:C.text,margin:0,letterSpacing:-0.5}}>Abonnement</h1>
           <p style={{fontSize:14,color:C.textSoft,margin:"6px 0 0"}}>Gérez votre formule Fydelys</p>
         </div>
