@@ -1537,6 +1537,18 @@ function Settings({ isMobile, onImpersonate }) {
                   ⚠ La clé secrète est stockée chiffrée — elle ne sera jamais affichée en clair.
                 </div>
               </div>
+              <div>
+                <FieldLabel>Secret Webhook Stripe (whsec_…)</FieldLabel>
+                <input type="password" value={directKeys.whsec||""}
+                  onChange={e=>setDirectKeys(k=>({...k,whsec:e.target.value}))}
+                  placeholder="whsec_… (depuis Stripe Dashboard → Webhooks)"
+                  style={{ width:"100%", padding:"9px 12px", border:`1.5px solid ${C.border}`, borderRadius:8, fontSize:13, outline:"none", boxSizing:"border-box", color:C.text, background:C.surfaceWarm, fontFamily:"monospace" }}
+                  onFocus={e=>e.target.style.borderColor=C.accent}
+                  onBlur={e=>e.target.style.borderColor=C.border}/>
+                <div style={{ fontSize:11, color:C.textMuted, marginTop:4 }}>
+                  Configurez un webhook dans votre Stripe Dashboard pointant vers <code>https://{studio?.slug}.fydelys.fr/api/connect/webhook</code>
+                </div>
+              </div>
               <div style={{ display:"flex", gap:8, marginTop:4 }}>
                 <Button sm variant="primary" onClick={async () => {
                   setSavingKeys(true);
@@ -1544,7 +1556,7 @@ function Settings({ isMobile, onImpersonate }) {
                     const res = await fetch("/api/studio/stripe-keys", {
                       method: "POST",
                       headers: {"Content-Type":"application/json"},
-                      body: JSON.stringify({ studioId, pk: directKeys.pk, sk: directKeys.sk || null }),
+                      body: JSON.stringify({ studioId, pk: directKeys.pk, sk: directKeys.sk || null, whsec: directKeys.whsec || null }),
                     });
                     if (res.ok) { showToast("Clés Stripe enregistrées"); setDirectKeys(k=>({...k, sk:""})); }
                     else showToast("Erreur lors de l'enregistrement", false);

@@ -10,22 +10,53 @@ export async function POST(req: NextRequest) {
   const body = await req.text()
   const sig  = req.headers.get("stripe-signature")!
 
-  // Webhook secret Connect (différent du webhook Fydelys billing)
-  const secret = process.env.STRIPE_CONNECT_WEBHOOK_SECRET!
-  if (!secret) {
-    console.error("STRIPE_CONNECT_WEBHOOK_SECRET manquant")
-    return NextResponse.json({ error: "Config error" }, { status: 500 })
+  const db = createServiceSupabase()
+  let event: Stripe.Event | null = null
+
+  // Récupérer le studioId depuis le corps brut pour trouver le bon secret webhook
+  // On essaie d'abord les secrets globaux, puis le secret du studio si mode direct
+  const secrets = [
+    process.env.STRIPE_CONNECT_WEBHOOK_SECRET,
+    process.env.STRIPE_WEBHOOK_SECRET,
+  ].filter(Boolean) as string[]
+
+  // Essayer chaque secret global
+  for (const secret of secrets) {
+    try {
+      event = stripe.webhooks.constructEvent(body, sig, secret)
+      break
+    } catch {
+      // continuer
+    }
   }
 
-  let event: Stripe.Event
-  try {
-    event = stripe.webhooks.constructEvent(body, sig, secret)
-  } catch (err: any) {
-    console.error("Connect webhook signature error:", err.message)
+  // Si signature globale échoue → chercher le secret webhook du studio en base
+  if (!event) {
+    try {
+      const parsed = JSON.parse(body)
+      // Récupérer le studioId depuis metadata de l'objet
+      const studioId = parsed?.data?.object?.metadata?.studioId
+      if (studioId) {
+        const { data: studio } = await db.from("studios")
+          .select("stripe_webhook_secret").eq("id", studioId).maybeSingle()
+        const studioSecret = (studio as any)?.stripe_webhook_secret
+        if (studioSecret) {
+          try {
+            event = stripe.webhooks.constructEvent(body, sig, studioSecret)
+          } catch (err: any) {
+            console.error("Connect webhook: studio secret also failed:", err.message)
+          }
+        }
+      }
+    } catch { /* ignore parse errors */ }
+  }
+
+  if (!event) {
+    console.error("Connect webhook: toutes les signatures ont échoué")
     return NextResponse.json({ error: "Invalid signature" }, { status: 400 })
   }
+  }
 
-  const db = createServiceSupabase()
 
   try {
     switch (event.type) {

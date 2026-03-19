@@ -18,7 +18,7 @@ export async function POST(req: NextRequest) {
     if (!profile || !["admin", "superadmin"].includes(profile.role))
       return NextResponse.json({ error: "Accès refusé" }, { status: 403 })
 
-    const { studioId, pk, sk } = await req.json()
+    const { studioId, pk, sk, whsec } = await req.json()
     if (!studioId || !pk) return NextResponse.json({ error: "studioId et pk requis" }, { status: 400 })
 
     // Un admin ne peut modifier que son propre studio
@@ -27,6 +27,7 @@ export async function POST(req: NextRequest) {
 
     const update: Record<string, any> = { stripe_pk: pk }
     if (sk) update.stripe_sk = sk
+    if (whsec) update.stripe_webhook_secret = whsec
 
     const { error } = await db.from("studios").update(update).eq("id", studioId)
     if (error) return NextResponse.json({ error: error.message }, { status: 500 })
