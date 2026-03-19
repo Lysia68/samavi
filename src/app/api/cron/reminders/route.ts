@@ -22,11 +22,12 @@ export async function GET(request: Request) {
     .select("id, name, slug, email, timezone, reminder_hours_default, sms_enabled")
     .eq("status", "actif")
 
-  if (!studios?.length) return NextResponse.json({ ok: true, processed: 0 })
+  if (!studios?.length) return NextResponse.json({ ok: true, processed: 0, debug: "no studios with status=actif" })
 
   let totalSent = 0
   let totalSkipped = 0
   const errors: string[] = []
+  const debugInfo: any[] = []
 
   for (const studio of studios) {
     const reminderHours = studio.reminder_hours_default ?? 24
@@ -36,6 +37,7 @@ export async function GET(request: Request) {
     const now = new Date()
     const windowStart = new Date(now.getTime() + (reminderHours - 0.5) * 3600 * 1000)
     const windowEnd   = new Date(now.getTime() + (reminderHours + 0.5) * 3600 * 1000)
+    debugInfo.push({ studio: studio.name, reminderHours, now: now.toISOString(), windowStart: windowStart.toISOString(), windowEnd: windowEnd.toISOString() })
 
     // Dates en format YYYY-MM-DD pour la query
     const dateStart = windowStart.toISOString().slice(0, 10)
@@ -50,6 +52,7 @@ export async function GET(request: Request) {
       .gte("session_date", dateStart)
       .lte("session_date", dateEnd)
 
+    debugInfo[debugInfo.length-1].sessionsFound = sessions?.length || 0
     if (!sessions?.length) continue
 
     // Filtrer précisément selon l'heure en tenant compte de la timezone du studio
@@ -146,7 +149,7 @@ export async function GET(request: Request) {
     }
   }
 
-  return NextResponse.json({ ok: true, sent: totalSent, skipped: totalSkipped, errors })
+  return NextResponse.json({ ok: true, sent: totalSent, skipped: totalSkipped, errors, debug: debugInfo })
 }
 
 // Offset timezone approximatif (Europe/Paris = UTC+1 hiver, UTC+2 été)
