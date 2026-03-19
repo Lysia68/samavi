@@ -291,14 +291,14 @@ export default function LandingPage() {
     }
   }, [])
 
-  // Afficher la page vitrine si sous-domaine studio
-  if (studioSlug) return <StudioPage slug={studioSlug}/>
-
   useEffect(() => {
     const fn = () => setScrolled(window.scrollY > 40)
     window.addEventListener("scroll", fn)
     return () => window.removeEventListener("scroll", fn)
   }, [])
+
+  // Afficher la page vitrine si sous-domaine studio
+  if (studioSlug) return <StudioPage slug={studioSlug}/>
 
 
 
