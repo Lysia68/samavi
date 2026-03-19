@@ -23,8 +23,11 @@ function AdherentView({ onSwitch, isMobile, studioName = "", impersonateUserId =
 
   // ── Données membre chargées depuis Supabase ─────────────────────────────────
   const [me, setMe] = useState(null);           // fiche membre
+  const [myBookings, setMyBookings] = useState([]); // ids de sessions réservées
+  const [history, setHistory] = useState([]);   // bookings passés
+  const [loading, setLoading] = useState(true);
 
-  // Gérer le retour depuis Stripe Checkout — après déclaration de studioId et setMe
+  // Gérer le retour depuis Stripe Checkout
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const payment = params.get("payment");
@@ -49,9 +52,6 @@ function AdherentView({ onSwitch, isMobile, studioName = "", impersonateUserId =
       window.history.replaceState({}, "", window.location.pathname);
     }
   }, [studioId]);
-  const [myBookings, setMyBookings] = useState([]); // ids de sessions réservées
-  const [history, setHistory] = useState([]);   // bookings passés
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!studioId) return;
