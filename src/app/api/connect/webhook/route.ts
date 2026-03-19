@@ -55,8 +55,6 @@ export async function POST(req: NextRequest) {
     console.error("Connect webhook: toutes les signatures ont échoué")
     return NextResponse.json({ error: "Invalid signature" }, { status: 400 })
   }
-  }
-
 
   try {
     switch (event.type) {
