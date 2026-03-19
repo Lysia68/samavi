@@ -53,6 +53,7 @@ export async function GET(request: Request) {
       .lte("session_date", dateEnd)
 
     debugInfo[debugInfo.length-1].sessionsFound = sessions?.length || 0
+    debugInfo[debugInfo.length-1].sessions = sessions?.map(s => ({ id: s.id, date: s.session_date, time: s.session_time }))
     if (!sessions?.length) continue
 
     // Filtrer précisément selon l'heure en tenant compte de la timezone du studio
@@ -64,6 +65,13 @@ export async function GET(request: Request) {
       return sessUTC >= windowStart && sessUTC <= windowEnd
     })
 
+    debugInfo[debugInfo.length-1].targetSessions = targetSessions.length
+    debugInfo[debugInfo.length-1].sessionsDetail = sessions?.map(s => {
+      const sessDateTime = new Date(`${s.session_date}T${s.session_time}`)
+      const tzOffset = getTzOffsetMinutes(tz)
+      const sessUTC = new Date(sessDateTime.getTime() - tzOffset * 60 * 1000)
+      return { id: s.id, date: s.session_date, time: s.session_time, sessUTC: sessUTC.toISOString(), inWindow: sessUTC >= windowStart && sessUTC <= windowEnd }
+    })
     if (!targetSessions.length) continue
 
     for (const sess of targetSessions) {
@@ -93,6 +101,8 @@ export async function GET(request: Request) {
         }))
         .filter((m: any) => m.email || m.phone)
 
+      debugInfo[debugInfo.length-1].bookingsForSess = (bookings || []).length
+      debugInfo[debugInfo.length-1].recipients = recipients.length
       if (!recipients.length) { totalSkipped++; continue }
 
       // Formater la séance
