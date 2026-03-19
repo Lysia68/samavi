@@ -166,10 +166,17 @@ function Subscriptions({ isMobile }) {
                 <div style={{ display:"flex", gap:8 }}>
                   <Button sm variant="ghost" onClick={()=>startEdit(sub)}><span style={{display:"flex",alignItems:"center",gap:5}}><IcoSettings2 s={13} c={C.textMid}/>Modifier</span></Button>
                   <Button sm variant="danger" onClick={async ()=>{
-                    setSubs(prev=>prev.filter(s=>s.id!==sub.id));
                     if (studioId) {
-                      try { const sb = createClient(); await sb.from("subscriptions").update({active:false}).eq("id",sub.id); }
-                      catch(e) { console.error("del sub",e); }
+                      try {
+                        const sb = createClient();
+                        const { count } = await sb.from("members").select("id", { count:"exact", head:true }).eq("subscription_id", sub.id).eq("studio_id", studioId);
+                        if (count && count > 0) {
+                          alert(`Impossible de supprimer — ${count} membre${count>1?"s utilisent":" utilise"} cet abonnement.`);
+                          return;
+                        }
+                        await sb.from("subscriptions").update({active:false}).eq("id",sub.id);
+                        setSubs(prev=>prev.filter(s=>s.id!==sub.id));
+                      } catch(e) { console.error("del sub",e); }
                     }
                   }}>Supprimer</Button>
                 </div>
