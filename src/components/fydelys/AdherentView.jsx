@@ -653,11 +653,21 @@ function AdherentView({ onSwitch, isMobile, studioName = "", impersonateUserId =
               {ADH_NAV.find(n=>n.key===page)?.label||"Planning"}
             </div>
             {me && (
-              <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+              <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+                {me.credits_total > 0 && (
+                  <div style={{ display:"flex", alignItems:"center", gap:5, padding:"4px 10px", background:me.credits<=0?C.warnBg:C.accentBg, borderRadius:20, border:`1px solid ${me.credits<=0?C.warn:C.accent}20` }}>
+                    <IcoCreditCard2 s={12} c={me.credits<=0?C.warn:C.accent}/>
+                    <span style={{ fontSize:12, fontWeight:700, color:me.credits<=0?C.warn:C.accent }}>{me.credits||0} crédit{(me.credits||0)!==1?"s":""}</span>
+                  </div>
+                )}
                 <div style={{ width:30, height:30, borderRadius:"50%", background:C.accentBg, border:`1.5px solid ${C.accent}`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:11, fontWeight:700, color:C.accent, flexShrink:0 }}>
                   {`${me.first_name?.[0]||""}${me.last_name?.[0]||""}`.toUpperCase()||"?"}
                 </div>
                 <div style={{ fontSize:13, fontWeight:600, color:C.text }}>{me.first_name} {me.last_name}</div>
+                <button onClick={async()=>{ const sb = createClient(); await sb.auth.signOut(); window.location.reload(); }}
+                  style={{ marginLeft:4, padding:"5px 12px", borderRadius:8, border:`1px solid ${C.border}`, background:C.bg, color:C.textSoft, fontSize:12, fontWeight:600, cursor:"pointer" }}>
+                  Déconnexion
+                </button>
               </div>
             )}
           </div>
@@ -668,10 +678,18 @@ function AdherentView({ onSwitch, isMobile, studioName = "", impersonateUserId =
             <div style={{ fontSize:15, fontWeight:800, color:C.text, letterSpacing:-0.3 }}>{studioName || "Fydelys"}</div>
             {me && (
               <div style={{ display:"flex", alignItems:"center", gap:7 }}>
-                <div style={{ fontSize:13, fontWeight:600, color:C.textSoft }}>{me.first_name} {me.last_name}</div>
+                {me.credits_total > 0 && (
+                  <span style={{ fontSize:11, fontWeight:700, color:me.credits<=0?C.warn:C.accent, background:me.credits<=0?C.warnBg:C.accentBg, padding:"2px 8px", borderRadius:12 }}>
+                    {me.credits||0} cr.
+                  </span>
+                )}
                 <div style={{ width:28, height:28, borderRadius:"50%", background:C.accentBg, border:`1.5px solid ${C.accent}`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:11, fontWeight:700, color:C.accent }}>
                   {`${me.first_name?.[0]||""}${me.last_name?.[0]||""}`.toUpperCase()||"?"}
                 </div>
+                <button onClick={async()=>{ const sb = createClient(); await sb.auth.signOut(); window.location.reload(); }}
+                  style={{ padding:"4px 8px", borderRadius:6, border:`1px solid ${C.border}`, background:"none", color:C.textSoft, fontSize:11, fontWeight:600, cursor:"pointer" }}>
+                  ⏻
+                </button>
               </div>
             )}
           </div>
