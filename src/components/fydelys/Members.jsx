@@ -236,29 +236,23 @@ function Members({ isMobile }) {
     </Modal>;
   };
 
+  const saveSubscription = async () => {
+    const subId = modal.subId ?? (modal.member.subscriptionId || "");
+    setModal(prev => ({...prev, saving:true}));
+    const res = await fetch("/api/members", { method:"PATCH", headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({ id: modal.member.id, subscription_id: subId || null }) });
+    setModal(prev => ({...prev, saving:false}));
+    if (res.ok) {
+      const newSub = subscriptionsList.find(s=>s.id===subId)?.name||"—";
+      setMembers(prev=>prev.map(m => m.id===modal.member.id ? {...m, subscriptionId:subId||null, subscription:newSub} : m));
+      setSelected(prev=>prev?.id===modal.member.id ? {...prev, subscriptionId:subId||null, subscription:newSub} : prev);
+      setModal(prev => ({...prev, saved:true}));
+      setTimeout(()=>setModal(null), 1200);
+    } else { showToast("Erreur lors de la sauvegarde",false); }
+  };
+
   const SubscriptionModal = () => {
-    const [subId, setSubId] = useState(modal.member.subscriptionId || "");
-    const [saving, setSaving] = useState(false);
-    const [saved, setSaved] = useState(false);
-    const subName = subscriptionsList.find(s=>s.id===subId)?.name || subId || "—";
-
-    const save = async () => {
-      setSaving(true);
-      const res = await fetch("/api/members", { method:"PATCH", headers:{"Content-Type":"application/json"},
-        body: JSON.stringify({ id: modal.member.id, subscription_id: subId || null }) });
-      setSaving(false);
-      if (res.ok) {
-        const newSub = subscriptionsList.find(s=>s.id===subId)?.name||"—";
-        const updater = m => m.id===modal.member.id
-          ? {...m, subscriptionId:subId||null, subscription:newSub}
-          : m;
-        setMembers(prev=>prev.map(updater));
-        setSelected(prev=>prev?.id===modal.member.id ? {...prev, subscriptionId:subId||null, subscription:newSub} : prev);
-        setSaved(true);
-        setTimeout(()=>setModal(null), 1200);
-      } else { showToast("Erreur lors de la sauvegarde",false); }
-    };
-
+    const subId = modal.subId ?? (modal.member.subscriptionId || "");
     return <Modal>
       <ModalHeader title={`Abonnement — ${modal.member.firstName} ${modal.member.lastName}`} onClose={()=>setModal(null)}/>
       <div style={{marginBottom:16}}>
@@ -269,16 +263,16 @@ function Members({ isMobile }) {
       </div>
       <div style={{marginBottom:18}}>
         <FieldLabel>Nouvel abonnement</FieldLabel>
-        <select value={subId} onChange={e=>setSubId(e.target.value)}
+        <select value={subId} onChange={e=>setModal(prev=>({...prev, subId:e.target.value}))}
           style={{width:"100%",padding:"9px 12px",border:`1.5px solid ${C.border}`,borderRadius:8,fontSize:13,color:C.text,background:C.surfaceWarm,outline:"none"}}>
           <option value="">— Aucun abonnement —</option>
           {subscriptionsList.map(s=><option key={s.id} value={s.id}>{s.name}</option>)}
         </select>
       </div>
-      {saved
+      {modal.saved
         ? <div style={{display:"flex",alignItems:"center",gap:8,padding:"10px 14px",background:C.okBg,borderRadius:8,color:C.ok,fontWeight:600,fontSize:14}}><IcoCheck s={16} c={C.ok}/>Abonnement mis à jour !</div>
         : <div style={{display:"flex",gap:10}}>
-            <Button variant="primary" onClick={save} disabled={saving}>{saving?"Enregistrement…":"Enregistrer"}</Button>
+            <Button variant="primary" onClick={saveSubscription} disabled={modal.saving}>{modal.saving?"Enregistrement…":"Enregistrer"}</Button>
             <Button variant="ghost" onClick={()=>setModal(null)}>Annuler</Button>
           </div>
       }
