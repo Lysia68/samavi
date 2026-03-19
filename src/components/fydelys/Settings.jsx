@@ -856,6 +856,23 @@ function Settings({ isMobile, onImpersonate }) {
     };
 
     const handleDelete = async (userId) => {
+      // Vérifier si le coach a des séances futures assignées
+      try {
+        const sb = createClient();
+        const today = new Date().toISOString().slice(0,10);
+        const user = users.find(u => u.id === userId);
+        const coachName = user ? `${user.first_name||""} ${user.last_name||""}`.trim() : "";
+        if (coachName) {
+          const { count } = await sb.from("sessions").select("id", { count:"exact", head:true })
+            .eq("studio_id", studioId).eq("teacher", coachName).gte("session_date", today).neq("status", "cancelled");
+          if (count && count > 0) {
+            showToast(`Impossible — ${count} séance${count>1?"s futures assignées":" future assignée"} à ce coach. Réaffectez-les d'abord.`, false);
+            setConfirmAction(null);
+            return;
+          }
+        }
+      } catch(e) { console.error("check coach sessions", e); }
+
       const res = await fetch("/api/team/suspend", {
         method:"DELETE", headers:{"Content-Type":"application/json"},
         body: JSON.stringify({ userId, studioId })
