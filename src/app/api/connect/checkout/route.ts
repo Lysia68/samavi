@@ -111,7 +111,7 @@ export async function POST(req: NextRequest) {
         let priceId = sub.stripe_price_id
         if (priceId) {
           try {
-            await stripeInstance.prices.retrieve(priceId, connectAccountId ? { stripeAccount: connectAccountId } : {})
+            await stripeInstance.prices.retrieve(priceId, ...(connectAccountId ? [{ stripeAccount: connectAccountId }] : []))
           } catch {
             console.warn(`[connect/checkout] stripe_price_id ${priceId} invalide — recréation`)
             priceId = null
@@ -127,7 +127,7 @@ export async function POST(req: NextRequest) {
             currency: "eur",
             recurring: { interval, interval_count: intervalCount },
             ...(productId ? { product: productId } : { product_data: { name: `${studio.name} — ${sub.name}` } }),
-          }, connectAccountId ? { stripeAccount: connectAccountId } : {})
+          }, ...(connectAccountId ? [{ stripeAccount: connectAccountId }] : []))
           priceId = price.id
           await db.from("subscriptions").update({ stripe_price_id: priceId }).eq("id", subscriptionId)
         }
@@ -229,8 +229,10 @@ export async function POST(req: NextRequest) {
     }
 
     // Créer la session Stripe (Connect ou Direct)
-    const sessionOptions = connectAccountId ? { stripeAccount: connectAccountId } : {}
-    const session = await stripeInstance.checkout.sessions.create(sessionParams, sessionOptions)
+    const session = await stripeInstance.checkout.sessions.create(
+      sessionParams,
+      ...(connectAccountId ? [{ stripeAccount: connectAccountId }] : [])
+    )
 
     return NextResponse.json({ url: session.url, sessionId: session.id })
 
