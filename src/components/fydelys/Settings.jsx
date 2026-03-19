@@ -1546,7 +1546,7 @@ function Settings({ isMobile, onImpersonate }) {
                   onFocus={e=>e.target.style.borderColor=C.accent}
                   onBlur={e=>e.target.style.borderColor=C.border}/>
                 <div style={{ fontSize:11, color:C.textMuted, marginTop:4 }}>
-                  Configurez un webhook dans votre Stripe Dashboard pointant vers <code>https://{studio?.slug}.fydelys.fr/api/connect/webhook</code>
+                  Configurez un webhook dans votre Stripe Dashboard pointant vers <code>https://{studioSlug}.fydelys.fr/api/connect/webhook</code>
                 </div>
               </div>
               <div style={{ display:"flex", gap:8, marginTop:4 }}>
