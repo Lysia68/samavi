@@ -1541,7 +1541,7 @@ function Settings({ isMobile, onImpersonate }) {
                 <Button sm variant="primary" onClick={async () => {
                   setSavingKeys(true);
                   try {
-                    const res = await fetch("/api/sa/stripe-keys", {
+                    const res = await fetch("/api/studio/stripe-keys", {
                       method: "POST",
                       headers: {"Content-Type":"application/json"},
                       body: JSON.stringify({ studioId, pk: directKeys.pk, sk: directKeys.sk || null }),
