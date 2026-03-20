@@ -639,7 +639,7 @@ function Planning({ isMobile }) {
       duration_min: parseInt(nS.duration) || 60, spots: parseInt(nS.spots) || 12,
       status: "scheduled",
     }).select("id").single();
-    if (error) { setSessions(prev => prev.filter(s => s.id !== tempId)); alert("❌ " + error.message); }
+    if (error) { setSessions(prev => prev.filter(s => s.id !== tempId)); openConfirm("❌ " + error.message, ()=>{}, {subMsg:"Vérifiez les champs et réessayez."}); }
     else if (data?.id) {
       if (isDemoData) { setSessions([{ id: data.id, ...nS, booked: 0, waitlist: 0 }]); setIsDemoData(false); }
       else setSessions(prev => prev.map(s => s.id === tempId ? { ...s, id: data.id } : s));
@@ -651,7 +651,7 @@ function Planning({ isMobile }) {
     const { count } = await sb.from("bookings").select("id", { count:"exact", head:true })
       .eq("session_id", id).eq("status", "confirmed");
     if (count && count > 0) {
-      alert(`Impossible de supprimer — ${count} réservation${count>1?"s confirmées":"  confirmée"}. Annulez-les d'abord.`);
+      openConfirm(`Impossible de supprimer`, ()=>{}, {subMsg:`${count} réservation${count>1?"s confirmées":" confirmée"}. Annulez-les d'abord.`});
       return;
     }
     setSessions(prev => prev.filter(s => s.id !== id));
@@ -706,14 +706,14 @@ function Planning({ isMobile }) {
   const handleSendReminder = async sessId => {
     const sess = sessions.find(s => s.id === sessId);
     const bl = (bookings[sessId] || []).filter(b => b.st === "confirmed");
-    if (!bl.length) { alert("Aucun inscrit confirmé pour cette séance."); return; }
+    if (!bl.length) { setPlanToast({msg:"Aucun inscrit confirmé pour cette séance.", ok:false}); setTimeout(()=>setPlanToast(null),3000); return; return; }
     try {
       const res = await fetch("/api/send-reminder", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ sessId, studioId, members: bl.map(b => ({ email: b.email, name: b.name })), sess }),
       });
-      if (res.ok) alert(`✅ Rappel envoyé à ${bl.length} inscrit${bl.length > 1 ? "s" : ""}.`);
+      if (res.ok) { setPlanToast({msg:`Rappel envoyé à ${bl.length} inscrit${bl.length > 1 ? "s" : ""}`, ok:true}); setTimeout(()=>setPlanToast(null),3500); };
     } catch (e) { console.error("reminder", e); }
   };
 

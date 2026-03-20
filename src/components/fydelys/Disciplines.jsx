@@ -110,7 +110,7 @@ function DisciplinesPage({ isMobile }) {
       const { count } = await sb.from("sessions").select("id", { count:"exact", head:true })
         .eq("discipline_id", discId).eq("studio_id", studioId).neq("status", "cancelled");
       if (count && count > 0) {
-        alert(`Impossible de supprimer — ${count} séance${count>1?"s utilisent":"  utilise"} cette discipline.`);
+        showToast(`Impossible de supprimer — ${count} séance${count>1?"s utilisent":" utilise"} cette discipline.`, false);
         return;
       }
       await sb.from("disciplines").delete().eq("id", discId);

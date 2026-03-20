@@ -18,6 +18,8 @@ function Subscriptions({ isMobile }) {
   const [nSub, setNSub] = useState({ name:"", price:"", period:"mois", description:"" });
   const [editData, setEditData] = useState({});
   const [stripeEnabled, setStripeEnabled] = useState(false);
+  const [toast, setToast] = useState(null);
+  const showToast = (msg, ok=true) => { setToast({msg,ok}); setTimeout(()=>setToast(null),3500); };
   const p = isMobile?12:28;
 
   useEffect(() => {
@@ -70,6 +72,13 @@ function Subscriptions({ isMobile }) {
   return (
     <div>
       {isDemoData && <DemoBanner/>}
+      {toast && (
+        <div style={{ position:"fixed", bottom:24, left:"50%", transform:"translateX(-50%)", zIndex:1000,
+          background:toast.ok?"#2A1F14":"#7F1D1D", color:"#fff", borderRadius:12, padding:"11px 22px",
+          fontSize:14, fontWeight:600, boxShadow:"0 4px 20px rgba(0,0,0,.18)", whiteSpace:"nowrap" }}>
+          {toast.ok ? "✓" : "✗"} {toast.msg}
+        </div>
+      )}
       <div style={{ padding:p }}>
       <div style={{ display:"flex", justifyContent:"flex-end", marginBottom:18 }}><Button sm variant="primary" onClick={()=>setShowAdd(!showAdd)}>＋ Abonnement</Button></div>
       {showAdd && (
@@ -183,7 +192,7 @@ function Subscriptions({ isMobile }) {
                         const sb = createClient();
                         const { count } = await sb.from("members").select("id", { count:"exact", head:true }).eq("subscription_id", sub.id).eq("studio_id", studioId);
                         if (count && count > 0) {
-                          alert(`Impossible de supprimer — ${count} membre${count>1?"s utilisent":" utilise"} cet abonnement.`);
+                          showToast(`Impossible de supprimer — ${count} membre${count>1?"s utilisent":" utilise"} cet abonnement.`, false);
                           return;
                         }
                         await sb.from("subscriptions").update({active:false}).eq("id",sub.id);

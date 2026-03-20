@@ -1700,7 +1700,7 @@ function Settings({ isMobile, onImpersonate }) {
       const { count } = await sb.from("sessions").select("id", { count:"exact", head:true })
         .eq("room_id", id).neq("status", "cancelled");
       if (count && count > 0) {
-        alert(`Impossible de supprimer — ${count} séance${count>1?"s utilisent":"  utilise"} cette salle.`);
+        showToast(`Impossible de supprimer — ${count} séance${count>1?"s utilisent":" utilise"} cette salle.`, false);
         setConfirmDel(null);
         return;
       }
