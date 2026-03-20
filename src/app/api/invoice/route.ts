@@ -80,7 +80,7 @@ export async function GET(req: NextRequest) {
 <title>Facture ${invoiceNum} — ${studioName}</title>
 <style>
   * { margin:0; padding:0; box-sizing:border-box; }
-  body { font-family: 'Helvetica Neue', Arial, sans-serif; color: #1a1a1a; background: #fff; width: 210mm; min-height: 297mm; margin: 0 auto; }
+  body { font-family: 'Helvetica Neue', Arial, sans-serif; color: #1a1a1a; background: #fff; width: 210mm; min-height: 297mm; margin: 0 auto; display: flex; flex-direction: column; }
 
   /* ── Header ── */
   .header { background: linear-gradient(135deg, #2A1F14 0%, #5C3D20 100%); color: white; padding: 20px 28px 16px; display: flex; justify-content: space-between; align-items: flex-start; }
@@ -135,7 +135,7 @@ export async function GET(req: NextRequest) {
   .pi-value { font-size: 12px; font-weight: 600; color: #2A1F14; }
 
   /* ── Footer ── */
-  .footer { background: #FDFAF7; padding: 12px 28px; margin-top: 20px; border-top: 2px solid #F0E8DC; }
+  .footer { background: #FDFAF7; padding: 12px 28px; margin-top: auto; border-top: 2px solid #F0E8DC; }
   .footer-legal { font-size: 10px; color: #8C7B6C; line-height: 1.7; }
   .footer-legal strong { color: #5C4A38; }
   .footer-brand { text-align: center; margin-top: 8px; padding-top: 8px; border-top: 1px solid #EDE4D8; font-size: 10px; color: #C4A880; font-weight: 600; letter-spacing: 0.5px; }
@@ -156,6 +156,7 @@ export async function GET(req: NextRequest) {
 </head>
 <body>
 
+  <div style="flex:1">
   <!-- Header -->
   <div class="header">
     <div>
@@ -249,6 +250,7 @@ export async function GET(req: NextRequest) {
     </div>
   </div>
 
+  </div>
   <!-- Footer -->
   <div class="footer">
     <div class="footer-legal">
