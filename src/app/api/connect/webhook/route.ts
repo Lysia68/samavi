@@ -101,6 +101,12 @@ export async function POST(req: NextRequest) {
         if (type === "subscription_once" && memberId) {
           const creditsToAdd = parseInt(session.metadata?.credits || "1")
           L.info(`subscription_once — ${creditsToAdd} crédit(s) → membre ${memberId}`)
+          // Récupérer le nom de l'abonnement pour la note
+          let subName = `${creditsToAdd} crédit${creditsToAdd > 1 ? "s" : ""}`
+          if (session.metadata?.subscriptionId) {
+            const { data: subRow } = await db.from("subscriptions").select("name").eq("id", session.metadata.subscriptionId).maybeSingle()
+            if (subRow?.name) subName = subRow.name
+          }
           const { data: member, error: mErr } = await db.from("members").select("credits, credits_total").eq("id", memberId).single()
           if (mErr || !member) { L.err(`Membre ${memberId} introuvable`, mErr); break }
           const { error: uErr } = await db.from("members").update({
@@ -115,7 +121,7 @@ export async function POST(req: NextRequest) {
             status: "payé", payment_date: new Date().toISOString().slice(0, 10),
             payment_type: "Carte", source: "card_subscription_once",
             stripe_payment_id: (session.payment_intent as string) || session.id,
-            notes: `Achat — ${creditsToAdd} crédit${creditsToAdd > 1 ? "s" : ""}`,
+            notes: subName,
           })
           if (pErr) L.err("Échec insert member_payments", pErr)
           else L.ok("member_payments inséré")
@@ -126,6 +132,12 @@ export async function POST(req: NextRequest) {
         if (type === "credits" && memberId && credits) {
           const creditsAmount = parseInt(credits)
           L.info(`credits — ${creditsAmount} crédit(s) → membre ${memberId}`)
+          // Récupérer le nom du pack pour la note
+          let packName = `Pack — ${creditsAmount} crédit${creditsAmount > 1 ? "s" : ""}`
+          if (session.metadata?.creditsPackId) {
+            const { data: packRow } = await db.from("credits_packs").select("name").eq("id", session.metadata.creditsPackId).maybeSingle()
+            if (packRow?.name) packName = packRow.name
+          }
           const { data: member, error: mErr } = await db.from("members").select("credits, credits_total").eq("id", memberId).single()
           if (mErr || !member) { L.err(`Membre ${memberId} introuvable`, mErr); break }
           const { error: uErr } = await db.from("members").update({
@@ -140,7 +152,7 @@ export async function POST(req: NextRequest) {
             status: "payé", payment_date: new Date().toISOString().slice(0, 10),
             payment_type: "Carte", source: "card_credits",
             stripe_payment_id: (session.payment_intent as string) || session.id,
-            notes: `Pack crédits — ${creditsAmount} crédits`,
+            notes: packName,
           })
           if (pErr) L.err("Échec insert member_payments", pErr)
           else L.ok("member_payments inséré")
@@ -215,13 +227,20 @@ export async function POST(req: NextRequest) {
         if (uErr) L.err("Échec update membre abonnement", uErr)
         else L.ok(`Membre ${memberId} mis à jour — statut Actif`)
 
+        // Récupérer le nom de l'abonnement pour la note
+        let subLabel = "Abonnement mensuel"
+        if (subscriptionId) {
+          const { data: subRow } = await db.from("subscriptions").select("name").eq("id", subscriptionId).maybeSingle()
+          if (subRow?.name) subLabel = subRow.name
+        }
+
         const { error: pErr } = await db.from("member_payments").insert({
           studio_id: studioId, member_id: memberId,
           amount: (invoice.amount_paid || 0) / 100,
           status: "payé", payment_date: new Date().toISOString().slice(0, 10),
           payment_type: "Carte", source: "card_subscription",
           stripe_payment_id: (invoice.payment_intent as string) || invoice.id,
-          notes: `Abonnement mensuel`,
+          notes: subLabel,
         })
         if (pErr) L.err("Échec insert member_payments", pErr)
         else L.ok("member_payments inséré")

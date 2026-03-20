@@ -144,7 +144,13 @@ function TenantFormModal({ editing, setModal, showToast, setTenants, createClien
         plan:f.plan, members:0, revenue:0, status:"actif", since, growth:0,
       };
       setTenants(prev=>[newT, ...prev]);
-      showToast(`🚀 "${f.name}" créé !`);
+
+      // Afficher warning si compte admin non créé (email déjà utilisé, etc.)
+      if (result.warning) {
+        showToast(`⚠️ Studio créé mais : ${result.warning}`, false);
+      } else {
+        showToast(`🚀 "${f.name}" créé ! Magic link envoyé à ${f.email}`);
+      }
     }
     setModal(null);
   };
@@ -376,11 +382,13 @@ function SuperAdminView({ onSwitch, isMobile, onSignOut, onImpersonateStudio }) 
           lastName:  admin?.last_name  || "",
           isCoach:   admin?.is_coach   || false,
           contact:   admin ? `${admin.first_name||""} ${admin.last_name||""}`.trim() : "",
-          notes:       s.notes || "",
-          paymentMode: s.payment_mode || "none",
-          members:     0,
-          revenue:   0,
-          growth:    0,
+          notes:          s.notes || "",
+          paymentMode:    s.payment_mode || "none",
+          billingStatus:  s.billing_status || "trialing",
+          trialEndsAt:    s.trial_ends_at || null,
+          members:        0,
+          revenue:        0,
+          growth:         0,
         };
       });
       setTenants(mapped);
