@@ -67,7 +67,7 @@ export async function GET(req: NextRequest) {
   // ── Fallback : reçu HTML maison ────────────────────────────────────────────
   const member = (pay as any).members as any
   const memberName = member ? `${member.first_name} ${member.last_name}` : "Adhérent"
-  const dateStr = new Date(pay.payment_date).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })
+  const dateStr = new Date(pay.payment_date).toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit", year: "numeric" })
   const invoiceNum = `FAC-${pay.id.slice(0,8).toUpperCase()}`
   const studioName = studio?.name || "Studio"
   const now = new Date().toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })
@@ -81,16 +81,17 @@ export async function GET(req: NextRequest) {
 <style>
   * { margin:0; padding:0; box-sizing:border-box; }
   body { font-family: 'Helvetica Neue', Arial, sans-serif; color: #1a1a1a; background: #f5f5f5; }
-  .page { max-width: 760px; margin: 0 auto; background: #fff; min-height: 100vh; overflow: hidden; border-radius: 0; display: flex; flex-direction: column; }
+  .page { max-width: 760px; margin: 0 auto; background: #fff; min-height: 100vh; display: flex; flex-direction: column; position: relative; }
+  .full-width-wrap { position: relative; left: 50%; right: 50%; margin-left: -50vw; margin-right: -50vw; width: 100vw; }
   /* ── Header ── */
-  .header { background: linear-gradient(135deg, #2A1F14 0%, #5C3D20 100%); color: white; padding: 24px 36px 18px; display: flex; justify-content: space-between; align-items: flex-start; border-radius: 0; margin: -1px; }
+  .header { background: linear-gradient(135deg, #2A1F14 0%, #5C3D20 100%); color: white; padding: 24px 36px 18px; display: flex; justify-content: space-between; align-items: flex-start; }
   .logo-block .studio-name { font-size: 20px; font-weight: 800; letter-spacing: -0.5px; color: #F5D5A8; }
   .logo-block .studio-sub { font-size: 12px; color: rgba(255,255,255,0.6); margin-top: 4px; line-height: 1.6; }
   .invoice-meta { text-align: right; }
   .invoice-meta .label { font-size: 11px; text-transform: uppercase; letter-spacing: 1.5px; color: rgba(255,255,255,0.5); margin-bottom: 6px; }
   .invoice-meta .invoice-number { font-size: 22px; font-weight: 800; color: #F5D5A8; }
   .invoice-meta .invoice-date { font-size: 13px; color: rgba(255,255,255,0.7); margin-top: 4px; }
-  .status-bar { background: #A06838; padding: 7px 36px; display: flex; justify-content: space-between; align-items: center; margin: 0 -1px; }
+  .status-bar { background: #A06838; padding: 7px 36px; display: flex; justify-content: space-between; align-items: center; }
   .status-bar .status-label { font-size: 12px; font-weight: 700; color: white; text-transform: uppercase; letter-spacing: 1px; }
   .status-bar .status-badge { background: rgba(255,255,255,0.2); color: white; padding: 3px 12px; border-radius: 20px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
   /* ── Body ── */
@@ -128,10 +129,10 @@ export async function GET(req: NextRequest) {
   .payment-info .pi-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #A06838; }
   .payment-info .pi-value { font-size: 14px; font-weight: 600; color: #2A1F14; }
   /* ── Footer ── */
-  .footer { margin-top: auto; padding: 14px 36px; background: #FDFAF7; border-top: 2px solid #F0E8DC; position: fixed; bottom: 0; left: 0; right: 0; }
-  .footer-legal { font-size: 11px; color: #8C7B6C; line-height: 1.8; }
-  .footer-legal strong { color: #5C4A38; }
-  .footer-brand { text-align: center; margin-top: 16px; padding-top: 16px; border-top: 1px solid #EDE4D8; font-size: 11px; color: #C4A880; font-weight: 600; letter-spacing: 0.5px; }
+  .footer { padding: 14px 36px; background: #2A1F14; border-top: none; }
+  .footer-legal { font-size: 11px; color: rgba(255,255,255,0.7); line-height: 1.8; }
+  .footer-legal strong { color: #F5D5A8; }
+  .footer-brand { text-align: center; margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.15); font-size: 11px; color: rgba(255,255,255,0.5); font-weight: 600; letter-spacing: 0.5px; }
   /* ── Actions (masqués à l'impression) ── */
   .actions { position: fixed; bottom: 24px; right: 24px; display: flex; gap: 10px; }
   .btn { display: inline-flex; align-items: center; gap: 8px; padding: 12px 20px; border-radius: 10px; border: none; font-size: 14px; font-weight: 700; cursor: pointer; box-shadow: 0 4px 16px rgba(0,0,0,0.15); }
@@ -144,14 +145,14 @@ export async function GET(req: NextRequest) {
     .page { box-shadow: none; }
     .header { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     .status-bar { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-    .footer { position: fixed; bottom: 0; left: 0; right: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .footer { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   }
 </style>
 </head>
-<body style="padding-bottom:70px">
+<body>
 <div class="page">
   <!-- Header -->
-  <div class="header">
+  <div class="full-width-wrap"><div class="header">
     <div class="logo-block">
       <div class="studio-name">${studioName}</div>
       <div class="studio-sub">
@@ -164,11 +165,11 @@ export async function GET(req: NextRequest) {
       <div class="invoice-number">${invoiceNum}</div>
       <div class="invoice-date">Émise le ${now}</div>
     </div>
-  </div>
-  <div class="status-bar">
+  </div></div>
+  <div class="full-width-wrap"><div class="status-bar">
     <span class="status-label">Statut du paiement</span>
     <span class="status-badge">✓ ${pay.status || "payé"}</span>
-  </div>
+  </div></div>
 
   <div class="body">
     <!-- Émetteur / Destinataire -->
@@ -256,14 +257,14 @@ export async function GET(req: NextRequest) {
   </div>
 
   <!-- Footer légal -->
-  <div class="footer">
+  <div class="full-width-wrap"><div class="footer">
     <div class="footer-legal">
       <strong>Mentions légales :</strong> TVA non applicable, article 293 B du CGI. 
       Ce document tient lieu de facture conformément à la législation française en vigueur.
       ${pay.stripe_payment_id ? `Référence transaction : ${pay.stripe_payment_id}` : ""}
     </div>
     <div class="footer-brand">Propulsé par Fydelys — fydelys.fr</div>
-  </div>
+  </div></div>
 </div>
 
 <!-- Boutons d'action -->
