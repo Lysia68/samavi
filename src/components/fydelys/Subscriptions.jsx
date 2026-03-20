@@ -37,7 +37,7 @@ function Subscriptions({ isMobile }) {
     if (!studioId) return;
     setDbLoading(true);
     createClient().from("subscriptions")
-      .select("id, name, price, period, description, popular, color, stripe_price_id, stripe_product_id")
+      .select("id, name, price, period, description, popular, color, credits, stripe_price_id, stripe_product_id")
       .eq("studio_id", studioId).eq("active", true).order("price")
       .then(({ data, error }) => {
         if (error) { console.error("load subs", error); setDbLoading(false); return; }
@@ -50,6 +50,7 @@ function Subscriptions({ isMobile }) {
   const startEdit = (sub) => {
     setEditId(sub.id);
     setEditData({ name:sub.name, price:sub.price, period:sub.period, description:sub.description, popular:sub.popular,
+      credits: sub.credits ?? 1,
       stripe_product_id: sub.stripe_product_id||"", stripe_price_id: sub.stripe_price_id||"" });
   };
   const saveEdit = async (id) => {
@@ -59,6 +60,7 @@ function Subscriptions({ isMobile }) {
       await createClient().from("subscriptions").update({
         name: editData.name, price: parseFloat(editData.price)||0,
         period: editData.period, description: editData.description||"", popular: editData.popular||false,
+        credits: parseInt(editData.credits) || 0,
         stripe_product_id: editData.stripe_product_id||"",
         stripe_price_id:   editData.stripe_price_id||"",
       }).eq("id", id);
@@ -114,6 +116,15 @@ function Subscriptions({ isMobile }) {
                     <div><FieldLabel>Prix (€)</FieldLabel><input type="number" value={editData.price} onChange={e=>setEditData({...editData,price:e.target.value})} style={{ width:"100%", padding:"8px 11px", border:`1.5px solid ${C.border}`, borderRadius:8, fontSize:14, outline:"none", boxSizing:"border-box", color:C.text, background:C.surfaceWarm }} onFocus={e=>e.target.style.borderColor=C.accent} onBlur={e=>e.target.style.borderColor=C.border}/></div>
                     <Field label="Période" value={editData.period} onChange={v=>setEditData({...editData,period:v})} opts={["mois","séance","carnet","trimestre","année"]}/>
                   </div>
+                  <div>
+                    <FieldLabel>Crédits attribués</FieldLabel>
+                    <input type="number" min="0" value={editData.credits ?? 1}
+                      onChange={e=>setEditData({...editData,credits:e.target.value})}
+                      placeholder="0 = illimité"
+                      style={{ width:"100%", padding:"8px 11px", border:`1.5px solid ${C.border}`, borderRadius:8, fontSize:14, outline:"none", boxSizing:"border-box", color:C.text, background:C.surfaceWarm }}
+                      onFocus={e=>e.target.style.borderColor=C.accent} onBlur={e=>e.target.style.borderColor=C.border}/>
+                    <div style={{ fontSize:11, color:C.textMuted, marginTop:3 }}>Nombre de séances créditées lors de l'achat (0 = accès illimité)</div>
+                  </div>
                   <div><FieldLabel>Description</FieldLabel><input value={editData.description} onChange={e=>setEditData({...editData,description:e.target.value})} style={{ width:"100%", padding:"8px 11px", border:`1.5px solid ${C.border}`, borderRadius:8, fontSize:14, outline:"none", boxSizing:"border-box", color:C.text, background:C.surfaceWarm }} onFocus={e=>e.target.style.borderColor=C.accent} onBlur={e=>e.target.style.borderColor=C.border}/></div>
                   {stripeEnabled && <div style={{ borderTop:`1px solid ${C.borderSoft}`, paddingTop:10 }}>
                     <div style={{ fontSize:11, fontWeight:700, color:C.textMuted, textTransform:"uppercase", letterSpacing:.5, marginBottom:8 }}>🔗 Stripe (optionnel)</div>
@@ -158,6 +169,7 @@ function Subscriptions({ isMobile }) {
                 <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:8 }}>
                   <div>
                     <div style={{ fontSize:19, fontWeight:700, color:C.text, marginBottom:4 }}>{sub.name}</div>
+                    {sub.credits > 0 && <div style={{ fontSize:11, color:C.textSoft, marginTop:2 }}>🎟 {sub.credits} crédit{sub.credits > 1 ? 's' : ''} attribué{sub.credits > 1 ? 's' : ''}</div>}
                     <div style={{ fontSize:34, fontWeight:700, color:C.text, lineHeight:1 }}>{sub.price} €<span style={{ fontSize:16, color:C.textSoft, fontWeight:400 }}> / {sub.period}</span></div>
                   </div>
                   <div style={{ width:10, height:10, borderRadius:"50%", background:sub.color, marginTop:4, flexShrink:0 }}/>
