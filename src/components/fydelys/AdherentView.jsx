@@ -476,9 +476,9 @@ function AdherentView({ onSwitch, isMobile, studioName = "", impersonateUserId =
                   </div>
                   <div style={{ textAlign:"right", flexShrink:0, display:"flex", flexDirection:"column", alignItems:"flex-end", gap:6 }}>
                     <div style={{ fontSize:15, fontWeight:800, color:C.accent }}>{parseFloat(p.amount||0).toFixed(2)} €</div>
-                    <Tag color={p.status==="payé"?C.ok:C.warn} bg={p.status==="payé"?C.okBg:C.warnBg} style={{ fontSize:10 }}>
+                    <Pill color={p.status==="payé"?C.ok:C.warn} bg={p.status==="payé"?C.okBg:C.warnBg}>
                       {p.status || "payé"}
-                    </Tag>
+                    </Pill>
                     {p.stripe_payment_id
                       ? <a href={`/api/invoice?paymentId=${p.id}`} target="_blank" rel="noopener noreferrer"
                           style={{ fontSize:11, fontWeight:600, color:C.accent, textDecoration:"none", padding:"3px 10px", border:`1px solid ${C.accent}40`, borderRadius:6, background:C.accentBg, whiteSpace:"nowrap" }}>
