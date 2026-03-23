@@ -44,6 +44,7 @@ export async function POST(req: NextRequest) {
     ])
 
     // Envoyer les emails de confirmation si SendGrid configuré
+    console.log("[bookings] Email check — SENDGRID:", !!process.env.SENDGRID_API_KEY, "| member.email:", member?.email || "VIDE", "| studio.email:", studio?.email || "VIDE")
     if (process.env.SENDGRID_API_KEY && member?.email && studio) {
       const disc = (sess as any).disciplines
       const discName = disc?.name || "Séance"
