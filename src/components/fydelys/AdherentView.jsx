@@ -166,22 +166,29 @@ function AdherentView({ onSwitch, isMobile, studioName = "", impersonateUserId =
         return;
       }
 
-      const isFull = s.booked >= s.spots;
-      const { error } = await sb.from("bookings").upsert({
-        session_id: s.id,
-        member_id: me.id,
-        status: isFull ? "waitlist" : "confirmed",
-      }, { onConflict: "session_id,member_id", ignoreDuplicates: true });
-      if (!error) {
+      // Passer par l'API pour déclencher les emails de confirmation
+      const res = await fetch("/api/bookings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sessionId: s.id, memberId: me.id, studioId }),
+        credentials: "include",
+      });
+      const result = await res.json();
+      if (res.ok && !result.error) {
+        if (result.already) {
+          showToast("Déjà inscrit à cette séance");
+          return;
+        }
+        const isFull = result.status === "waitlist";
         setMyBookings(p=>[...p, s.id]);
-        setSessions(p=>p.map(x=>x.id===s.id?{...x,booked:x.booked+1}:x));
+        setSessions(p=>p.map(x=>x.id===s.id?{...x,booked:x.booked+(isFull?0:1)}:x));
         if (isFull) {
           showToast(`Ajouté à la liste d'attente — ${s.discName}`);
         } else {
           showToast(`Réservé : ${s.discName} — ${s.time}`);
         }
       } else {
-        showToast("Erreur lors de la réservation", false);
+        showToast(result.error || "Erreur lors de la réservation", false);
       }
     };
 
