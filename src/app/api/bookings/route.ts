@@ -43,7 +43,7 @@ export async function POST(req: NextRequest) {
       db.from("studios").select("id, name, slug, email, reminder_hours_default, sms_enabled").eq("id", studioId).maybeSingle(),
     ])
 
-    console.log(`[bookings] M:${member?.email||"NULL"} S:${studio?.name||"NULL"} mE:${mErr?.message||"ok"} sE:${sErr?.message||"ok"} SG:${!!process.env.SENDGRID_API_KEY} → send:${!!(process.env.SENDGRID_API_KEY && member?.email && studio)}`)
+    console.log(`[BK] send:${!!(process.env.SENDGRID_API_KEY&&member?.email&&studio)} SG:${!!process.env.SENDGRID_API_KEY} M:${!!member?.email} S:${!!studio} sE:${sErr?.message||"ok"}`)
 
     if (process.env.SENDGRID_API_KEY && member?.email && studio) {
       const disc = (sess as any).disciplines
@@ -62,12 +62,14 @@ export async function POST(req: NextRequest) {
             ? `⏳ Liste d'attente — ${discName} chez ${studio.name}`
             : `✅ Réservation confirmée — ${discName} chez ${studio.name}`,
           html: buildConfirmationEmail({ studio, sess, sessDate, sessTime, discName, discIcon, member: { name: memberName }, firstName, status }),
+          fromName: studio.name,
         }),
         // 2. Email à l'admin du studio
         studio.email && sendEmail({
           to: studio.email,
           subject: `📋 Nouvelle inscription — ${memberName} · ${discName} ${sessDate}`,
           html: buildAdminNotifEmail({ studio, sess, sessDate, sessTime, discName, discIcon, memberName, status }),
+          fromName: studio.name,
         }),
       ])
     }
@@ -106,17 +108,18 @@ export async function POST(req: NextRequest) {
   }
 }
 
-async function sendEmail({ to, subject, html }: { to: string; subject: string; html: string }) {
+async function sendEmail({ to, subject, html, fromName = "Fydelys" }: { to: string; subject: string; html: string; fromName?: string }) {
   const res = await fetch("https://api.sendgrid.com/v3/mail/send", {
     method: "POST",
     headers: { "Authorization": `Bearer ${process.env.SENDGRID_API_KEY}`, "Content-Type": "application/json" },
     body: JSON.stringify({
       personalizations: [{ to: [{ email: to }], subject }],
-      from: { email: "noreply@synq9.com", name: studio?.name || "Fydelys" },
+      from: { email: "noreply@synq9.com", name: fromName },
       content: [{ type: "text/html", value: html }],
     }),
   })
   if (!res.ok) console.error("SendGrid error:", await res.text())
+  else console.log("[bookings] Email envoyé →", to, "|", subject.slice(0, 40))
 }
 
 function buildConfirmationEmail({ studio, sess, sessDate, sessTime, discName, discIcon, member, firstName, status }: any) {
