@@ -19,11 +19,13 @@ export async function POST(req: NextRequest) {
       .neq("status", "cancelled").maybeSingle()
     if (existing) return NextResponse.json({ already: true, status: existing.status })
 
-    // Vérifier accès à la réservation
-    const { data: memberCredits } = await db.from("members")
-      .select("credits, credits_total, status, subscription_id, subscriptions(period)").eq("id", memberId).single()
+    // Charger studio + membre en parallèle pour vérification accès
+    const [{ data: studioData }, { data: memberCredits }] = await Promise.all([
+      db.from("studios").select("payment_mode").eq("id", studioId).maybeSingle(),
+      db.from("members").select("credits, credits_total, status, subscription_id, subscriptions(period)").eq("id", memberId).single(),
+    ])
 
-    const paymentMode = (studio as any)?.payment_mode || "none"
+    const paymentMode = studioData?.payment_mode || "none"
     const subPeriod   = (memberCredits as any)?.subscriptions?.period
     const isUnlimited = subPeriod === "mois" || subPeriod === "trimestre" || subPeriod === "année"
     const hasCredits  = memberCredits && (memberCredits.credits_total ?? 0) > 0
