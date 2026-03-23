@@ -46,40 +46,25 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Erreur lors de l'enregistrement" }, { status: 500 })
     }
 
-    // Générer le lien et l'envoyer via SendGrid (comme send-magic-link)
-    const SENDGRID_API_KEY = process.env.SENDGRID_API_KEY
-    const { data: linkData, error: linkErr } = await db.auth.admin.generateLink({
-      type: "magiclink",
+    // Envoyer OTP via Supabase Admin (envoie l'email automatiquement)
+    const { createClient: createAnonClient } = await import("@supabase/supabase-js")
+    const anonClient = createAnonClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    )
+    const { error: otpErr } = await anonClient.auth.signInWithOtp({
       email,
       options: {
-        redirectTo: `https://fydelys.fr/auth/callback?next=/dashboard&register=1`,
+        emailRedirectTo: `https://fydelys.fr/auth/callback?next=/dashboard&register=1`,
+        shouldCreateUser: true,
         data: { first_name: firstName, last_name: lastName },
       },
     })
-
-    console.log("[register] generateLink result:", linkErr?.message || "ok", "| props:", JSON.stringify(Object.keys(linkData?.properties||{})))
-    if (linkErr || !linkData?.properties) {
-      console.error("[register] generateLink error:", linkErr?.message)
-      return NextResponse.json({ ok: true, fallback: true })
+    if (otpErr) {
+      console.error("[register] signInWithOtp error:", otpErr.message)
+      return NextResponse.json({ error: "Erreur envoi email" }, { status: 500 })
     }
-
-    // Utiliser directement action_link — Supabase redirigera vers notre callback
-    const magicLink = linkData.properties.action_link
-    console.log("[register] magicLink prêt, envoi email à", email)
-
-    if (SENDGRID_API_KEY) {
-      const emailRes = await fetch("https://api.sendgrid.com/v3/mail/send", {
-        method: "POST",
-        headers: { "Authorization": `Bearer ${SENDGRID_API_KEY}`, "Content-Type": "application/json" },
-        body: JSON.stringify({
-          personalizations: [{ to: [{ email }], subject: `Confirmez votre inscription — Fydelys` }],
-          from: { email: "noreply@fydelys.fr", name: "Fydelys" },
-          content: [{ type: "text/html", value: buildRegisterEmail({ firstName, studioName, magicLink }) }],
-        }),
-      })
-      if (!emailRes.ok) console.error("[register] SendGrid error:", await emailRes.text())
-      else console.log("[register] Email envoyé à", email)
-    }
+    console.log("[register] OTP envoyé à", email)
 
     console.log("[register] Inscription enregistrée pour", email, "| studio:", slug)
     return NextResponse.json({ ok: true })
