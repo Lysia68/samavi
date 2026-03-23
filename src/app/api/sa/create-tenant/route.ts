@@ -16,11 +16,13 @@ export async function POST(req: NextRequest) {
     if (profile?.role !== "superadmin")
       return NextResponse.json({ error: "Accès refusé — superadmin uniquement" }, { status: 403 })
 
+    const body = await req.json()
+    console.log("[create-tenant] Body reçu:", JSON.stringify(body))
     const {
       studioName, slug, city, zip, address, type, email, phone,
       firstName, lastName, isCoach, plan,
       payment_mode, stripe_connect_enabled,
-    } = await req.json()
+    } = body
 
     if (!studioName || !slug || !email)
       return NextResponse.json({ error: "Champs obligatoires manquants" }, { status: 400 })
@@ -104,7 +106,6 @@ export async function POST(req: NextRequest) {
       role:       "admin",
       first_name: firstName,
       last_name:  lastName,
-      email,
       is_coach:   isCoach || false,
     })
     if (profileErr) {
