@@ -363,8 +363,8 @@ function AdherentView({ onSwitch, isMobile, studioName = "", impersonateUserId =
                                 const canBook = !paymentActive || isUnlimited || hasCredits;
                                 const noSub   = paymentActive && !isUnlimited && !hasC;
                                 const noCredit = paymentActive && !isUnlimited && hasC && me.credits <= 0;
-                                if (noCredit) return <button disabled style={{ fontSize:12, padding:"5px 12px", borderRadius:8, border:"1px solid #EFC8BC", background:C.warnBg, color:C.warn, cursor:"not-allowed", fontWeight:600 }}>⛔ Crédits épuisés</button>;
-                                if (noSub)    return <button disabled style={{ fontSize:12, padding:"5px 12px", borderRadius:8, border:"1px solid #DDD5C8", background:C.bgDeep, color:C.textMuted, cursor:"not-allowed", fontWeight:600 }}>🔒 Abonnement requis</button>;
+                                if (noCredit) return <button disabled style={{ fontSize:12, padding:"5px 12px", borderRadius:8, border:"1px solid #EFC8BC", background:C.warnBg, color:C.warn, cursor:"not-allowed", fontWeight:600 }}>⛔ Abonnement ou crédit requis</button>;
+                                if (noSub)    return <button disabled style={{ fontSize:12, padding:"5px 12px", borderRadius:8, border:"1px solid #DDD5C8", background:C.bgDeep, color:C.textMuted, cursor:"not-allowed", fontWeight:600 }}>🔒 Abonnement ou crédit requis</button>;
                                 return <Button sm onClick={()=>setConfirmSess(s)}>Réserver</Button>;
                               })()
                         }

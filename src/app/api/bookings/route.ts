@@ -37,10 +37,10 @@ export async function POST(req: NextRequest) {
         // A des crédits → OK
       } else if (hasCredits && (memberCredits.credits ?? 0) <= 0) {
         // Crédits épuisés
-        return NextResponse.json({ error: "Crédits insuffisants — rechargez votre compte" }, { status: 402 })
+        return NextResponse.json({ error: "Abonnement ou crédit requis pour réserver" }, { status: 402 })
       } else {
         // Aucun abonnement ni crédits
-        return NextResponse.json({ error: "Aucun abonnement actif — souscrivez un abonnement pour réserver" }, { status: 402 })
+        return NextResponse.json({ error: "Abonnement ou crédit requis pour réserver" }, { status: 402 })
       }
     }
 
