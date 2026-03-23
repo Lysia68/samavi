@@ -23,6 +23,7 @@ function AdherentView({ onSwitch, isMobile, studioName = "", impersonateUserId =
 
   // ── Données membre chargées depuis Supabase ─────────────────────────────────
   const [me, setMe] = useState(null);           // fiche membre
+  const [studioPaymentMode, setStudioPaymentMode] = useState("none"); // none|connect|direct
   const [myBookings, setMyBookings] = useState([]); // ids de sessions réservées
   const [history, setHistory] = useState([]);   // bookings passés
   const [loading, setLoading] = useState(true);
@@ -31,6 +32,9 @@ function AdherentView({ onSwitch, isMobile, studioName = "", impersonateUserId =
   useEffect(() => {
     if (!studioId) return;
     const sb = createClient();
+    // Charger payment_mode du studio
+    sb.from("studios").select("payment_mode").eq("id", studioId).single()
+      .then(({ data }) => { if (data?.payment_mode) setStudioPaymentMode(data.payment_mode); });
     sb.auth.getUser().then(async ({ data: { user } }) => {
       if (!user) return;
 
@@ -183,6 +187,10 @@ function AdherentView({ onSwitch, isMobile, studioName = "", impersonateUserId =
         // Batching : tous les state updates ensemble pour éviter le flash
         setMyBookings(p=>[...p, s.id]);
         setSessions(p=>p.map(x=>x.id===s.id?{...x,booked:x.booked+(isFull?0:1)}:x));
+        // Décrémenter les crédits localement si système de crédits actif
+        if (!isFull && me?.credits_total > 0 && me?.credits > 0) {
+          setMe(m => ({ ...m, credits: m.credits - 1 }));
+        }
         // Toast après le re-render des sessions
         requestAnimationFrame(() => {
           if (isFull) {
@@ -347,11 +355,17 @@ function AdherentView({ onSwitch, isMobile, studioName = "", impersonateUserId =
                           : isFull
                             ? <Button sm variant="secondary" onClick={()=>showToast("Ajouté à la liste d'attente")}>Liste d'attente</Button>
                             : (() => {
-                                const hasC = me?.credits_total > 0;
-                                const blocked = hasC && me.credits <= 0;
-                                return blocked
-                                  ? <button disabled style={{ fontSize:12, padding:"5px 12px", borderRadius:8, border:"1px solid #EFC8BC", background:C.warnBg, color:C.warn, cursor:"not-allowed", fontWeight:600 }}>⛔ Crédits épuisés</button>
-                                  : <Button sm onClick={()=>setConfirmSess(s)}>Réserver</Button>;
+                                const hasC        = me?.credits_total > 0;
+                                const hasCredits  = hasC && me.credits > 0;
+                                const subPeriod   = me?.subPeriod;
+                                const isUnlimited = subPeriod === "mois" || subPeriod === "trimestre" || subPeriod === "année";
+                                const paymentActive = studioPaymentMode !== "none";
+                                const canBook = !paymentActive || isUnlimited || hasCredits;
+                                const noSub   = paymentActive && !isUnlimited && !hasC;
+                                const noCredit = paymentActive && !isUnlimited && hasC && me.credits <= 0;
+                                if (noCredit) return <button disabled style={{ fontSize:12, padding:"5px 12px", borderRadius:8, border:"1px solid #EFC8BC", background:C.warnBg, color:C.warn, cursor:"not-allowed", fontWeight:600 }}>⛔ Crédits épuisés</button>;
+                                if (noSub)    return <button disabled style={{ fontSize:12, padding:"5px 12px", borderRadius:8, border:"1px solid #DDD5C8", background:C.bgDeep, color:C.textMuted, cursor:"not-allowed", fontWeight:600 }}>🔒 Abonnement requis</button>;
+                                return <Button sm onClick={()=>setConfirmSess(s)}>Réserver</Button>;
                               })()
                         }
                       </div>

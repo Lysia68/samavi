@@ -19,6 +19,31 @@ export async function POST(req: NextRequest) {
       .neq("status", "cancelled").maybeSingle()
     if (existing) return NextResponse.json({ already: true, status: existing.status })
 
+    // Vérifier accès à la réservation
+    const { data: memberCredits } = await db.from("members")
+      .select("credits, credits_total, status, subscription_id, subscriptions(period)").eq("id", memberId).single()
+
+    const paymentMode = (studio as any)?.payment_mode || "none"
+    const subPeriod   = (memberCredits as any)?.subscriptions?.period
+    const isUnlimited = subPeriod === "mois" || subPeriod === "trimestre" || subPeriod === "année"
+    const hasCredits  = memberCredits && (memberCredits.credits_total ?? 0) > 0
+    const creditsOk   = hasCredits && (memberCredits.credits ?? 0) > 0
+
+    // Si le studio utilise les paiements, vérifier que le membre peut réserver
+    if (paymentMode !== "none") {
+      if (isUnlimited) {
+        // Abonnement mensuel/illimité → OK
+      } else if (creditsOk) {
+        // A des crédits → OK
+      } else if (hasCredits && (memberCredits.credits ?? 0) <= 0) {
+        // Crédits épuisés
+        return NextResponse.json({ error: "Crédits insuffisants — rechargez votre compte" }, { status: 402 })
+      } else {
+        // Aucun abonnement ni crédits
+        return NextResponse.json({ error: "Aucun abonnement actif — souscrivez un abonnement pour réserver" }, { status: 402 })
+      }
+    }
+
     // Compter les inscrits confirmés vs spots
     const [{ data: sess }, { count: confirmedCount }] = await Promise.all([
       db.from("sessions")
@@ -37,10 +62,18 @@ export async function POST(req: NextRequest) {
       .insert({ session_id: sessionId, member_id: memberId, status }).select().single()
     if (bookErr || !booking) return NextResponse.json({ error: bookErr?.message }, { status: 500 })
 
+    // Décrémenter les crédits si applicable (pas liste d'attente, pas abonnement illimité)
+    if (status === "confirmed" && hasCredits && !isUnlimited) {
+      await db.from("members").update({
+        credits: Math.max(0, (memberCredits?.credits ?? 1) - 1)
+      }).eq("id", memberId)
+      console.log(`[bookings] Crédit déduit — membre ${memberId} : ${memberCredits?.credits} → ${(memberCredits?.credits ?? 1) - 1}`)
+    }
+
     // Charger les infos nécessaires pour les emails
     const [{ data: member, error: mErr }, { data: studio, error: sErr }] = await Promise.all([
       db.from("members").select("first_name, last_name, email, phone, sms_opt_in").eq("id", memberId).maybeSingle(),
-      db.from("studios").select("id, name, slug, email, reminder_hours_default, sms_enabled").eq("id", studioId).maybeSingle(),
+      db.from("studios").select("id, name, slug, email, reminder_hours_default, sms_enabled, payment_mode").eq("id", studioId).maybeSingle(),
     ])
 
     console.log(`[BK] send:${!!(process.env.SENDGRID_API_KEY&&member?.email&&studio)} SG:${!!process.env.SENDGRID_API_KEY} M:${!!member?.email} S:${!!studio} sE:${sErr?.message||"ok"}`)
