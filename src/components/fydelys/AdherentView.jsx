@@ -363,7 +363,7 @@ function AdherentView({ onSwitch, isMobile, studioName = "", impersonateUserId =
                             : (() => {
                                 const hasC        = me?.credits_total > 0;
                                 const hasCredits  = hasC && me.credits > 0;
-                                const subPeriod   = (me?.subscriptions as any)?.period || me?.subPeriod;
+                                const subPeriod   = me?.subscriptions?.period || me?.subPeriod;
                                 const isUnlimited = subPeriod === "mois" || subPeriod === "trimestre" || subPeriod === "année";
                                 const paymentActive = studioPaymentMode !== "none";
                                 const canBook = !paymentActive || isUnlimited || hasCredits;
