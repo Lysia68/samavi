@@ -165,11 +165,18 @@ export async function GET(request: NextRequest) {
         response.headers.set("Location", "https://fydelys.fr/?error=slug_taken")
         return response
       }
+      const trialEnd = new Date(); trialEnd.setDate(trialEnd.getDate() + 30)
       const { data: studio, error: studioErr } = await db.from("studios").insert({
         name: r.studioName, slug: r.slug, city: r.city,
         postal_code: r.zip || null, address: r.address || null,
         email: userEmail, phone: r.phone || null, status: "actif",
+        billing_status: "trialing",
+        trial_ends_at: trialEnd.toISOString().slice(0, 10),
+        plan_started_at: new Date().toISOString(),
+        plan_slug: r.plan?.toLowerCase() || "essentiel",
+        payment_mode: "none",
       }).select().single()
+      console.log("[auth/callback] Studio insert:", studioErr ? studioErr.message : studio?.id)
       if (studioErr) console.error("Studio insert error:", JSON.stringify(studioErr))
       if (studio) {
         await db.from("profiles").insert({
@@ -177,10 +184,12 @@ export async function GET(request: NextRequest) {
           first_name: r.firstName || "", last_name: r.lastName || "",
           is_coach: r.isCoach || false,
         })
-        await db.rpc("seed_new_tenant", {
+        const { error: seedErr } = await db.rpc("seed_new_tenant", {
           p_studio_id: studio.id,
           p_type:      r.type || "Multi",
         })
+        if (seedErr) console.error("[auth/callback] Seed error:", seedErr.message)
+        else console.log("[auth/callback] Seed OK for", studio.slug)
         await db.from("pending_registrations").delete().eq("email", userEmail)
         response.headers.set("Location", `https://${studio.slug}.fydelys.fr/dashboard`)
         return response
