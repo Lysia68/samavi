@@ -114,7 +114,7 @@ async function sendEmail({ to, subject, html, fromName = "Fydelys" }: { to: stri
     headers: { "Authorization": `Bearer ${process.env.SENDGRID_API_KEY}`, "Content-Type": "application/json" },
     body: JSON.stringify({
       personalizations: [{ to: [{ email: to }], subject }],
-      from: { email: "noreply@synq9.com", name: fromName },
+      from: { email: "noreply@fydelys.fr", name: fromName },
       content: [{ type: "text/html", value: html }],
     }),
   })

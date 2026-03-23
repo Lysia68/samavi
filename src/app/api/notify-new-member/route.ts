@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
     const memberName  = `${member.first_name || ""} ${member.last_name || ""}`.trim()
     const firstName   = member.first_name || memberName
     const studioName  = studio.name
-    const studioEmail = studio.email || "noreply@synq9.com"
+    const studioEmail = studio.email || "noreply@fydelys.fr"
     const studioUrl   = `https://${studio.slug}.fydelys.fr`
 
     async function sendEmail(to: string, subject: string, html: string) {
@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
         headers: { "Authorization": `Bearer ${SENDGRID_API_KEY}`, "Content-Type": "application/json" },
         body: JSON.stringify({
           personalizations: [{ to: [{ email: to }], subject }],
-          from: { email: "noreply@synq9.com", name: studioName },
+          from: { email: "noreply@fydelys.fr", name: studioName },
           reply_to: { email: studioEmail, name: studioName },
           content: [{ type: "text/html", value: html }],
         }),

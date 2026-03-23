@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
 
   const studioName = studio.name || "Votre studio"
   const studioSlug = studio.slug
-  const studioEmail = studio.email || "noreply@synq9.com"
+  const studioEmail = studio.email || "noreply@fydelys.fr"
 
   // Insérer l'invitation en base (le callback en tiendra compte pour le rôle)
   // Un seul appel listUsers — réutilisé pour vérif doublon ET création
@@ -123,7 +123,7 @@ export async function POST(request: NextRequest) {
       to: [{ email, name: `${firstName || ""} ${lastName || ""}`.trim() || email }],
       subject: `Invitation à rejoindre ${studioName} ✦`,
     }],
-    from: { email: "noreply@synq9.com", name: studioName },
+    from: { email: "noreply@fydelys.fr", name: studioName },
     reply_to: { email: studioEmail, name: studioName },
     content: [{
       type: "text/html",

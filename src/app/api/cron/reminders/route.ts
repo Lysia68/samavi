@@ -23,6 +23,7 @@ export async function GET(request: Request) {
     .select("id, name, slug, email, timezone, reminder_hours_default, sms_enabled")
     .eq("status", "actif")
 
+  console.log("[CRON] Studios actifs:", studios?.length || 0, studios?.map(s => s.name))
   if (!studios?.length) return NextResponse.json({ ok: true, processed: 0, debug: "no studios with status=actif" })
 
   let totalSent = 0
@@ -39,6 +40,7 @@ export async function GET(request: Request) {
     const windowStart = new Date(now.getTime() + (reminderHours - 0.5) * 3600 * 1000)
     const windowEnd   = new Date(now.getTime() + (reminderHours + 0.5) * 3600 * 1000)
     debugInfo.push({ studio: studio.name, reminderHours, now: now.toISOString(), windowStart: windowStart.toISOString(), windowEnd: windowEnd.toISOString() })
+    console.log(`[CRON] ${studio.name} | window: ${windowStart.toISOString()} → ${windowEnd.toISOString()}`)
 
     // Dates en format YYYY-MM-DD pour la query
     const dateStart = windowStart.toISOString().slice(0, 10)
@@ -55,6 +57,7 @@ export async function GET(request: Request) {
 
     debugInfo[debugInfo.length-1].sessionsFound = sessions?.length || 0
     debugInfo[debugInfo.length-1].sessions = sessions?.map(s => ({ id: s.id, date: s.session_date, time: s.session_time }))
+    console.log(`[CRON] ${studio.name} | sessions trouvées: ${sessions?.length || 0}`)
     if (!sessions?.length) continue
 
     // Filtrer précisément selon l'heure en tenant compte de la timezone du studio
@@ -67,6 +70,7 @@ export async function GET(request: Request) {
       return sessUTC >= windowStart && sessUTC <= windowEnd
     })
 
+    console.log(`[CRON] ${studio.name} | sessions dans fenêtre: ${targetSessions.length}`)
     debugInfo[debugInfo.length-1].targetSessions = targetSessions.length
     debugInfo[debugInfo.length-1].sessionsDetail = sessions?.map(s => {
       const sessDateTime = new Date(`${s.session_date}T${s.session_time}`)
@@ -78,12 +82,13 @@ export async function GET(request: Request) {
 
     for (const sess of targetSessions) {
       // Vérifier qu'on n'a pas déjà envoyé le rappel pour cette séance
-      const { data: existing } = await db
+      const { data: existing, error: logErr } = await db
         .from("reminder_logs")
         .select("id")
         .eq("session_id", sess.id)
         .eq("type", "reminder")
         .maybeSingle()
+      if (logErr) console.error("[CRON] reminder_logs error:", logErr.message)
 
       if (existing) { totalSkipped++; continue }
 
@@ -121,7 +126,7 @@ export async function GET(request: Request) {
           const subjectLabel = reminderHours < 1 ? "maintenant" : reminderHours === 1 ? "dans 1 heure" : reminderHours < 24 ? `dans ${reminderHours}h` : reminderHours <= 26 ? "demain" : `dans ${Math.round(reminderHours/24)} jours`
           const body = {
             personalizations: [{ to: [{ email: member.email }], subject: `Votre cours "${discName}" est ${subjectLabel} chez ${studio.name}` }],
-            from: { email: "noreply@synq9.com", name: studio.name },
+            from: { email: "noreply@fydelys.fr", name: studio.name },
             content: [{ type: "text/html", value: buildReminderEmail({ studio, sess, sessDate, sessTime, discName, discIcon, member, firstName, reminderHours }) }]
           }
           const res = await fetch("https://api.sendgrid.com/v3/mail/send", {

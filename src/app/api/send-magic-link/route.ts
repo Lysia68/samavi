@@ -63,7 +63,7 @@ export async function POST(request: NextRequest) {
   }
 
   const studioName = studio.name || "Votre studio"
-  const studioEmail = studio.email || "noreply@synq9.com"
+  const studioEmail = studio.email || "noreply@fydelys.fr"
 
   // Vérifier si l'utilisateur existe par email (listUsers paginé)
   const { data: { users } } = await db.auth.admin.listUsers({ perPage: 1000 })
@@ -123,7 +123,7 @@ export async function POST(request: NextRequest) {
       to: [{ email }],
       subject: `Votre lien de connexion — ${studioName}`,
     }],
-    from: { email: "noreply@synq9.com", name: studioName },
+    from: { email: "noreply@fydelys.fr", name: studioName },
     reply_to: { email: studioEmail, name: studioName },
     content: [{
       type: "text/html",
