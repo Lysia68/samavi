@@ -42,14 +42,14 @@ function AdherentView({ onSwitch, isMobile, studioName = "", impersonateUserId =
       const targetUid = impersonateUserId || user.id;
       let member = null;
       const { data: byUid } = await sb.from("members")
-        .select("id, first_name, last_name, email, status, credits, credits_total, created_at, phone, address, postal_code, city, profile_complete")
+        .select("id, first_name, last_name, email, status, credits, credits_total, created_at, phone, address, postal_code, city, profile_complete, subscription_id, subscriptions(period)")
         .eq("studio_id", studioId).eq("auth_user_id", targetUid).maybeSingle();
       member = byUid;
 
       // Fallback email uniquement pour l'user réel (pas l'impersonate)
       if (!member && !impersonateUserId && user.email) {
         const { data: byEmail } = await sb.from("members")
-          .select("id, first_name, last_name, email, status, credits, credits_total, created_at, phone, address, postal_code, city, profile_complete")
+          .select("id, first_name, last_name, email, status, credits, credits_total, created_at, phone, address, postal_code, city, profile_complete, subscription_id, subscriptions(period)")
           .eq("studio_id", studioId).eq("email", user.email).maybeSingle();
         member = byEmail;
         if (member) {
@@ -67,7 +67,7 @@ function AdherentView({ onSwitch, isMobile, studioName = "", impersonateUserId =
         window.history.replaceState({}, "", window.location.pathname);
         setTimeout(async () => {
           const { data: fresh } = await sb.from("members")
-            .select("id, first_name, last_name, email, status, credits, credits_total, created_at, phone, address, postal_code, city, profile_complete")
+            .select("id, first_name, last_name, email, status, credits, credits_total, created_at, phone, address, postal_code, city, profile_complete, subscription_id, subscriptions(period)")
             .eq("id", member.id).maybeSingle();
           if (fresh) setMe(fresh);
         }, 2000);
@@ -311,6 +311,12 @@ function AdherentView({ onSwitch, isMobile, studioName = "", impersonateUserId =
                 const isBooked   = myBookings.includes(s.id);
                 const isFull     = s.booked >= s.spots;
                 const isCancelled = s.status === "cancelled";
+                // Masquer les séances déjà commencées (sauf si déjà inscrit)
+                const [sy,sm,sd] = (s.date||"").split("-").map(Number);
+                const [sh,smi]   = (s.time||"00:00").split(":").map(Number);
+                const sessStart  = new Date(sy, sm-1, sd, sh, smi);
+                const isPast     = sessStart <= new Date();
+                if (isPast && !isBooked) return null;
                 const pct        = s.booked/s.spots;
                 return (
                   <Card key={s.id} style={{ marginBottom:8, borderLeft:`3px solid ${isCancelled ? C.warn : s.discColor}`, opacity: isCancelled ? 0.75 : (isFull&&!isBooked ? .7 : 1) }}>
@@ -357,7 +363,7 @@ function AdherentView({ onSwitch, isMobile, studioName = "", impersonateUserId =
                             : (() => {
                                 const hasC        = me?.credits_total > 0;
                                 const hasCredits  = hasC && me.credits > 0;
-                                const subPeriod   = me?.subPeriod;
+                                const subPeriod   = (me?.subscriptions as any)?.period || me?.subPeriod;
                                 const isUnlimited = subPeriod === "mois" || subPeriod === "trimestre" || subPeriod === "année";
                                 const paymentActive = studioPaymentMode !== "none";
                                 const canBook = !paymentActive || isUnlimited || hasCredits;
@@ -400,7 +406,7 @@ function AdherentView({ onSwitch, isMobile, studioName = "", impersonateUserId =
       const sb = createClient();
       // Recharger credits + statut
       sb.from("members")
-        .select("id, first_name, last_name, email, status, credits, credits_total, created_at, phone, address, postal_code, city, profile_complete")
+        .select("id, first_name, last_name, email, status, credits, credits_total, created_at, phone, address, postal_code, city, profile_complete, subscription_id, subscriptions(period)")
         .eq("id", me.id).maybeSingle()
         .then(({ data }) => { if (data) setMe(data); });
       // Recharger historique pour avoir les présences à jour
@@ -463,7 +469,7 @@ function AdherentView({ onSwitch, isMobile, studioName = "", impersonateUserId =
           <button onClick={()=>{
             const sb = createClient();
             const today = new Date().toISOString().split("T")[0];
-            sb.from("members").select("id, first_name, last_name, email, status, credits, credits_total, created_at, phone, address, postal_code, city, profile_complete").eq("id", me.id).maybeSingle().then(({data})=>{ if(data) setMe(data); });
+            sb.from("members").select("id, first_name, last_name, email, status, credits, credits_total, created_at, phone, address, postal_code, city, profile_complete, subscription_id, subscriptions(period)").eq("id", me.id).maybeSingle().then(({data})=>{ if(data) setMe(data); });
             sb.from("bookings").select("session_id, status, attended, sessions(session_date, session_time, discipline_id, teacher, disciplines(name,color))").eq("member_id", me.id).order("session_id",{ascending:false}).limit(50).then(({data:hist})=>{ if(hist) setHistory(hist.filter(h=>h.sessions&&h.sessions.session_date<=today)); });
           }} style={{ fontSize:12, color:C.textMuted, background:"none", border:"none", cursor:"pointer", padding:"2px 0 0", textAlign:"right", width:"100%", display:"flex", alignItems:"center", justifyContent:"flex-end", gap:4 }}>
             ↻ Actualiser
