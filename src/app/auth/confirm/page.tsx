@@ -9,17 +9,17 @@ export default function AuthConfirmPage() {
     const hash      = window.location.hash
     const params    = new URLSearchParams(window.location.search)
     const tenant    = params.get("tenant")
+const slug   = params.get("slug")    // ← ajouter
+const register = params.get("register")  // ← ajouter
     const code      = params.get("code")
     const tokenHash = params.get("token_hash")
     const type      = params.get("type") || "magiclink"
 
-    function redirectFinal(slug: string | null) {
-      if (!slug) {
-        window.location.href = "https://fydelys.fr/dashboard"
-      } else {
-        window.location.href = `https://${slug}.fydelys.fr/dashboard`
-      }
-    }
+   function redirectFinal(resultSlug: string | null) {
+  const dest = resultSlug || slug || tenant
+  if (!dest) window.location.href = "https://fydelys.fr/dashboard"
+  else window.location.href = `https://${dest}.fydelys.fr/dashboard`
+}
 
     async function callServerRoute(route: string, body: object) {
       const res = await fetch(route, {
