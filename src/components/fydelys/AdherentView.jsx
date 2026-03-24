@@ -9,6 +9,145 @@ import { IcoCalendar2, IcoUser2, IcoChevron, IcoCreditCard2, IcoCheck, IcoX, Ico
 import { Card, SectionHead, Button, Tag, Pill, EmptyState, DateLabel, Field, SessionRow } from "./ui";
 import { OnboardingView } from "./OnboardingView";
 
+// ── AdhAccountPanel — composant standalone (hors AdherentView pour éviter remontage) ──
+function AdhAccountPanel({ me, loading, history, p, editing, setEditing, saving, form, setForm, set, save }) {
+  const initials = me ? `${me.first_name?.[0]||""}${me.last_name?.[0]||""}`.toUpperCase() : "?";
+
+  if (loading) return <div style={{ padding:p, color:C.textMuted, fontSize:14 }}>Chargement…</div>;
+  if (!me) return (
+    <div style={{ padding:p }}>
+      <Card>
+        <div style={{ textAlign:"center", padding:"24px 0", color:C.textMuted }}>
+          <div style={{ fontSize:32, marginBottom:8 }}>👤</div>
+          <div style={{ fontSize:15, fontWeight:600, color:C.text, marginBottom:4 }}>Profil introuvable</div>
+          <div style={{ fontSize:13 }}>Votre fiche membre n'a pas encore été créée par le studio.</div>
+        </div>
+      </Card>
+    </div>
+  );
+
+  const inp = (k, type="text", placeholder="") => (
+    <input
+      value={form?.[k]||""}
+      onChange={e => set(k)(e)}
+      type={type}
+      placeholder={placeholder}
+      style={{ width:"100%", padding:"9px 12px", borderRadius:9, border:`1.5px solid ${C.border}`, fontSize:14, boxSizing:"border-box", outline:"none", background:"#FDFAF7", color:C.text, fontFamily:"inherit", WebkitAppearance:"none" }}
+    />
+  );
+
+  return (
+    <div style={{ padding:p, maxWidth:600, width:"100%", boxSizing:"border-box" }}>
+      <Card style={{ marginBottom:16 }}>
+        <div style={{ display:"flex", alignItems:"center", gap:16, marginBottom:16 }}>
+          <div style={{ width:54, height:54, borderRadius:"50%", background:C.accentBg, border:`2px solid ${C.accent}`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:20, fontWeight:700, color:C.accent, flexShrink:0 }}>
+            {initials}
+          </div>
+          <div style={{ flex:1, minWidth:0 }}>
+            <div style={{ fontSize:18, fontWeight:700, color:C.text }}>{me?.first_name} {me?.last_name}</div>
+            <div style={{ fontSize:13, color:C.textSoft, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{me?.email}</div>
+            <Tag s={me?.status||"actif"}/>
+          </div>
+        </div>
+        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
+          {[
+            { l:"Crédits restants",   v:`${me?.credits||0} / ${me?.credits_total||0}`,  icon:<IcoCreditCard2 s={16} c={C.accent}/> },
+            { l:"Membre depuis",      v:me?.created_at ? new Date(me.created_at).toLocaleDateString("fr-FR") : "—", icon:<IcoCalendar2 s={16} c={C.accent}/> },
+            { l:"Séances effectuées", v:(history||[]).filter(h=>h.attended===true).length, icon:<IcoCheck s={16} c={C.ok}/> },
+            { l:"Statut",             v:me?.status||"actif", icon:<IcoUser2 s={16} c={C.accent}/> },
+          ].map(k=>(
+            <div key={k.l} style={{ background:C.bg, borderRadius:10, padding:"12px 14px", display:"flex", gap:10, alignItems:"center" }}>
+              {k.icon}
+              <div>
+                <div style={{ fontSize:15, fontWeight:700, color:C.text }}>{k.v}</div>
+                <div style={{ fontSize:12, color:C.textSoft }}>{k.l}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </Card>
+
+      <Card>
+        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:16 }}>
+          <div style={{ fontSize:15, fontWeight:700, color:C.text }}>Mes coordonnées</div>
+          {!editing
+            ? <Button sm variant="secondary" onClick={()=>setEditing(true)}>✏ Modifier</Button>
+            : <div style={{ display:"flex", gap:8 }}>
+                <Button sm variant="secondary" onClick={()=>{ setEditing(false); setForm({ first_name:me.first_name||"", last_name:me.last_name||"", phone:me.phone||"", birth_date:me.birth_date||"", address:me.address||"", postal_code:me.postal_code||"", city:me.city||"" }); }}>Annuler</Button>
+                <Button sm onClick={save} disabled={saving}>{saving ? "…" : "Enregistrer"}</Button>
+              </div>
+          }
+        </div>
+
+        {!editing ? (
+          <div style={{ display:"grid", gap:0 }}>
+            {[
+              { l:"Prénom",           v:me?.first_name },
+              { l:"Nom",              v:me?.last_name },
+              { l:"Téléphone",        v:me?.phone },
+              { l:"Date de naissance",v:me?.birth_date ? new Date(me.birth_date).toLocaleDateString("fr-FR") : null },
+              { l:"Adresse",          v:me?.address },
+              { l:"Code postal",      v:me?.postal_code },
+              { l:"Ville",            v:me?.city },
+              { l:"Email",            v:me?.email, locked:true },
+            ].filter(f=>f.v).map(f=>(
+              <div key={f.l} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"9px 0", borderBottom:`1px solid ${C.border}`, gap:8 }}>
+                <span style={{ fontSize:13, color:C.textMuted, flexShrink:0, minWidth:90 }}>{f.l}</span>
+                <span style={{ fontSize:14, fontWeight:600, color:C.text, textAlign:"right", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", minWidth:0, display:"flex", alignItems:"center", gap:6 }}>
+                  {f.v}{f.locked && <span style={{ fontSize:10, color:C.textMuted, fontWeight:400 }}>🔒</span>}
+                </span>
+              </div>
+            ))}
+          </div>
+        ) : form && (
+          <div style={{ display:"grid", gap:12 }}>
+            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
+              <div>
+                <label style={{ fontSize:12, color:C.textMuted, fontWeight:600, display:"block", marginBottom:5 }}>Prénom</label>
+                {inp("first_name")}
+              </div>
+              <div>
+                <label style={{ fontSize:12, color:C.textMuted, fontWeight:600, display:"block", marginBottom:5 }}>Nom</label>
+                {inp("last_name")}
+              </div>
+            </div>
+            <div>
+              <label style={{ fontSize:12, color:C.textMuted, fontWeight:600, display:"block", marginBottom:5 }}>Téléphone</label>
+              {inp("phone", "tel", "06 12 34 56 78")}
+            </div>
+            <div>
+              <label style={{ fontSize:12, color:C.textMuted, fontWeight:600, display:"block", marginBottom:5 }}>Date de naissance</label>
+              <input
+                value={form.birth_date||""}
+                onChange={e => set("birth_date")(e)}
+                type="date"
+                style={{ width:"100%", padding:"9px 12px", borderRadius:9, border:`1.5px solid ${C.border}`, fontSize:14, boxSizing:"border-box", outline:"none", background:"#FDFAF7", color:C.text, fontFamily:"inherit", WebkitAppearance:"none", colorScheme:"light" }}
+              />
+            </div>
+            <div>
+              <label style={{ fontSize:12, color:C.textMuted, fontWeight:600, display:"block", marginBottom:5 }}>Adresse</label>
+              {inp("address", "text", "5 rue des lilas")}
+            </div>
+            <div style={{ display:"grid", gridTemplateColumns:"1fr 2fr", gap:10 }}>
+              <div>
+                <label style={{ fontSize:12, color:C.textMuted, fontWeight:600, display:"block", marginBottom:5 }}>Code postal</label>
+                {inp("postal_code", "text", "75001")}
+              </div>
+              <div>
+                <label style={{ fontSize:12, color:C.textMuted, fontWeight:600, display:"block", marginBottom:5 }}>Ville</label>
+                {inp("city", "text", "Paris")}
+              </div>
+            </div>
+            <div style={{ padding:"8px 12px", background:C.bg, borderRadius:8, fontSize:12, color:C.textMuted }}>
+              🔒 L'adresse email ne peut pas être modifiée
+            </div>
+          </div>
+        )}
+      </Card>
+    </div>
+  );
+}
+
 function AdherentView({ onSwitch, isMobile, studioName = "", impersonateUserId = null }) {
   const ADH_NAV = ADH_NAV_KEYS.map((n,i) => ({ ...n, icon:[IcoCalendar2,IcoHeart,IcoActivity,IcoTag2,IcoCreditCard2][i] }));
   const ADH_MOBILE_NAV = ADH_NAV;
@@ -481,7 +620,16 @@ function AdherentView({ onSwitch, isMobile, studioName = "", impersonateUserId =
   }
 
   function AdhAccount() {
-    const initials = me ? `${me.first_name?.[0]||""}${me.last_name?.[0]||""}`.toUpperCase() : "?";
+    return <AdhAccountPanel
+      me={me} loading={loading} history={history} p={p}
+      editing={accountEditing} setEditing={setAccountEditing}
+      saving={accountSaving}
+      form={accountForm} setForm={setAccountForm}
+      set={accountSetField} save={accountSave}
+    />;
+  }
+  function _AdhAccountUnused() { // garder pour référence, remplacé par AdhAccountPanel
+    const initials = me ? \`\${me.first_name?.[0]||""}\${me.last_name?.[0]||""}\`.toUpperCase() : "?";
     const editing = accountEditing;
     const setEditing = setAccountEditing;
     const saving = accountSaving;
