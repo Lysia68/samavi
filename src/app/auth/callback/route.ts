@@ -119,6 +119,18 @@ export async function GET(request: NextRequest) {
   }
 
   if (existing && !isRegister) {
+    // Admin sans studio mais avec pending_registration → traiter comme inscription
+    if (existing.role === "admin" && !existing.studio_id) {
+      const { data: pendingForAdmin } = await db
+        .from("pending_registrations").select("email").eq("email", userEmail).maybeSingle()
+      if (pendingForAdmin) {
+        console.log("[auth/callback] Admin sans studio + pending found → treating as register")
+        // Ne pas return ici, laisser tomber dans le bloc isRegisterDetected plus bas
+      } else {
+        // Pas de pending → continuer normalement
+        // (admin orphelin sans rien à créer)
+      }
+    }
     if (existing.role === "superadmin") {
       response.headers.set("Location", "https://fydelys.fr/dashboard")
       return response
@@ -140,6 +152,7 @@ export async function GET(request: NextRequest) {
         response.headers.set("Location", `https://${slugToUse}.fydelys.fr/dashboard`)
         return response
       }
+      // Admin sans studio et sans pending → on ne bloque pas, on continue vers le bloc pending ci-dessous
     }
     if (existing.role === "adherent" || existing.role === "coach") {
       let slugToUse: string | null = tenantSlug
@@ -168,8 +181,12 @@ export async function GET(request: NextRequest) {
         return response
       }
     }
-    response.headers.set("Location", new URL(next, request.url).toString())
-    return response
+    // Ne PAS return ici si admin sans studio → laisser tomber dans le bloc pending_registrations
+    if (!(existing.role === "admin" && !existing.studio_id)) {
+      response.headers.set("Location", new URL(next, request.url).toString())
+      return response
+    }
+    console.log("[auth/callback] Admin sans studio, checking pending_registrations...")
   }
 
   // SuperAdmin première connexion
