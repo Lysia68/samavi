@@ -329,7 +329,7 @@ export async function GET(request: NextRequest) {
       }
     }
     console.error("no_pending | email:", userEmail)
-    response.headers.set("Location", "https://fydelys.fr/?error=no_pending")
+    response.headers.set("Location", `https://fydelys.fr/?error=no_pending&debug_email=${encodeURIComponent(userEmail)}&debug_register=${isRegister}&debug_pending=${!!pendingCheck}&debug_existing=${existing?.role || 'none'}&debug_studio=${existing?.studio_id || 'none'}`)
     return response
   }
 
@@ -343,6 +343,6 @@ export async function GET(request: NextRequest) {
   return response
   } catch (err: any) {
     console.error("[auth/callback] uncaught error:", err.message, err.stack?.slice(0,200))
-    return NextResponse.redirect(new URL("/?error=callback_error", "https://fydelys.fr"))
+    return NextResponse.redirect(new URL(`/?error=callback_error&debug_msg=${encodeURIComponent(err.message?.slice(0,100) || 'unknown')}`, "https://fydelys.fr"))
   }
 }
