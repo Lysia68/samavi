@@ -34,12 +34,16 @@ export async function POST(request: NextRequest) {
   let profileComplete = true
   let slug = tenantSlug || registerSlug || null
 
-  // Chercher dans pending_registrations si pas de slug (inscription studio)
-  if (!slug && user.email) {
+  // ── Inscription studio : créer le studio depuis pending_registrations ──
+  // On vérifie pending_registrations si :
+  // - pas de slug (fallback classique)
+  // - OU isRegister est true (inscription en cours, le studio n'existe peut-être pas encore)
+  const shouldCheckPending = (!slug || isRegister) && user.email
+  if (shouldCheckPending) {
     const { data: pending } = await db.from("pending_registrations").select("data").eq("email", user.email).maybeSingle()
     if (pending?.data) {
       const r = pending.data as any
-      slug = r.slug || null
+      slug = r.slug || slug
       console.log("[verify-token] slug from pending_registrations:", slug)
 
       // Créer le studio si pas encore créé
@@ -93,7 +97,7 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  if (tenantSlug) {
+  if (tenantSlug && !isRegister) {
     const { data: studio } = await db.from("studios").select("id,slug").eq("slug", tenantSlug).single()
     if (studio) {
       const { data: existing } = await db.from("profiles").select("role,studio_id").eq("id", user.id).maybeSingle()
