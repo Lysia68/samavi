@@ -10,7 +10,7 @@ import { Card, SectionHead, Button, Tag, Pill, EmptyState, DateLabel, Field, Ses
 import { OnboardingView } from "./OnboardingView";
 
 // ── AdhAccountPanel — composant standalone (hors AdherentView pour éviter remontage) ──
-function AdhAccountPanel({ me, loading, history, p, editing, setEditing, saving, form, setForm, set, save }) {
+const AdhAccountPanel = React.memo(function AdhAccountPanel({ me, loading, history, p, editing, setEditing, saving, form, setForm, set, save }) {
   const initials = me ? `${me.first_name?.[0]||""}${me.last_name?.[0]||""}`.toUpperCase() : "?";
 
   if (loading) return <div style={{ padding:p, color:C.textMuted, fontSize:14 }}>Chargement…</div>;
@@ -146,7 +146,7 @@ function AdhAccountPanel({ me, loading, history, p, editing, setEditing, saving,
       </Card>
     </div>
   );
-}
+});
 
 function AdherentView({ onSwitch, isMobile, studioName = "", impersonateUserId = null }) {
   const ADH_NAV = ADH_NAV_KEYS.map((n,i) => ({ ...n, icon:[IcoCalendar2,IcoHeart,IcoActivity,IcoTag2,IcoCreditCard2][i] }));
@@ -190,9 +190,9 @@ function AdherentView({ onSwitch, isMobile, studioName = "", impersonateUserId =
     }
   }, [me?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const accountSetField = k => e => setAccountForm(f => ({ ...f, [k]: e.target.value }));
+  const accountSetField = React.useCallback(k => e => setAccountForm(f => ({ ...f, [k]: e.target.value })), []);
 
-  const accountSave = async () => {
+  const accountSave = React.useCallback(async () => {
     setAccountSaving(true);
     try {
       const res = await fetch("/api/member-profile", {
@@ -211,7 +211,7 @@ function AdherentView({ onSwitch, isMobile, studioName = "", impersonateUserId =
       }
     } catch { showToast("Erreur réseau", false); }
     setAccountSaving(false);
-  };
+  }, [studioId, accountForm, showToast]);
 
 
   useEffect(() => {
@@ -1034,7 +1034,13 @@ function AdherentView({ onSwitch, isMobile, studioName = "", impersonateUserId =
         <div style={{ flex:1, overflowY:"auto" }}>
           <div style={{ paddingBottom: isMobile ? 62 : 0 }}>
           {page === "planning" && <AdhPlanning/>}
-          {page === "account"  && <AdhAccountRefreshed/>}
+          {page === "account"  && <AdhAccountPanel
+              me={me} loading={loading} history={history} p={p}
+              editing={accountEditing} setEditing={setAccountEditing}
+              saving={accountSaving}
+              form={accountForm} setForm={setAccountForm}
+              set={accountSetField} save={accountSave}
+            />}
           {page === "history"  && <AdhHistory/>}
           {page === "purchases" && <AdhPurchases/>}
           {page === "payment"  && <AdhPayment/>}
