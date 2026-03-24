@@ -34,16 +34,6 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(confirmUrl)
   }
 
-  // ── Cas 2b : code PKCE depuis fydelys.fr → /auth/confirm ────
-  if (code && isApp) {
-    const confirmUrl = new URL("/auth/confirm", "https://fydelys.fr")
-    confirmUrl.searchParams.set("code", code)
-    if (tenantSlug)    confirmUrl.searchParams.set("tenant", tenantSlug)
-    if (isRegister)    confirmUrl.searchParams.set("register", "1")
-    if (registerSlug)  confirmUrl.searchParams.set("slug", registerSlug)
-    return NextResponse.redirect(confirmUrl)
-  }
-
   // ── Cas 2 : token_hash depuis fydelys.fr avec tenant= ─────────────────────
   if (tokenHash && isApp) {
     // Extraire register + slug depuis redirect_to si présent
@@ -272,7 +262,7 @@ export async function GET(request: NextRequest) {
     if (pending?.data) {
       const r = pending.data as any
       console.log("[auth/callback] pending data:", JSON.stringify({ firstName: r.firstName, lastName: r.lastName, slug: r.slug }))
-      const { data: exists } = await db.from("studios").select("slug").eq("slug", r.slug).single()
+      const { data: exists } = await db.from("studios").select("slug").eq("slug", r.slug).maybeSingle()
       if (exists) {
         response.headers.set("Location", "https://fydelys.fr/?error=slug_taken")
         return response
