@@ -8,13 +8,26 @@ export async function GET(request: NextRequest) {
   const studioId = request.nextUrl.searchParams.get("studioId")
   if (!studioId) return NextResponse.json({ error: "studioId requis" }, { status: 400 })
 
+  const search = request.nextUrl.searchParams.get("search")
   const db = createServiceSupabase()
-  const { data, error } = await db
-    .from("members")
-    .select("id, first_name, last_name, email, phone, address, postal_code, city, birth_date, status, credits, credits_total, joined_at, next_payment, notes, subscription_id, profile_complete, subscriptions(name)")
-    .eq("studio_id", studioId)
-    .order("last_name")
 
+  let query = db.from("members")
+  if (search) {
+    // Recherche légère pour la BookingModal
+    query = query
+      .select("id, first_name, last_name, email, phone")
+      .eq("studio_id", studioId)
+      .or(`first_name.ilike.%${search}%,last_name.ilike.%${search}%,email.ilike.%${search}%`)
+      .limit(8)
+  } else {
+    // Liste complète pour la page Adhérents
+    query = query
+      .select("id, first_name, last_name, email, phone, address, postal_code, city, birth_date, status, credits, credits_total, joined_at, next_payment, notes, subscription_id, profile_complete, subscriptions(name)")
+      .eq("studio_id", studioId)
+      .order("last_name")
+  }
+
+  const { data, error } = await query
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   return NextResponse.json({ members: data || [] })
 }

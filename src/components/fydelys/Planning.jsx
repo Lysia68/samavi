@@ -277,12 +277,13 @@ function BookingModal({ sessId, sessions, studioId, bookings, setBookings, setSe
     setQ(v);
     if (!v || v.length < 2) { setResults([]); return; }
     setLoading(true);
-    const { data } = await createClient().from("members")
-      .select("id, first_name, last_name, email, phone")
-      .eq("studio_id", studioId)
-      .or(`first_name.ilike.%${v}%,last_name.ilike.%${v}%,email.ilike.%${v}%`)
-      .limit(8);
-    setResults(data || []);
+    try {
+      const res = await fetch(`/api/members?studioId=${studioId}&search=${encodeURIComponent(v)}`);
+      const json = await res.json();
+      setResults(json.members || []);
+    } catch {
+      setResults([]);
+    }
     setLoading(false);
   }
 
