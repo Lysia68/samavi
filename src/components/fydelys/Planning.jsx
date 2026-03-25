@@ -277,12 +277,20 @@ function BookingModal({ sessId, sessions, studioId, bookings, setBookings, setSe
     setQ(v);
     if (!v || v.length < 2) { setResults([]); return; }
     setLoading(true);
-    try {
-      const res = await fetch(`/api/members?studioId=${studioId}&search=${encodeURIComponent(v)}`);
-      const json = await res.json();
-      setResults(json.members || []);
-    } catch {
-      setResults([]);
+    const { data } = await createClient().from("members")
+      .select("id, first_name, last_name, email, phone")
+      .eq("studio_id", studioId)
+      .or(`first_name.ilike.%${v}%,last_name.ilike.%${v}%,email.ilike.%${v}%`)
+      .limit(8);
+    if (!data || data.length === 0) {
+      // Fallback API route si RLS bloque
+      try {
+        const res = await fetch(`/api/members?studioId=${studioId}&search=${encodeURIComponent(v)}`);
+        const json = await res.json();
+        setResults(json.members || []);
+      } catch { setResults([]); }
+    } else {
+      setResults(data);
     }
     setLoading(false);
   }

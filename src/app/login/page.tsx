@@ -208,7 +208,7 @@ export default function LoginPage() {
     type:"Yoga", firstName:"", lastName:"", email:"", phone:"",
     isCoach:false,
   })
-  const [selectedDiscs, setSelectedDiscs] = useState<string[]>(DEFAULTS["Yoga"])
+  const [selectedDiscs, setSelectedDiscs] = useState<string[]>(["Yoga Vinyasa"])
   const [regErrors, setRegErrors] = useState<Record<string,string>>({})
   const [regStep, setRegStep]     = useState(1)
   const [regSent, setRegSent]     = useState(false)
@@ -253,7 +253,6 @@ export default function LoginPage() {
     if(k==="studioName") { n.slug=toSlug(v); checkSlug(n.slug) }
     if(k==="slug") { n.slug=v.toLowerCase().replace(/[^a-z0-9]/g,""); checkSlug(n.slug) }
     if(k==="email") checkEmail(v)
-    if(k==="type") setSelectedDiscs(DEFAULTS[v] || DEFAULTS.Multi)
     setReg(n); setRegErrors(e=>({...e,[k]:undefined as any}))
   }
 
@@ -392,7 +391,8 @@ export default function LoginPage() {
     if(!reg.address.trim())    e.address="Obligatoire"
     if(!reg.slug.trim())       e.slug="Obligatoire"
     else if(!validSlug(reg.slug)) e.slug="Lettres minuscules et chiffres uniquement, sans tirets"
-    if(selectedDiscs.length===0) e.disciplines="Sélectionnez au moins une discipline"
+    if(selectedDiscs.length===0) e.disciplines="Sélectionnez au moins 1 discipline"
+    if(selectedDiscs.length>2) e.disciplines="Maximum 2 disciplines"
     return e
   }
   const step2valid = () => {
@@ -567,29 +567,29 @@ export default function LoginPage() {
                     <FR label="Code postal" k="zip" placeholder="75001" value={reg.zip} onChange={updReg}/>
                   </div>
                   <FR label="Adresse" k="address" placeholder="12 rue de la Paix" required value={reg.address} onChange={updReg} error={regErrors.address}/>
-                  <SR label="Type de pratique" k="type" value={reg.type} onChange={updReg} opts={[
-                    {v:"Yoga",l:"🧘 Yoga"},{v:"Pilates",l:"⚡ Pilates"},{v:"Danse",l:"💃 Danse"},
-                    {v:"Fitness",l:"🏋 Fitness"},{v:"Méditation",l:"☯ Méditation"},{v:"Multi",l:"🌀 Multi"}
-                  ]}/>
 
                   <div>
                     <label style={{fontSize:11,fontWeight:700,color:"#8C7B6C",textTransform:"uppercase" as const,letterSpacing:.8,display:"block",marginBottom:8}}>
-                      Disciplines proposées <span style={{color:"#B0A090",fontWeight:400,textTransform:"none"}}>(modifiable après)</span>
+                      Disciplines proposées <span style={{color:"#B0A090",fontWeight:400,textTransform:"none"}}>(1 à 2, modifiable après)</span>
                     </label>
                     <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
                       {DISC_OPTS.map(d => {
                         const sel = selectedDiscs.includes(d.name)
+                        const atMax = selectedDiscs.length >= 2 && !sel
                         return (
                           <button key={d.name} type="button"
+                            disabled={atMax}
                             onClick={() => setSelectedDiscs(prev =>
-                              sel ? prev.filter(n => n !== d.name) : [...prev, d.name]
+                              sel ? prev.filter(n => n !== d.name) : prev.length < 2 ? [...prev, d.name] : prev
                             )}
                             style={{
-                              padding:"6px 12px",borderRadius:20,fontSize:12,cursor:"pointer",
+                              padding:"6px 12px",borderRadius:20,fontSize:12,
+                              cursor:atMax?"not-allowed":"pointer",
                               border:`1.5px solid ${sel?"rgba(160,104,56,.4)":"#DDD5C8"}`,
                               background:sel?"#F5EBE0":"#FDFAF7",
-                              color:sel?"#8C5E38":"#8C7B6C",
+                              color:sel?"#8C5E38":atMax?"#D0C8BE":"#8C7B6C",
                               fontWeight:sel?700:400,
+                              opacity:atMax?0.5:1,
                               transition:"all .15s",
                             }}>
                             {d.icon} {d.name}
@@ -597,7 +597,7 @@ export default function LoginPage() {
                         )
                       })}
                     </div>
-                    {selectedDiscs.length === 0 && regErrors.disciplines && (
+                    {regErrors.disciplines && (
                       <div style={{fontSize:11,color:"#F87171",marginTop:4}}>{regErrors.disciplines}</div>
                     )}
                   </div>
@@ -678,7 +678,6 @@ export default function LoginPage() {
                       ["URL",         `${reg.slug||"—"}.fydelys.fr`],
                       ["Ville",       reg.city],
                       ["Code postal",  reg.zip],
-                      ["Type",        reg.type],
                       ["Disciplines", selectedDiscs.map(n => { const d = DISC_OPTS.find(o=>o.name===n); return d ? `${d.icon} ${d.name}` : n }).join(", ")],
                       ["Plan",        "À choisir après l'activation (9 · 29 · 69 €/mois)"],
                       ["Gérant",      `${reg.firstName} ${reg.lastName}`],
