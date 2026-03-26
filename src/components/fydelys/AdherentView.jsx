@@ -252,7 +252,7 @@ function AdherentView({ onSwitch, isMobile, studioName = "", impersonateUserId =
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ studioId, ...accountForm }),
+        body: JSON.stringify({ studioId, memberId: me?.id || null, ...accountForm }),
       });
       const result = await res.json();
       if (res.ok) {

@@ -16,17 +16,12 @@ export async function POST(req: NextRequest) {
     if (!user) return NextResponse.json({ error: "Non authentifié" }, { status: 401 })
 
     const body = await req.json()
-    const { studioId, first_name, last_name, phone, birth_date, address, postal_code, city, profession } = body
-    console.log("[member-profile] body received:", JSON.stringify(body))
+    const { studioId, memberId, first_name, last_name, phone, birth_date, address, postal_code, city, profession } = body
     if (!studioId) return NextResponse.json({ error: "studioId manquant" }, { status: 400 })
 
     const db = createServiceSupabase()
 
-    // Chercher le membre — par auth_user_id en priorité
-    const { data: byUid } = await db.from("members")
-      .select("id").eq("studio_id", studioId).eq("auth_user_id", user.id).maybeSingle()
-
-    const updateData = {
+    const updateData: any = {
       first_name:       first_name?.trim()     || null,
       last_name:        last_name?.trim()      || null,
       phone:            phone?.trim()          || null,
@@ -36,25 +31,40 @@ export async function POST(req: NextRequest) {
       city:             city?.trim()           || null,
       profession:       profession?.trim()     || null,
       profile_complete: true,
-      status:           "actif",
-      auth_user_id:     user.id,
     }
 
     let updateErr = null
+    let targetId: string | null = null
 
-    console.log("[member-profile] byUid:", byUid?.id || "null", "| user.id:", user.id, "| email:", user.email)
-    console.log("[member-profile] updateData:", JSON.stringify(updateData))
-
-    if (byUid) {
-      const { error, count } = await db.from("members").update(updateData).eq("id", byUid.id)
-      console.log("[member-profile] updated by uid, count:", count, "error:", error?.message || "none")
+    // 1. Si memberId fourni (édition admin d'un autre membre) → update direct
+    if (memberId) {
+      targetId = memberId
+      const { error } = await db.from("members").update(updateData).eq("id", memberId)
       updateErr = error
     } else {
-      // Fallback par email
-      const { error, count } = await db.from("members").update(updateData)
-        .eq("studio_id", studioId).eq("email", user.email!)
-      console.log("[member-profile] updated by email, count:", count, "error:", error?.message || "none")
-      updateErr = error
+      // 2. Chercher le membre par auth_user_id (self-edit adhérent)
+      updateData.status = "actif"
+      updateData.auth_user_id = user.id
+
+      const { data: byUid } = await db.from("members")
+        .select("id").eq("studio_id", studioId).eq("auth_user_id", user.id).maybeSingle()
+
+      if (byUid) {
+        targetId = byUid.id
+        const { error } = await db.from("members").update(updateData).eq("id", byUid.id)
+        updateErr = error
+      } else {
+        // 3. Fallback par email
+        const { data: byEmail } = await db.from("members")
+          .select("id").eq("studio_id", studioId).eq("email", user.email!).maybeSingle()
+        if (byEmail) {
+          targetId = byEmail.id
+          const { error } = await db.from("members").update(updateData).eq("id", byEmail.id)
+          updateErr = error
+        } else {
+          return NextResponse.json({ error: "Membre introuvable" }, { status: 404 })
+        }
+      }
     }
 
     if (updateErr) {
