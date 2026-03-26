@@ -14,6 +14,11 @@ function Payments({ isMobile }) {
   const [dbLoading, setDbLoading] = useState(true);
   const [isDemoData, setIsDemoData] = useState(false);
   const [toast, setToast] = useState(null);
+  const [showAdd, setShowAdd] = useState(false);
+  const [addForm, setAddForm] = useState({ memberId:"", memberName:"", amount:"", date:new Date().toISOString().slice(0,10), type:"Espèces", status:"payé", notes:"", credits:"0" });
+  const [memberSearch, setMemberSearch] = useState("");
+  const [memberResults, setMemberResults] = useState([]);
+  const [addSaving, setAddSaving] = useState(false);
   const total  = payments.filter(p=>p.status==="payé").reduce((s,p)=>s+p.amount,0);
   const unpaid = payments.filter(p=>p.status==="impayé").reduce((s,p)=>s+p.amount,0);
   const p = isMobile?12:28;
@@ -64,9 +69,122 @@ function Payments({ isMobile }) {
           <IcoMail s={16} c="white"/>{toast}
         </div>
       )}
-      <div style={{ display:"flex", justifyContent:"flex-end", marginBottom:10 }}>
+      <div style={{ display:"flex", justifyContent:"flex-end", gap:8, marginBottom:10 }}>
         <Button sm variant="ghost" onClick={()=>window.open(`/api/export?type=payments&studioId=${studioId}`)}>CSV</Button>
+        <Button sm variant="primary" onClick={()=>setShowAdd(!showAdd)}>+ Paiement</Button>
       </div>
+
+      {showAdd && (
+        <Card style={{ marginBottom:16, borderTop:`3px solid ${C.accent}` }}>
+          <div style={{ fontSize:13, fontWeight:800, color:C.accent, textTransform:"uppercase", letterSpacing:.6, marginBottom:14 }}>Enregistrer un paiement</div>
+          <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
+            {/* Membre */}
+            <div>
+              <div style={{ fontSize:11, fontWeight:700, color:C.textMuted, textTransform:"uppercase", letterSpacing:.8, marginBottom:5 }}>Adhérent *</div>
+              {addForm.memberId ? (
+                <div style={{ display:"flex", alignItems:"center", gap:10, padding:"9px 12px", borderRadius:9, border:`1.5px solid ${C.accent}`, background:C.accentBg }}>
+                  <div style={{ flex:1, fontSize:14, fontWeight:700, color:C.accent }}>{addForm.memberName}</div>
+                  <button onClick={()=>{ setAddForm(f=>({...f,memberId:"",memberName:""})); setMemberSearch(""); }} style={{ background:"none", border:"none", cursor:"pointer", color:C.textMuted }}>x</button>
+                </div>
+              ) : (
+                <>
+                  <input value={memberSearch} placeholder="Rechercher un adhérent…"
+                    onChange={e=>{
+                      const v=e.target.value; setMemberSearch(v);
+                      if(v.length<2){setMemberResults([]);return;}
+                      createClient().from("members").select("id,first_name,last_name,email").eq("studio_id",studioId)
+                        .or(`first_name.ilike.%${v}%,last_name.ilike.%${v}%,email.ilike.%${v}%`).limit(6)
+                        .then(({data})=>setMemberResults(data||[]));
+                    }}
+                    style={{ width:"100%", padding:"9px 12px", borderRadius:9, border:`1.5px solid ${C.border}`, fontSize:14, outline:"none", boxSizing:"border-box", background:"#FDFAF7" }}/>
+                  {memberResults.length>0 && (
+                    <div style={{ borderRadius:9, border:`1px solid ${C.borderSoft}`, overflow:"hidden", marginTop:4 }}>
+                      {memberResults.map(m=>(
+                        <div key={m.id} onClick={()=>{ setAddForm(f=>({...f,memberId:m.id,memberName:`${m.first_name} ${m.last_name}`.trim()})); setMemberResults([]); setMemberSearch(""); }}
+                          style={{ padding:"8px 12px", cursor:"pointer", borderBottom:`1px solid ${C.borderSoft}`, fontSize:13, transition:"background .1s" }}
+                          onMouseEnter={e=>e.currentTarget.style.background=C.accentBg}
+                          onMouseLeave={e=>e.currentTarget.style.background=""}>
+                          <span style={{ fontWeight:700, color:C.text }}>{m.first_name} {m.last_name}</span>
+                          <span style={{ color:C.textMuted, marginLeft:8 }}>{m.email}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+            {/* Montant + Date */}
+            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
+              <div>
+                <div style={{ fontSize:11, fontWeight:700, color:C.textMuted, textTransform:"uppercase", letterSpacing:.8, marginBottom:5 }}>Montant (EUR) *</div>
+                <input type="number" min="0" step="0.01" value={addForm.amount} onChange={e=>setAddForm(f=>({...f,amount:e.target.value}))} placeholder="0.00"
+                  style={{ width:"100%", padding:"9px 12px", borderRadius:9, border:`1.5px solid ${C.border}`, fontSize:14, outline:"none", boxSizing:"border-box", background:"#FDFAF7" }}/>
+              </div>
+              <div>
+                <div style={{ fontSize:11, fontWeight:700, color:C.textMuted, textTransform:"uppercase", letterSpacing:.8, marginBottom:5 }}>Date *</div>
+                <input type="date" value={addForm.date} onChange={e=>setAddForm(f=>({...f,date:e.target.value}))}
+                  style={{ width:"100%", padding:"9px 12px", borderRadius:9, border:`1.5px solid ${C.border}`, fontSize:14, outline:"none", boxSizing:"border-box", background:"#FDFAF7" }}/>
+              </div>
+            </div>
+            {/* Mode + Statut */}
+            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
+              <div>
+                <div style={{ fontSize:11, fontWeight:700, color:C.textMuted, textTransform:"uppercase", letterSpacing:.8, marginBottom:5 }}>Mode de paiement</div>
+                <select value={addForm.type} onChange={e=>setAddForm(f=>({...f,type:e.target.value}))}
+                  style={{ width:"100%", padding:"9px 12px", borderRadius:9, border:`1.5px solid ${C.border}`, fontSize:14, outline:"none", boxSizing:"border-box", background:"#FDFAF7", appearance:"none" }}>
+                  {["Espèces","Carte","Virement","Chèque","Prélèvement"].map(t=><option key={t}>{t}</option>)}
+                </select>
+              </div>
+              <div>
+                <div style={{ fontSize:11, fontWeight:700, color:C.textMuted, textTransform:"uppercase", letterSpacing:.8, marginBottom:5 }}>Statut</div>
+                <select value={addForm.status} onChange={e=>setAddForm(f=>({...f,status:e.target.value}))}
+                  style={{ width:"100%", padding:"9px 12px", borderRadius:9, border:`1.5px solid ${C.border}`, fontSize:14, outline:"none", boxSizing:"border-box", background:"#FDFAF7", appearance:"none" }}>
+                  {["payé","impayé"].map(s=><option key={s}>{s}</option>)}
+                </select>
+              </div>
+            </div>
+            {/* Crédits */}
+            <div>
+              <div style={{ fontSize:11, fontWeight:700, color:C.textMuted, textTransform:"uppercase", letterSpacing:.8, marginBottom:5 }}>Crédits à ajouter</div>
+              <input type="number" min="0" value={addForm.credits} onChange={e=>setAddForm(f=>({...f,credits:e.target.value}))} placeholder="0"
+                style={{ width:"100%", padding:"9px 12px", borderRadius:9, border:`1.5px solid ${C.border}`, fontSize:14, outline:"none", boxSizing:"border-box", background:"#FDFAF7" }}/>
+              <div style={{ fontSize:11, color:C.textMuted, marginTop:3 }}>Nombre de séances ajoutées au solde du membre (0 = pas de modification)</div>
+            </div>
+            {/* Notes */}
+            <div>
+              <div style={{ fontSize:11, fontWeight:700, color:C.textMuted, textTransform:"uppercase", letterSpacing:.8, marginBottom:5 }}>Notes</div>
+              <input value={addForm.notes} onChange={e=>setAddForm(f=>({...f,notes:e.target.value}))} placeholder="Ex : Carnet 10 séances, mois de mars…"
+                style={{ width:"100%", padding:"9px 12px", borderRadius:9, border:`1.5px solid ${C.border}`, fontSize:14, outline:"none", boxSizing:"border-box", background:"#FDFAF7" }}/>
+            </div>
+            {/* Actions */}
+            <div style={{ display:"flex", gap:10 }}>
+              <Button variant="primary" disabled={addSaving||!addForm.memberId||!addForm.amount} onClick={async()=>{
+                setAddSaving(true);
+                const { error } = await createClient().from("member_payments").insert({
+                  studio_id:studioId, member_id:addForm.memberId,
+                  amount:parseFloat(addForm.amount), payment_date:addForm.date,
+                  payment_type:addForm.type, status:addForm.status, notes:addForm.notes||null,
+                  source:"manual",
+                });
+                if(!error){
+                  // Ajouter les crédits au membre si > 0
+                  const creditsToAdd = parseInt(addForm.credits) || 0;
+                  if(creditsToAdd > 0){
+                    const sb = createClient();
+                    const { data:m } = await sb.from("members").select("credits,credits_total").eq("id",addForm.memberId).single();
+                    if(m) await sb.from("members").update({ credits:(m.credits||0)+creditsToAdd, credits_total:(m.credits_total||0)+creditsToAdd }).eq("id",addForm.memberId);
+                  }
+                  setPayments(prev=>[{ id:Date.now(), member:addForm.memberName, amount:parseFloat(addForm.amount), date:addForm.date, subscription:addForm.notes||"—", status:addForm.status, payment_type:addForm.type, stripe_payment_id:null, relance:false },...prev]);
+                  setShowAdd(false); setAddForm({ memberId:"",memberName:"",amount:"",date:new Date().toISOString().slice(0,10),type:"Espèces",status:"payé",notes:"",credits:"0" });
+                  setToast("Paiement enregistré"); setTimeout(()=>setToast(null),3000);
+                }
+                setAddSaving(false);
+              }}>{addSaving?"Enregistrement…":"Enregistrer"}</Button>
+              <Button variant="ghost" onClick={()=>setShowAdd(false)}>Annuler</Button>
+            </div>
+          </div>
+        </Card>
+      )}
       <div style={{ display:"grid", gridTemplateColumns:isMobile?"1fr":"repeat(3,1fr)", gap:isMobile?8:14, marginBottom:isMobile?16:20 }}>
         {stats.map(s=>(
           <Card key={s.lbl} style={{ padding:"14px 16px" }}>
