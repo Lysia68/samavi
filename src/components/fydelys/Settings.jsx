@@ -165,7 +165,7 @@ function Settings({ isMobile, onImpersonate }) {
           postal_code: data.postal_code || "",
           phone: data.phone || "",
           email: data.email || "",
-          website: data.website || "",
+          website: data.website || (data.slug ? `https://${data.slug}.fydelys.fr` : ""),
           cancel_delay_hours: data.cancel_delay_hours ?? 12,
           booking_days_ahead: data.booking_days_ahead ?? 7,
           waitlist_max: data.waitlist_max ?? 10,
