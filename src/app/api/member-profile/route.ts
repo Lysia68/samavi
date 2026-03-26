@@ -42,13 +42,18 @@ export async function POST(req: NextRequest) {
 
     let updateErr = null
 
+    console.log("[member-profile] byUid:", byUid?.id || "null", "| user.id:", user.id, "| email:", user.email)
+    console.log("[member-profile] updateData:", JSON.stringify(updateData))
+
     if (byUid) {
-      const { error } = await db.from("members").update(updateData).eq("id", byUid.id)
+      const { error, count } = await db.from("members").update(updateData).eq("id", byUid.id)
+      console.log("[member-profile] updated by uid, count:", count, "error:", error?.message || "none")
       updateErr = error
     } else {
       // Fallback par email
-      const { error } = await db.from("members").update(updateData)
+      const { error, count } = await db.from("members").update(updateData)
         .eq("studio_id", studioId).eq("email", user.email!)
+      console.log("[member-profile] updated by email, count:", count, "error:", error?.message || "none")
       updateErr = error
     }
 
