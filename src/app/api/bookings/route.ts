@@ -26,20 +26,10 @@ export async function GET(req: NextRequest) {
   if (sessionIds && studioId) {
     const ids = sessionIds.split(",").filter(Boolean)
     if (ids.length === 0) return NextResponse.json({ bookings: [] })
-    // Query simple d'abord pour diagnostiquer
-    const { data: simple, error: simpleErr } = await db.from("bookings")
-      .select("id, session_id, member_id, status")
+    const { data } = await db.from("bookings")
+      .select("id, session_id, member_id, status, attended, guest_name, host_member_id, members!bookings_member_id_fkey(id, first_name, last_name, email, phone, credits, credits_total, subscription_id, subscriptions(period))")
       .in("session_id", ids)
-    console.log("[GET bookings] ids:", ids.length, "simple result:", simple?.length, "error:", simpleErr?.message || "none")
-    if (simple?.length) {
-      // Query complète — spécifier la FK pour désambiguïser (member_id vs host_member_id)
-      const { data, error } = await db.from("bookings")
-        .select("id, session_id, member_id, status, attended, guest_name, host_member_id, members!bookings_member_id_fkey(id, first_name, last_name, email, phone, credits, credits_total, subscription_id, subscriptions(period))")
-        .in("session_id", ids)
-      console.log("[GET bookings] full result:", data?.length, "error:", error?.message || "none")
-      return NextResponse.json({ bookings: data || [] })
-    }
-    return NextResponse.json({ bookings: [] })
+    return NextResponse.json({ bookings: data || [] })
   }
 
   return NextResponse.json({ error: "(memberId ou sessionIds) + studioId requis" }, { status: 400 })

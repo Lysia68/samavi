@@ -162,7 +162,6 @@ function PlanningSessionCard({ sess, expandedId, bookings, discs, onToggle, onCh
           <div style={{ fontSize: 12, color: C.textSoft, marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
             {sess.teacher && <><span style={{ fontWeight: 600 }}>{sess.teacher}</span> · </>}{sess.room} · {sess.duration}min
           </div>
-          <div style={{ fontSize: 9, color: C.border, marginTop: 1, fontFamily: "monospace" }}>{sess.id?.slice(0, 8)}</div>
           {(() => {
             const rd = (roomsList||[]).find(r => r.name === sess.room);
             if (!rd?.location && !rd?.address) return null;
@@ -686,13 +685,10 @@ function Planning({ isMobile }) {
         let bkData = [];
         try {
           const ids = mapped.map(s => s.id);
-          console.log("[Planning] Loading bookings for", ids.length, "sessions via API");
           const res = await fetch(`/api/bookings?sessionIds=${ids.join(",")}&studioId=${studioId}`);
           const json = await res.json();
           bkData = json.bookings || [];
-          console.log("[Planning] API returned", bkData.length, "bookings", json.error || "");
-        } catch (e) {
-          console.error("[Planning] API bookings failed, fallback client", e);
+        } catch {
           // Fallback client direct si API échoue
           const { data } = await sb.from("bookings")
             .select("id, session_id, member_id, status, attended, guest_name, host_member_id, members!bookings_member_id_fkey(id, first_name, last_name, email, phone, credits, credits_total, subscription_id, subscriptions(period))")

@@ -246,7 +246,6 @@ function AdherentView({ onSwitch, isMobile, studioName = "", impersonateUserId =
 
   const accountSave = React.useCallback(async () => {
     setAccountSaving(true);
-    console.log("[accountSave] payload:", JSON.stringify({ studioId, ...accountForm }));
     try {
       const res = await fetch("/api/member-profile", {
         method: "POST",
@@ -588,7 +587,6 @@ function AdherentView({ onSwitch, isMobile, studioName = "", impersonateUserId =
                           {isFull && !isBooked && !isCancelled && <Tag s="complet"/>}
                         </div>
                         <div style={{ fontSize:isMobile?14:15, color:C.textSoft, marginBottom:2 }}>{s.teacher} · {s.room} · {s.duration_min} min</div>
-                        <div style={{ fontSize:9, color:C.border, fontFamily:"monospace", marginBottom:4 }}>{s.id?.slice(0,8)}</div>
                         {!isCancelled && (
                           <div style={{ display:"flex", alignItems:"center", gap:8 }}>
                             <div style={{ flex:1, maxWidth:160, height:4, background:C.bgDeep, borderRadius:2 }}>
