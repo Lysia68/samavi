@@ -681,21 +681,19 @@ function Planning({ isMobile }) {
           duration: s.duration_min || 60, spots: s.spots || 12,
           status: s.status || "scheduled", booked: 0, waitlist: 0,
         }));
-        // Charger bookings — fallback API si RLS bloque côté client
-        let bkData = null;
-        const { data: bkDirect } = await sb.from("bookings")
-          .select("id, session_id, member_id, status, attended, guest_name, host_member_id, members(id, first_name, last_name, email, phone, credits, credits_total, subscription_id, subscriptions(period))")
-          .in("session_id", mapped.map(s => s.id));
-        if (bkDirect && bkDirect.length > 0) {
-          bkData = bkDirect;
-        } else {
-          // Fallback : charger via API (service role, pas de RLS)
-          try {
-            const ids = mapped.map(s => s.id);
-            const res = await fetch(`/api/bookings?sessionIds=${ids.join(",")}&studioId=${studioId}`);
-            const json = await res.json();
-            bkData = json.bookings || [];
-          } catch { bkData = []; }
+        // Charger bookings via API (service role) pour éviter les problèmes RLS
+        let bkData = [];
+        try {
+          const ids = mapped.map(s => s.id);
+          const res = await fetch(`/api/bookings?sessionIds=${ids.join(",")}&studioId=${studioId}`);
+          const json = await res.json();
+          bkData = json.bookings || [];
+        } catch {
+          // Fallback client direct si API échoue
+          const { data } = await sb.from("bookings")
+            .select("id, session_id, member_id, status, attended, guest_name, host_member_id, members(id, first_name, last_name, email, phone, credits, credits_total, subscription_id, subscriptions(period))")
+            .in("session_id", mapped.map(s => s.id));
+          bkData = data || [];
         }
         // Après chargement des bookings, filtrer les séances passées sans présences à valider
         const now = new Date();
