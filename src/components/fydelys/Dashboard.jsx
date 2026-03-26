@@ -33,11 +33,11 @@ function DashboardSessionCard({ sess, expandedId, bookings, onToggle, onChangeSt
         style={{ display:"flex", alignItems:"center", gap:10, padding:"12px 16px", cursor:isDemo?"default":"pointer", background:isExp?C.accentBg:C.surface, transition:"background .15s" }}
         onMouseEnter={e=>{ if(!isExp && !isDemo) e.currentTarget.style.background=C.surfaceWarm; }}
         onMouseLeave={e=>{ if(!isExp) e.currentTarget.style.background=C.surface; }}>
-        <div style={{ fontSize:14, fontWeight:700, color:C.accent, width:36, flexShrink:0 }}>{sess.time}</div>
+        <div style={{ fontSize:13, fontWeight:700, color:C.accent, width:36, flexShrink:0 }}>{sess.time}</div>
         <div style={{ width:3, height:28, background:disc.color, borderRadius:2, flexShrink:0 }}/>
         <div style={{ flex:1, minWidth:0 }}>
-          <div style={{ fontSize:16, fontWeight:700, color:C.text }}>{disc.name}</div>
-          <div style={{ fontSize:13, color:C.textSoft }}>{sess.teacher} · {sess.room} · {sess.duration}min</div>
+          <div style={{ fontSize:15, fontWeight:700, color:C.text, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{disc.name}</div>
+          <div style={{ fontSize:12, color:C.textSoft, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{sess.teacher} · {sess.room} · {sess.duration}min</div>
         </div>
         <div style={{ textAlign:"right", flexShrink:0 }}>
           <div style={{ fontSize:15, fontWeight:700, color:pct>=1?C.warn:C.text }}>
@@ -200,61 +200,61 @@ function Dashboard({ isMobile }) {
     <div>
       {isDemo && <DemoBanner/>}
       <div style={{ padding:p }}>
+        {/* KPIs */}
         <div style={{ display:"grid", gridTemplateColumns:isMobile?"1fr 1fr":"repeat(4,1fr)", gap:isMobile?8:14, marginBottom:isMobile?12:20 }}>
           <KpiCard icon={<IcoUsers2 s={isMobile?16:18} c={C.ok}/>}      label="Adhérents actifs" value={activeMembers>0?String(activeMembers):"—"}  delta={null} accentColor={C.ok}     isMobile={isMobile}/>
           <KpiCard icon={<IcoCalendar2 s={isMobile?16:18} c="#6B9E7A"/>} label="Séances ce mois"  value={monthSessions>0?String(monthSessions):"—"}   delta={null} accentColor="#6B9E7A"  isMobile={isMobile}/>
           <KpiCard icon={<IcoBarChart2 s={isMobile?16:18} c="#6A8FAE"/>} label="Taux remplissage" value={totalCap>0?fillRate+" %":"—"}                 delta={null} accentColor="#6A8FAE"  isMobile={isMobile}/>
           <KpiCard icon={<IcoEuro2 s={isMobile?16:18} c={C.accent}/>}   label="CA du mois"        value={monthRevenue>0?monthRevenue.toLocaleString("fr-FR")+" €":"—"} delta={null} accentColor={C.accent} isMobile={isMobile}/>
         </div>
-        <div style={{ display:"grid", gridTemplateColumns:isMobile?"1fr":"1.6fr 1fr", gap:16 }}>
-          <Card noPad>
-            <SectionHead action={<Pill>{todayLabel}</Pill>}>Séances du jour</SectionHead>
-            {loading
-              ? <div style={{padding:"28px",textAlign:"center",color:C.textMuted,fontSize:14}}>Chargement…</div>
-              : todaySessions.length === 0
-                ? <EmptyCard label="Aucune séance programmée aujourd'hui"/>
-                : todaySessions.map(s=>(
-                  <DashboardSessionCard key={s.id} sess={s} expandedId={expandedId} bookings={bookings} onToggle={handleToggle} onChangeStatus={handleChangeStatus} isDemo={isDemo} discs={discs}/>
-                ))}
-          </Card>
-          <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
+
+        {/* Séances du jour — pleine largeur */}
+        <Card noPad style={{marginBottom:isMobile?12:16}}>
+          <SectionHead action={<Pill>{todayLabel}</Pill>}>Séances du jour</SectionHead>
+          {loading
+            ? <div style={{padding:"28px",textAlign:"center",color:C.textMuted,fontSize:14}}>Chargement…</div>
+            : todaySessions.length === 0
+              ? <EmptyCard label="Aucune séance programmée aujourd'hui"/>
+              : todaySessions.map(s=>(
+                <DashboardSessionCard key={s.id} sess={s} expandedId={expandedId} bookings={bookings} onToggle={handleToggle} onChangeStatus={handleChangeStatus} isDemo={isDemo} discs={discs}/>
+              ))}
+        </Card>
+
+        {/* Alertes + Derniers inscrits — côte à côte desktop, empilé mobile */}
+        <div style={{ display:"grid", gridTemplateColumns:isMobile?"1fr":"1fr 1fr", gap:isMobile?12:16 }}>
+          {alerts.length > 0 && (
             <Card noPad>
               <SectionHead><span style={{display:"flex",alignItems:"center",gap:6}}><IcoAlert2 s={15} c={C.warn}/>Alertes</span></SectionHead>
-              {loading
-                ? <EmptyCard label="Chargement…"/>
-                : alerts.length === 0
-                  ? <EmptyCard label="Aucune alerte pour le moment"/>
-                  : alerts.map(a=>(
-                    a.label === "page_publique"
-                      ? <div key="page_publique" style={{ padding:"12px 16px", borderBottom:`1px solid ${C.borderSoft}` }}>
-                          <div style={{ fontSize:13, color:C.text, fontWeight:600, marginBottom:2 }}>
-                            🌐 Site vitrine non activé
-                          </div>
-                          <div style={{ fontSize:12, color:C.textSoft, marginBottom:8, lineHeight:1.5 }}>
-                            Vous n'avez pas de site web ? Activez votre page vitrine gratuite pour présenter votre studio et afficher votre planning en ligne.
-                          </div>
-                          <button onClick={()=>{ window.dispatchEvent(new CustomEvent("fydelys:nav", { detail:"settings" })); }}
-                            style={{ fontSize:12, fontWeight:700, color:C.accent, background:C.accentBg, border:`1px solid ${C.accent}40`, borderRadius:7, padding:"4px 12px", cursor:"pointer" }}>
-                            Configurer mon site vitrine →
-                          </button>
-                        </div>
-                      : <div key={a.label} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"10px 16px", borderBottom:`1px solid ${C.borderSoft}` }}>
-                          <span style={{ fontSize:14, color:C.textMid }}>{a.label}</span>
-                          <span style={{ fontSize:13, fontWeight:700, color:a.c, background:a.bg, padding:"3px 12px", borderRadius:12 }}>{a.value}</span>
-                        </div>
-                  ))
-              }
+              {alerts.map(a=>(
+                a.label === "page_publique"
+                  ? <div key="page_publique" style={{ padding:"12px 16px", borderBottom:`1px solid ${C.borderSoft}` }}>
+                      <div style={{ fontSize:13, color:C.text, fontWeight:600, marginBottom:2 }}>
+                        Site vitrine non activé
+                      </div>
+                      <div style={{ fontSize:12, color:C.textSoft, marginBottom:8, lineHeight:1.5 }}>
+                        Vous n'avez pas de site web ? Activez votre page vitrine gratuite pour présenter votre studio et afficher votre planning en ligne.
+                      </div>
+                      <button onClick={()=>{ window.dispatchEvent(new CustomEvent("fydelys:nav", { detail:"settings" })); }}
+                        style={{ fontSize:12, fontWeight:700, color:C.accent, background:C.accentBg, border:`1px solid ${C.accent}40`, borderRadius:7, padding:"6px 14px", cursor:"pointer" }}>
+                        Configurer mon site vitrine →
+                      </button>
+                    </div>
+                  : <div key={a.label} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"10px 16px", borderBottom:`1px solid ${C.borderSoft}` }}>
+                      <span style={{ fontSize:13, color:C.textMid }}>{a.label}</span>
+                      <span style={{ fontSize:12, fontWeight:700, color:a.c, background:a.bg, padding:"3px 10px", borderRadius:12 }}>{a.value}</span>
+                    </div>
+              ))}
             </Card>
-            <Card noPad style={{ flex:1 }}>
-              <SectionHead>Derniers inscrits</SectionHead>
-              {loading
-                ? <EmptyCard label="Chargement…"/>
-                : recentMembers.length === 0
-                  ? <EmptyCard label="Aucun adhérent pour le moment"/>
-                  : recentMembers.map(m=><MemberRow key={m.id} m={m} onSelect={()=>{}} selected={false}/>)
-              }
-            </Card>
-          </div>
+          )}
+          <Card noPad>
+            <SectionHead>Derniers inscrits</SectionHead>
+            {loading
+              ? <EmptyCard label="Chargement…"/>
+              : recentMembers.length === 0
+                ? <EmptyCard label="Aucun adhérent pour le moment"/>
+                : recentMembers.map(m=><MemberRow key={m.id} m={m} onSelect={()=>{}} selected={false}/>)
+            }
+          </Card>
         </div>
       </div>
     </div>

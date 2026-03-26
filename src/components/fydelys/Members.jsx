@@ -446,76 +446,97 @@ function Members({ isMobile }) {
     const m=selected;
     const adresseFull=[m.address,[m.postalCode,m.city].filter(Boolean).join(" ")].filter(Boolean).join(", ");
     const birthdayFmt=m.birthDate?new Date(m.birthDate+"T12:00:00").toLocaleDateString("fr-FR",{day:"numeric",month:"long",year:"numeric"}):null;
-    const infoRow=(ico,lbl,val)=>val?<div style={{display:"flex",alignItems:"flex-start",gap:8}}><span style={{fontSize:14,flexShrink:0,marginTop:1}}>{ico}</span><div><div style={{fontSize:11,fontWeight:700,color:C.textMuted,textTransform:"uppercase",letterSpacing:.5}}>{lbl}</div><div style={{fontSize:13,color:C.text,fontWeight:500}}>{val}</div></div></div>:null;
+    const infoRow=(ico,lbl,val)=>val?<div style={{display:"flex",alignItems:"flex-start",gap:8,padding:"6px 0"}}><span style={{fontSize:14,flexShrink:0,marginTop:1}}>{ico}</span><div><div style={{fontSize:11,fontWeight:700,color:C.textMuted,textTransform:"uppercase",letterSpacing:.5}}>{lbl}</div><div style={{fontSize:13,color:C.text,fontWeight:500,wordBreak:"break-word"}}>{val}</div></div></div>:null;
+    const isFrozen = m.frozenUntil && new Date(m.frozenUntil) >= new Date(new Date().toISOString().slice(0,10));
+    const actionBtn = (label, onClick, primary) => (
+      <button onClick={onClick} style={{
+        flex:isMobile?"1 1 calc(50% - 5px)":"0 0 auto", minHeight:40, padding:"8px 14px", borderRadius:10,
+        border:primary?"none":`1.5px solid ${C.border}`, background:primary?"linear-gradient(145deg,#B88050,#9A6030)":C.surface,
+        color:primary?"#fff":C.textMid, fontSize:13, fontWeight:600, cursor:"pointer",
+        display:"flex", alignItems:"center", justifyContent:"center", gap:6,
+      }}>{label}</button>
+    );
     return (
       <div onClick={e=>{if(e.target===e.currentTarget)setSelected(null)}}
-        style={{position:"fixed",inset:0,background:"rgba(42,31,20,.4)",zIndex:500,display:"flex",justifyContent:isMobile?"center":"flex-end",alignItems:isMobile?"flex-end":"stretch",padding:isMobile?0:0}}>
+        style={{position:"fixed",inset:0,background:"rgba(42,31,20,.4)",zIndex:500,display:"flex",justifyContent:isMobile?"center":"flex-end",alignItems:isMobile?"flex-end":"stretch"}}>
         <div style={{
-          background:C.surface,width:isMobile?"100%":480,maxHeight:isMobile?"90vh":"100vh",
-          overflowY:"auto",boxShadow:"-8px 0 40px rgba(42,31,20,.15)",
+          background:C.surface,width:isMobile?"100%":420,maxHeight:isMobile?"92vh":"100vh",
+          overflowY:"auto",boxShadow:isMobile?"0 -8px 40px rgba(42,31,20,.2)":"-8px 0 40px rgba(42,31,20,.15)",
           borderRadius:isMobile?"16px 16px 0 0":0,
           animation:"slideIn .2s ease",
+          WebkitOverflowScrolling:"touch",
         }}>
           <style>{`@keyframes slideIn { from { transform: translate${isMobile?"Y(40px)":"X(40px)"}; opacity:0; } to { transform: none; opacity:1; } }`}</style>
-          <div style={{padding:isMobile?20:28}}>
-        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16}}>
-          <div style={{display:"flex",alignItems:"center",gap:14}}>
-            <div style={{width:48,height:48,borderRadius:"50%",background:C.accentBg,border:`1.5px solid #DFC0A0`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:17,fontWeight:700,color:C.accent}}>{m.avatar}</div>
-            <div>
-              <div style={{fontSize:19,fontWeight:800,color:C.text}}>{m.firstName} {m.lastName}</div>
-              <div style={{fontSize:13,color:C.textSoft,marginTop:3,display:"flex",alignItems:"center",gap:10,flexWrap:"wrap"}}>
-                <span style={{display:"flex",alignItems:"center",gap:4}}><IcoMail s={13} c={C.textMuted}/>{m.email}</span>
-                {m.phone&&<span style={{display:"flex",alignItems:"center",gap:4}}><span style={{fontSize:13}}>📞</span>{m.phone}</span>}
+
+          {/* Handle bar mobile */}
+          {isMobile && <div style={{display:"flex",justifyContent:"center",padding:"10px 0 4px"}}><div style={{width:36,height:4,borderRadius:2,background:C.border}}/></div>}
+
+          <div style={{padding:isMobile?"12px 18px 24px":"24px 28px"}}>
+            {/* Header */}
+            <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",marginBottom:16,gap:10}}>
+              <div style={{display:"flex",alignItems:"center",gap:12,flex:1,minWidth:0}}>
+                <div style={{width:44,height:44,borderRadius:"50%",background:C.accentBg,border:`1.5px solid #DFC0A0`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,fontWeight:700,color:C.accent,flexShrink:0}}>{m.avatar}</div>
+                <div style={{minWidth:0}}>
+                  <div style={{fontSize:isMobile?17:19,fontWeight:800,color:C.text,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{m.firstName} {m.lastName}</div>
+                  <div style={{fontSize:12,color:C.textSoft,marginTop:2,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{m.email}</div>
+                  {m.phone&&<div style={{fontSize:12,color:C.textSoft,marginTop:1}}>{m.phone}</div>}
+                  {m.profileComplete===false&&<div style={{fontSize:11,color:C.warn,fontWeight:600,marginTop:2}}>Profil non complété</div>}
+                </div>
               </div>
-              {m.profileComplete===false&&<div style={{fontSize:11,color:C.warn,fontWeight:600,marginTop:3}}>Profil non complété</div>}
+              <div style={{display:"flex",gap:6,flexShrink:0}}>
+                <button onClick={()=>startEdit(m)} style={{fontSize:12,padding:"6px 10px",borderRadius:8,border:`1.5px solid ${C.border}`,background:C.surface,color:C.textMid,cursor:"pointer",fontWeight:600}}>Modifier</button>
+                <button onClick={()=>setSelected(null)} style={{background:"none",border:`1.5px solid ${C.border}`,borderRadius:8,padding:"5px 7px",cursor:"pointer",display:"flex",alignItems:"center"}}><IcoX s={14} c={C.textSoft}/></button>
+              </div>
             </div>
-          </div>
-          <div style={{display:"flex",gap:8}}>
-            <button onClick={()=>startEdit(m)} style={{fontSize:12,padding:"6px 12px",borderRadius:8,border:`1.5px solid ${C.border}`,background:C.surface,color:C.textMid,cursor:"pointer",fontWeight:600}}>Modifier</button>
-            <button onClick={()=>setSelected(null)} style={{background:"none",border:`1.5px solid ${C.border}`,borderRadius:8,padding:"5px 8px",cursor:"pointer",display:"flex",alignItems:"center"}}><IcoX s={16} c={C.textSoft}/></button>
-          </div>
-        </div>
-        <div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:10,marginBottom:14}}>
-          {[["Abonnement",m.subscription],["Statut",m.status],["Membre depuis",m.joined?new Date(m.joined).toLocaleDateString("fr-FR"):"—"],["Crédits",m.credits>0?`${m.credits} séances`:"Illimité"]].map(([l,v])=>(
-            <div key={l} style={{background:C.bg,borderRadius:8,padding:"11px 13px",border:`1.5px solid ${C.border}`}}>
-              <div style={{fontSize:11,fontWeight:700,color:C.textMuted,textTransform:"uppercase",marginBottom:3}}>{l}</div>
-              <div style={{fontSize:15,fontWeight:600,color:C.text,textTransform:"capitalize"}}>{v}</div>
+
+            {/* KPIs */}
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:12}}>
+              {[["Abonnement",m.subscription],["Statut",m.status],["Membre depuis",m.joined?new Date(m.joined).toLocaleDateString("fr-FR"):"—"],["Crédits",m.credits>0?`${m.credits} séances`:"Illimité"]].map(([l,v])=>(
+                <div key={l} style={{background:C.bg,borderRadius:8,padding:"10px 12px",border:`1px solid ${C.border}`}}>
+                  <div style={{fontSize:10,fontWeight:700,color:C.textMuted,textTransform:"uppercase",marginBottom:2}}>{l}</div>
+                  <div style={{fontSize:14,fontWeight:600,color:C.text,textTransform:"capitalize"}}>{v}</div>
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
-        <div style={{display:"flex",flexDirection:"column",gap:10,marginBottom:16,background:C.bg,borderRadius:10,padding:"14px 16px",border:`1px solid ${C.borderSoft}`}}>
-          {infoRow("🎂","Date de naissance",birthdayFmt)}
-          {infoRow("📍","Adresse",adresseFull||null)}
-          {infoRow("💼","Profession",m.profession||null)}
-        </div>
-        <div style={{display:"flex",gap:10,flexWrap:"wrap"}}>
-          <Button variant="primary" sm onClick={()=>setModal({type:"email",member:m})}><span style={{display:"flex",alignItems:"center",gap:5}}><IcoMail s={13} c="white"/>Envoyer un email</span></Button>
-          <Button variant="ghost" sm onClick={()=>setModal({type:"subscription",member:m})}><span style={{display:"flex",alignItems:"center",gap:5}}><IcoTag2 s={13} c={C.textMid}/>Modifier l'abonnement</span></Button>
-          <Button variant="ghost" sm onClick={()=>setModal({type:"history",member:m})}><span style={{display:"flex",alignItems:"center",gap:5}}><IcoCalendar2 s={13} c={C.textMid}/>Historique séances</span></Button>
-          <Button variant="ghost" sm onClick={()=>setModal({type:"gift",member:m})}><span style={{display:"flex",alignItems:"center",gap:5}}>🎁 Offrir des séances</span></Button>
-          {m.frozenUntil && new Date(m.frozenUntil) >= new Date(new Date().toISOString().slice(0,10))
-            ? <Button variant="ghost" sm onClick={async()=>{
-                await createClient().from("members").update({frozen_until:null}).eq("id",m.id);
-                setMembers(prev=>prev.map(x=>x.id===m.id?{...x,frozenUntil:null}:x));
-                setSelected(prev=>prev?{...prev,frozenUntil:null}:prev);
-                setToast({msg:"Abonnement dégelé",ok:true}); setTimeout(()=>setToast(null),3000);
-              }}><span style={{display:"flex",alignItems:"center",gap:5}}>&#10052; Dégeler</span></Button>
-            : <Button variant="ghost" sm onClick={()=>{
-                const until = prompt("Geler jusqu'au (AAAA-MM-JJ) :", new Date(Date.now()+30*86400000).toISOString().slice(0,10));
-                if (!until || !/^\d{4}-\d{2}-\d{2}$/.test(until)) return;
-                createClient().from("members").update({frozen_until:until}).eq("id",m.id).then(()=>{
-                  setMembers(prev=>prev.map(x=>x.id===m.id?{...x,frozenUntil:until}:x));
-                  setSelected(prev=>prev?{...prev,frozenUntil:until}:prev);
-                  setToast({msg:`Abonnement gelé jusqu'au ${new Date(until).toLocaleDateString("fr-FR")}`,ok:true}); setTimeout(()=>setToast(null),3000);
-                });
-              }}><span style={{display:"flex",alignItems:"center",gap:5}}>&#10052; Geler l'abonnement</span></Button>
-          }
-        </div>
-        {m.frozenUntil && new Date(m.frozenUntil) >= new Date(new Date().toISOString().slice(0,10)) && (
-          <div style={{marginTop:10,padding:"8px 14px",background:"#FFF8E8",border:"1.5px solid #F0D080",borderRadius:8,fontSize:13,color:"#8B6914",fontWeight:600}}>
-            Abonnement gelé jusqu'au {new Date(m.frozenUntil).toLocaleDateString("fr-FR")} — l'adhérent ne peut pas réserver de séances
-          </div>
-        )}
+
+            {/* Infos perso */}
+            <div style={{marginBottom:14,background:C.bg,borderRadius:10,padding:"10px 14px",border:`1px solid ${C.borderSoft}`}}>
+              {infoRow("🎂","Date de naissance",birthdayFmt)}
+              {infoRow("📍","Adresse",adresseFull||null)}
+              {infoRow("💼","Profession",m.profession||null)}
+            </div>
+
+            {/* Gel alert */}
+            {isFrozen && (
+              <div style={{marginBottom:12,padding:"8px 12px",background:"#FFF8E8",border:"1.5px solid #F0D080",borderRadius:8,fontSize:12,color:"#8B6914",fontWeight:600}}>
+                Gelé jusqu'au {new Date(m.frozenUntil).toLocaleDateString("fr-FR")}
+              </div>
+            )}
+
+            {/* Actions */}
+            <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+              {actionBtn(<><IcoMail s={13} c="white"/> Envoyer un email</>, ()=>setModal({type:"email",member:m}), true)}
+              {actionBtn(<><IcoTag2 s={13} c={C.textMid}/> Abonnement</>, ()=>setModal({type:"subscription",member:m}))}
+              {actionBtn(<><IcoCalendar2 s={13} c={C.textMid}/> Historique</>, ()=>setModal({type:"history",member:m}))}
+              {actionBtn(<>🎁 Offrir séances</>, ()=>setModal({type:"gift",member:m}))}
+              {isFrozen
+                ? actionBtn(<>&#10052; Dégeler</>, async()=>{
+                    await createClient().from("members").update({frozen_until:null}).eq("id",m.id);
+                    setMembers(prev=>prev.map(x=>x.id===m.id?{...x,frozenUntil:null}:x));
+                    setSelected(prev=>prev?{...prev,frozenUntil:null}:prev);
+                    setToast({msg:"Abonnement dégelé",ok:true}); setTimeout(()=>setToast(null),3000);
+                  })
+                : actionBtn(<>&#10052; Geler</>, ()=>{
+                    const until = prompt("Geler jusqu'au (AAAA-MM-JJ) :", new Date(Date.now()+30*86400000).toISOString().slice(0,10));
+                    if (!until || !/^\d{4}-\d{2}-\d{2}$/.test(until)) return;
+                    createClient().from("members").update({frozen_until:until}).eq("id",m.id).then(()=>{
+                      setMembers(prev=>prev.map(x=>x.id===m.id?{...x,frozenUntil:until}:x));
+                      setSelected(prev=>prev?{...prev,frozenUntil:until}:prev);
+                      setToast({msg:`Gelé jusqu'au ${new Date(until).toLocaleDateString("fr-FR")}`,ok:true}); setTimeout(()=>setToast(null),3000);
+                    });
+                  })
+              }
+            </div>
           </div>
         </div>
       </div>
@@ -536,17 +557,21 @@ function Members({ isMobile }) {
 
       {/* Modal Modifier */}
       {editMode && editForm && (
-        <div style={{position:"fixed",inset:0,background:"rgba(42,31,20,.5)",zIndex:500,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}
+        <div style={{position:"fixed",inset:0,background:"rgba(42,31,20,.5)",zIndex:600,display:"flex",alignItems:isMobile?"flex-end":"center",justifyContent:"center",padding:isMobile?0:16}}
           onClick={e=>{if(e.target===e.currentTarget){setEditMode(false);setNMErrors({});}}}>
-          <div style={{background:C.surface,borderRadius:16,padding:24,width:"100%",maxWidth:580,boxShadow:"0 24px 60px rgba(0,0,0,.2)",maxHeight:"90vh",overflowY:"auto"}}
-            onClick={e=>e.stopPropagation()}>
-            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:20}}>
-              <div style={{fontSize:16,fontWeight:800,color:C.text}}>✏ Modifier le profil</div>
-              <button onClick={()=>{setEditMode(false);setNMErrors({});}} style={{background:"none",border:`1.5px solid ${C.border}`,borderRadius:8,padding:"4px 7px",cursor:"pointer"}}><IcoX s={15} c={C.textSoft}/></button>
+          <div style={{
+            background:C.surface,borderRadius:isMobile?"16px 16px 0 0":16,padding:isMobile?"16px 18px 28px":24,
+            width:"100%",maxWidth:isMobile?"100%":580,boxShadow:"0 -8px 40px rgba(0,0,0,.2)",
+            maxHeight:isMobile?"95vh":"90vh",overflowY:"auto",WebkitOverflowScrolling:"touch",
+          }} onClick={e=>e.stopPropagation()}>
+            {isMobile && <div style={{display:"flex",justifyContent:"center",padding:"0 0 10px"}}><div style={{width:36,height:4,borderRadius:2,background:C.border}}/></div>}
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16}}>
+              <div style={{fontSize:15,fontWeight:800,color:C.text}}>Modifier le profil</div>
+              <button onClick={()=>{setEditMode(false);setNMErrors({});}} style={{background:"none",border:`1.5px solid ${C.border}`,borderRadius:8,padding:"5px 8px",cursor:"pointer"}}><IcoX s={14} c={C.textSoft}/></button>
             </div>
             <MemberForm value={editForm} onChange={setEditForm} errors={nMErrors} isMobile={isMobile}/>
-            <div style={{display:"flex",gap:10,marginTop:20}}>
-              <Button variant="primary" onClick={saveEdit}>💾 Enregistrer</Button>
+            <div style={{display:"flex",gap:10,marginTop:20,position:"sticky",bottom:0,background:C.surface,padding:"12px 0 0",borderTop:`1px solid ${C.border}`}}>
+              <Button variant="primary" onClick={saveEdit} style={{flex:1}}>Enregistrer</Button>
               <Button variant="ghost" onClick={()=>{setEditMode(false);setNMErrors({});}}>Annuler</Button>
             </div>
           </div>
