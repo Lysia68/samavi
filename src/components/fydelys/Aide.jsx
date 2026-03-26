@@ -169,7 +169,7 @@ function AideIllustration({ type, color = "#3A6E90" }) {
       <text x="298" y="97" textAnchor="middle" fontSize="13" fill={muted}>Annuler</text>
       {/* Confirmation */}
       <rect x="16" y="118" width="468" height="0" rx="0"/>
-      <text x="260" y="122" textAnchor="middle" fontSize="10" fill={muted} fontStyle="italic">→ Les séances apparaissent immédiatement dans le planning</text>
+      <text x="260" y="122" textAnchor="middle" fontSize="10" fill={muted} fontStyle="italic">Les séances sont enregistrées en base puis affichées dans le planning</text>
     </svg>
   );
 
@@ -771,27 +771,28 @@ function AidePage({ isMobile }) {
           { num: "2", title: "La barre de navigation", text: "À gauche (desktop) ou en bas (mobile) : Tableau de bord · Planning · Adhérents · Abonnements · Paiements · Disciplines · Paramètres · Aide.", visual: "nav_overview" },
           { num: "3", title: "Votre studio en sous-domaine", text: "Chaque studio a son URL unique : votre-studio.fydelys.fr. Vos adhérents s'y connectent directement. Vous les administrez depuis cette même URL.", visual: "subdomain_overview" },
         ]},
-        { q: "Comment configurer mon studio ?", a: "Allez dans Paramètres → Studio pour renseigner le nom, l'adresse, le téléphone et l'email de contact. Ces informations apparaissent sur les emails envoyés à vos adhérents." },
-        { q: "Comment créer mes premières disciplines ?", a: "Dans le menu Disciplines, définissez vos cours (Yoga, Pilates…) avec leur nom, couleur, icône et créneaux récurrents. Ces créneaux alimentent ensuite la génération automatique de séances." },
-        { q: "Comment inviter mon équipe ?", a: "Dans Paramètres → Équipe, cliquez sur + Inviter un coach. Un magic link est envoyé par email au nom de votre studio. Le coach clique dessus et accède directement à son espace." },
+        { q: "Comment configurer mon studio ?", a: "Allez dans Paramètres → Studio pour renseigner le nom, l'adresse, le téléphone et l'email de contact. Le champ site web est pré-rempli avec votre-studio.fydelys.fr. Ces informations apparaissent sur la page de connexion (qui affiche le nom de votre studio) et dans tous les emails envoyés à vos adhérents." },
+        { q: "Comment créer mes premières disciplines ?", a: "Dans le menu Disciplines, définissez vos cours (Yoga, Pilates...) avec leur nom, couleur, icone et créneaux récurrents. Ces créneaux alimentent ensuite la génération automatique de séances dans le Planning." },
+        { q: "Comment inviter mon équipe ?", a: "Dans Paramètres → Equipe, cliquez sur + Inviter un coach. Un email d'invitation est envoyé au nom de votre studio avec un magic link. Le coach clique dessus et accède directement à son espace." },
       ]
     },
     // ── 1. Planning ──────────────────────────────────────────────────────────
     {
       id: "planning", icon: "📅", title: "Planning", color: "#3A6E90",
       items: [
-        { q: "Comment créer une séance unique ?", a: "Dans Planning, cliquez sur + Séance → onglet 📅 Séance unique. Choisissez la discipline (l'heure et durée se pré-remplissent), sélectionnez le coach dans la liste déroulante, la date et les paramètres. Cliquez Créer la séance." },
+        { q: "Comment créer une séance unique ?", a: "Dans Planning, cliquez sur + Séance → onglet Séance unique. Choisissez la discipline (l'heure et durée se pré-remplissent), sélectionnez le coach dans la liste déroulante, la date et les paramètres. Cliquez Créer la séance." },
         { q: "Comment générer des séances récurrentes ?", type: "guide", steps: [
-          { num: "1", title: "Ouvrir le mode Récurrence", text: "Cliquez sur + Séance puis sélectionnez l'onglet 🔁 Récurrence.", visual: "rec_open" },
+          { num: "1", title: "Ouvrir le mode Récurrence", text: "Cliquez sur + Séance puis sélectionnez l'onglet Récurrence.", visual: "rec_open" },
           { num: "2", title: "Choisir les créneaux", text: "Les créneaux configurés dans Disciplines s'affichent sous forme de cases à cocher. Cochez ceux à inclure. Chaque créneau coché révèle un sélecteur de coach spécifique.", visual: "rec_slots" },
           { num: "3", title: "Configurer les paramètres", text: "Définissez le coach par défaut (appliqué aux créneaux sans coach spécifique), le nombre de places et la salle.", visual: "rec_params" },
-          { num: "4", title: "Choisir la période", text: "Saisissez la date de début et de fin. Fydelys calcule toutes les dates selon le jour de la semaine de chaque créneau.", visual: "rec_period" },
-          { num: "5", title: "Réviser et ajuster", text: "La liste des séances générées s'affiche. Changez le coach d'une séance précise ou cliquez ✕ pour supprimer une date (jour férié, fermeture…).", visual: "rec_preview" },
-          { num: "6", title: "Valider", text: "Cliquez sur ✦ Créer N séances. Toutes apparaissent immédiatement dans le planning.", visual: "rec_confirm" },
+          { num: "4", title: "Choisir la période", text: "Saisissez la date de début et de fin. Fydelys calcule toutes les dates selon le jour de la semaine de chaque créneau. Les séances déjà existantes (même date, heure et discipline) sont automatiquement exclues pour éviter les doublons.", visual: "rec_period" },
+          { num: "5", title: "Réviser et ajuster", text: "La liste des séances à créer s'affiche en aperçu. Changez le coach d'une séance précise ou cliquez ✕ pour supprimer une date (jour férié, fermeture…). Ces séances ne sont pas encore créées en base — elles ne seront visibles dans le planning qu'après validation.", visual: "rec_preview" },
+          { num: "6", title: "Valider", text: "Cliquez sur Créer N séances. Les séances sont enregistrées en base puis apparaissent dans le planning avec leurs vrais identifiants. Un message confirme le nombre de séances créées.", visual: "rec_confirm" },
         ]},
-        { q: "Comment gérer les présences ?", a: "Cliquez sur une séance dans le planning pour la développer. Vous voyez la liste des inscrits et pouvez marquer chaque adhérent présent, absent ou en liste d'attente." },
-        { q: "Comment inscrire manuellement un adhérent ?", a: "Dans le détail d'une séance (clic pour développer), cliquez sur + Inscrire. Tapez le nom de l'adhérent. Il apparaît dans la liste avec le statut Confirmé." },
-        { q: "Comment envoyer un rappel ?", a: "Dans le détail d'une séance développée, cliquez sur Rappel. Un email est envoyé automatiquement à tous les adhérents confirmés pour cette séance." },
+        { q: "Comment gérer les présences ?", a: "Cliquez sur une séance dans le planning pour la développer. Vous voyez la liste des inscrits avec leur statut (confirmé, en attente, annulé). Cliquez sur le bouton à côté de chaque nom pour changer son statut — le changement est enregistré immédiatement en base." },
+        { q: "Comment annuler ou supprimer une séance ?", a: "Annuler : cliquez sur le bouton Annuler à côté de la séance. Tous les inscrits confirmés sont automatiquement passés en statut annulé. Supprimer : cliquez sur ✕. Si des inscrits sont encore confirmés, annulez-les d'abord. Une fois tous les inscrits annulés, la suppression est possible — les réservations associées sont supprimées en même temps." },
+        { q: "Comment inscrire manuellement un adhérent ?", a: "Dans le détail d'une séance (clic pour développer), cliquez sur Inscrire un adhérent. Tapez le nom dans la recherche et sélectionnez-le. Il apparaît dans la liste avec le statut Confirmé (ou En attente si la séance est pleine)." },
+        { q: "Comment envoyer un rappel ?", a: "Dans le détail d'une séance développée, cliquez sur Rappel. Un email est envoyé au nom de votre studio à tous les inscrits confirmés. Des rappels automatiques sont aussi envoyés selon la configuration dans Paramètres (par défaut 24h avant)." },
       ]
     },
     // ── 2. Adhérents ─────────────────────────────────────────────────────────
@@ -845,24 +846,24 @@ function AidePage({ isMobile }) {
           { num: "3", title: "Lier à un abonnement", text: "Le paiement est automatiquement lié à l'abonnement en cours de l'adhérent. Le solde est mis à jour en temps réel.", visual: "pay_link" },
         ]},
         { q: "Comment voir les paiements en attente ?", a: "Dans Paiements, le filtre En attente liste les adhérents dont l'abonnement est actif mais dont le paiement du mois n'a pas encore été enregistré." },
-        { q: "Comment gérer mon abonnement Fydelys ?", a: "Dans Paramètres → Mon compte, la section Formule Fydelys affiche votre plan actuel. Chaque formule inclut 15 jours d'essai gratuit. Essentiel (9€/mois) : planification sans module paiements adhérents. Standard (29€) et Pro (69€) incluent les paiements adhérents via Stripe." },
-        { q: "La période d'essai gratuite dure combien de temps ?", a: "14 jours à compter de la création de votre studio, sans carte bancaire requise. Un email de rappel est envoyé 3 jours avant la fin de l'essai." },
+        { q: "Comment gérer mon abonnement Fydelys ?", a: "Dans Paramètres → Mon compte, la section Formule Fydelys affiche votre plan actuel. Chaque formule inclut 30 jours d'essai gratuit. Essentiel (9€/mois) : planification sans module paiements adhérents. Standard (29€) et Pro (69€) incluent les paiements adhérents via Stripe." },
+        { q: "La période d'essai gratuite dure combien de temps ?", a: "30 jours à compter de la création de votre studio, sans carte bancaire requise. Vous pouvez choisir votre formule à tout moment pendant ou après l'essai." },
       ]
     },
     // ── 6. Paramètres ────────────────────────────────────────────────────────
     {
       id: "settings", icon: "⚙️", title: "Paramètres", color: "#5D6D7E",
       items: [
-        { q: "Comment configurer les informations du studio ?", a: "Dans Paramètres → Studio : nom, adresse, téléphone, email, site web. Ces données apparaissent dans les emails envoyés à vos adhérents et sur votre page de connexion." },
+        { q: "Comment configurer les informations du studio ?", a: "Dans Paramètres → Studio : nom, adresse, téléphone, email, site web (pré-rempli avec votre-studio.fydelys.fr). Ces données apparaissent dans les emails envoyés à vos adhérents et sur votre page de connexion, qui affiche le nom de votre studio au lieu de Fydelys." },
         { q: "Comment gérer l'équipe (coachs) ?", type: "guide", steps: [
           { num: "1", title: "Voir l'équipe", text: "Dans Paramètres → Équipe, la liste des coachs affiche leur statut (actif / invité) et leurs disciplines associées.", visual: "team_list" },
           { num: "2", title: "Inviter un coach", text: "Cliquez sur + Inviter un coach. Renseignez prénom, nom et email. Un email d'invitation brandé au nom de votre studio est envoyé avec un lien de connexion.", visual: "team_invite" },
           { num: "3", title: "Affecter des disciplines", text: "Cliquez sur les ··· d'un coach pour gérer ses disciplines. Ces associations apparaissent comme suggestions dans la création de séances.", visual: "team_disciplines" },
         ]},
         { q: "Quelles sont les limites de chaque plan ?", type: "guide", steps: [
-          { num: "E", title: "Essentiel — 9 €/mois", text: "1 discipline, 1 coach, 50 adhérents. Planning, présences, espace adhérent magic link, séances récurrentes. Sans module paiements adhérents. 15 jours d'essai gratuit.", visual: "plan_essentiel" },
-          { num: "S", title: "Standard — 29 €/mois", text: "3 disciplines, 3 coachs, 100 adhérents. Tout Essentiel + paiements adhérents (Stripe), invitation d'équipe, rappel cours 1h avant. 15 jours d'essai gratuit.", visual: "plan_standard" },
-          { num: "★", title: "Pro — 69 €/mois", text: "Adhérents, coachs et disciplines illimités. Tout Studio + support prioritaire. Pour les grands studios.", visual: "plan_pro" },
+          { num: "E", title: "Essentiel — 9 €/mois", text: "1 discipline, 1 coach, 50 adhérents. Planning, présences, espace adhérent magic link, séances récurrentes. Sans module paiements adhérents. 30 jours d'essai gratuit.", visual: "plan_essentiel" },
+          { num: "S", title: "Standard — 29 €/mois", text: "3 disciplines, 3 coachs, 100 adhérents. Tout Essentiel + paiements adhérents (Stripe), invitation d'équipe, rappel cours avant la séance. 30 jours d'essai gratuit.", visual: "plan_standard" },
+          { num: "P", title: "Pro — 69 €/mois", text: "Adhérents, coachs et disciplines illimités. Tout Standard + support prioritaire. Pour les grands studios. 30 jours d'essai gratuit.", visual: "plan_pro" },
         ]},
         { q: "Comment gérer les rôles et permissions ?", a: "Dans Paramètres → Rôles : Admin a accès à tout, Coach voit le planning et ses séances, Adhérent accède à son espace membre. Les rôles sont attribués automatiquement à la connexion." },
       ]
@@ -872,13 +873,14 @@ function AidePage({ isMobile }) {
       id: "access", icon: "🔐", title: "Accès et connexion", color: "#E67E22",
       items: [
         { q: "Comment fonctionne la connexion sans mot de passe ?", type: "guide", steps: [
-          { num: "1", title: "Saisir son email", text: "Sur votre-studio.fydelys.fr, l'utilisateur entre son adresse email et clique sur Recevoir le lien.", visual: "login_email" },
-          { num: "2", title: "Recevoir le magic link", text: "Un email est envoyé en quelques secondes au nom de votre studio. Il contient un bouton de connexion valable 1 heure.", visual: "login_email_sent" },
+          { num: "1", title: "Saisir son email", text: "Sur votre-studio.fydelys.fr, la page de connexion affiche le nom de votre studio (pas Fydelys). L'utilisateur entre son adresse email et clique sur Recevoir le lien.", visual: "login_email" },
+          { num: "2", title: "Recevoir le magic link", text: "Un email est envoyé en quelques secondes au nom de votre studio. Il contient un bouton de connexion valable 1 heure. L'email est envoyé depuis noreply@fydelys.fr mais affiche le nom de votre studio comme expéditeur.", visual: "login_email_sent" },
           { num: "3", title: "Accéder à son espace", text: "Un clic sur le bouton et l'utilisateur est connecté — admin, coach ou adhérent selon son rôle. Pas de mot de passe à retenir.", visual: "login_connected" },
         ]},
-        { q: "Première connexion d'un nouvel adhérent ?", a: "Si l'adhérent n'a jamais eu de compte, son profil est créé automatiquement lors de sa première connexion via magic link. Il est redirigé vers son espace membre avec le statut Nouveau." },
+        { q: "Première connexion d'un nouvel adhérent ?", a: "Si l'adhérent n'a jamais eu de compte, son profil est créé automatiquement lors de sa première connexion via magic link. Il est redirigé vers son espace membre avec le statut Nouveau. Un email de bienvenue est envoyé au nom de votre studio." },
         { q: "Comment révoquer l'accès d'un coach ?", a: "Dans Paramètres → Équipe, cliquez sur ··· à côté du coach puis Désactiver. Il ne pourra plus se connecter mais son historique est conservé." },
         { q: "Le lien magic link a expiré, que faire ?", a: "Les magic links expirent après 1 heure. Il suffit de revenir sur votre-studio.fydelys.fr et de saisir à nouveau l'email pour recevoir un nouveau lien." },
+        { q: "Les emails arrivent en spam ?", a: "Les emails Fydelys sont envoyés depuis noreply@fydelys.fr avec authentification DKIM et SPF complète. Si un email arrive en spam, demandez à vos adhérents de marquer l'expéditeur comme fiable. Les emails sont envoyés en format texte et HTML pour une compatibilité maximale." },
       ]
     },
   ];
@@ -1009,7 +1011,7 @@ function AidePage({ isMobile }) {
 
       {/* Version */}
       <div style={{ marginTop: 32, textAlign: "center", fontSize: 12, color: C.textMuted }}>
-        Fydelys · Version 1.0 · <a href="https://fydelys.fr" style={{ color: C.accent, textDecoration: "none" }}>fydelys.fr</a>
+        Fydelys · Version 1.1 · <a href="https://fydelys.fr" style={{ color: C.accent, textDecoration: "none" }}>fydelys.fr</a>
       </div>
     </div>
   );
