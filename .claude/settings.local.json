@@ -1,7 +1,8 @@
 {
   "permissions": {
     "allow": [
-      "Bash(npx vitest:*)"
+      "Bash(npx vitest:*)",
+      "Bash(grep -n \"address\\\\|postal_code\\\\|city\\\\|birth_date\\\\|profession\\\\|frozen_until\\\\|profile_complete\" /c/Users/Bernard/Fydelys_v6/fydelys/supabase/migrations/*.sql)"
     ]
   }
 }
