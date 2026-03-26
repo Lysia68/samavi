@@ -21,9 +21,9 @@ export async function GET(req: NextRequest) {
 
   if (!studio) return NextResponse.json({ studio: null })
 
-  // Page vitrine désactivée → rediriger vers login
+  // Page vitrine désactivée → rediriger vers login (mais toujours renvoyer le nom pour la page login)
   if (!studio.public_page_enabled) {
-    return NextResponse.json({ redirect_login: true })
+    return NextResponse.json({ redirect_login: true, studio: { name: studio.name, slug: studio.slug } })
   }
 
   // Séances à venir (30 prochains jours)
