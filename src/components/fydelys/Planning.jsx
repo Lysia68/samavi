@@ -138,14 +138,16 @@ function PlanningSessionCard({ sess, expandedId, bookings, discs, onToggle, onCh
     : now < sessStart ? "upcoming"
     : now <= sessEnd  ? "ongoing"
     : "past";
-  const statusLabel = { upcoming:"À venir", ongoing:"En cours", past:"Terminée", cancelled:"Annulée", closed:"Fermé — congés" };
+  const displayStatus = (sessionStatus === "upcoming" && isFull) ? "full" : sessionStatus;
+  const statusLabel = { upcoming:"À venir", full:"Complet", ongoing:"En cours", past:"Terminée", cancelled:"Annulée", closed:"Fermé — congés" };
   const statusStyle = {
     upcoming: { color:"#7C9EC8", bg:"#EEF4FA" },
+    full:     { color:"#A85030", bg:"#FFF0F0"  },
     ongoing:  { color:C.ok,     bg:C.okBg    },
     past:     { color:"#6B5A47", bg:"#E8DDD0" },
     cancelled:{ color:C.warn,   bg:"#FFF5F5"  },
     closed:   { color:"#856404", bg:"#FFF3CD"  },
-  }[sessionStatus];
+  }[displayStatus];
 
   return (
     <div style={{ border: `1.5px solid ${isExp ? C.accent : C.borderSoft}`, borderRadius: 14, overflow: "hidden", marginBottom: 8, boxShadow: isExp ? `0 2px 12px rgba(176,120,72,.13)` : "0 1px 3px rgba(0,0,0,.05)", transition: "all .2s" }}>
@@ -225,7 +227,8 @@ function PlanningSessionCard({ sess, expandedId, bookings, discs, onToggle, onCh
         {sessionStatus === "ongoing"   && <span style={{ width:7, height:7, borderRadius:"50%", background:C.ok, display:"inline-block", animation:"pulse 1.2s ease-in-out infinite" }}/>}
         {sessionStatus === "cancelled" && <span style={{ fontSize:12 }}>⚠</span>}
         {sessionStatus === "closed"    && <span style={{ fontSize:12 }}>🔒</span>}
-        <span style={{ fontSize:11, fontWeight:700, color:statusStyle.color, letterSpacing:.3, textTransform:"uppercase" }}>{statusLabel[sessionStatus]}</span>
+        {displayStatus === "full"      && <span style={{ fontSize:12 }}>🔒</span>}
+        <span style={{ fontSize:11, fontWeight:700, color:statusStyle.color, letterSpacing:.3, textTransform:"uppercase" }}>{statusLabel[displayStatus]}</span>
         {sessionStatus === "past" && (() => {
           const bl = bookings[sess.id] || [];
           const confirmed = bl.filter(b => b.st === "confirmed");
@@ -332,7 +335,7 @@ function BookingModal({ sessId, sessions, studioId, bookings, setBookings, setSe
     const res = await fetch("/api/bookings", {
       method: "POST",
       headers: {"Content-Type":"application/json"},
-      body: JSON.stringify({ sessionId: sessId, memberId: member.id, studioId }),
+      body: JSON.stringify({ sessionId: sessId, memberId: member.id, studioId, force: true }),
     });
     const data = await res.json();
     setConfirming(false);
@@ -354,7 +357,7 @@ function BookingModal({ sessId, sessions, studioId, bookings, setBookings, setSe
     const res = await fetch("/api/bookings", {
       method: "POST",
       headers: {"Content-Type":"application/json"},
-      body: JSON.stringify({ sessionId: sessId, studioId, guestName: finalName, hostMemberId: hostId }),
+      body: JSON.stringify({ sessionId: sessId, studioId, guestName: finalName, hostMemberId: hostId, force: true }),
     });
     const data = await res.json();
     setConfirming(false);

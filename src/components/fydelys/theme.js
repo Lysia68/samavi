@@ -27,6 +27,7 @@ const statusMap = {
   nouveau:  ["#3A6E90", "#E6EFF5"],
   payé:     ["#4E8A58", "#E6F2E8"],
   impayé:   ["#A85030", "#F5EAE6"],
+  complet:  ["#A85030", "#FFF0F0"],
 };
 
 export { useWidth, C, statusMap };

@@ -39,7 +39,7 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
-    const { sessionId, memberId, studioId, guestName, hostMemberId } = body
+    const { sessionId, memberId, studioId, guestName, hostMemberId, force } = body
     const isGuest = !!guestName && !!hostMemberId
 
     if (!sessionId || !studioId || (!memberId && !isGuest))
@@ -55,7 +55,7 @@ export async function POST(req: NextRequest) {
         db.from("bookings").select("id", { count: "exact", head: true }).eq("session_id", sessionId).eq("status", "confirmed"),
       ])
       const isFull = (confirmedCount || 0) >= (sess?.spots || 999)
-      const status = isFull ? "waitlist" : "confirmed"
+      const status = (isFull && !force) ? "waitlist" : "confirmed"
 
       const { data: booking, error } = await db.from("bookings")
         .insert({ session_id: sessionId, member_id: null, status, guest_name: guestName, host_member_id: hostMemberId })
@@ -115,7 +115,7 @@ export async function POST(req: NextRequest) {
     if (!sess) return NextResponse.json({ error: "Séance introuvable" }, { status: 404 })
 
     const isFull   = (confirmedCount || 0) >= (sess.spots || 999)
-    const status   = isFull ? "waitlist" : "confirmed"
+    const status   = (isFull && !force) ? "waitlist" : "confirmed"
 
     // Créer la réservation
     const { data: booking, error: bookErr } = await db.from("bookings")
