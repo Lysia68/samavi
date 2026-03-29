@@ -656,8 +656,8 @@ function AdherentView({ onSwitch, isMobile, studioName = "", impersonateUserId =
                                 const noSub   = paymentActive && !isUnlimited && !hasC;
                                 const noCredit = paymentActive && !isUnlimited && hasC && me.credits <= 0;
                                 const btnStyle = isMobile ? { width:"100%", textAlign:"center", display:"block" } : {};
-                                if (noCredit) return <button disabled style={{ fontSize:12, padding:"6px 12px", borderRadius:8, border:"1px solid #EFC8BC", background:C.warnBg, color:C.warn, cursor:"not-allowed", fontWeight:600, ...btnStyle }}>⛔ Abonnement ou crédit requis</button>;
-                                if (noSub)    return <button disabled style={{ fontSize:12, padding:"6px 12px", borderRadius:8, border:"1px solid #DDD5C8", background:C.bgDeep, color:C.textMuted, cursor:"not-allowed", fontWeight:600, ...btnStyle }}>🔒 Abonnement ou crédit requis</button>;
+                                if (noCredit) return <button disabled style={{ fontSize:12, padding:"6px 12px", borderRadius:8, border:"1px solid #EFC8BC", background:C.warnBg, color:C.warn, cursor:"not-allowed", fontWeight:600, ...btnStyle }}>⛔ Formule ou crédit requis</button>;
+                                if (noSub)    return <button disabled style={{ fontSize:12, padding:"6px 12px", borderRadius:8, border:"1px solid #DDD5C8", background:C.bgDeep, color:C.textMuted, cursor:"not-allowed", fontWeight:600, ...btnStyle }}>🔒 Formule ou crédit requis</button>;
                                 return <Button sm onClick={()=>setConfirmSess(s)} style={isMobile?{width:"100%"}:{}}>Réserver</Button>;
                               })()
                         }
@@ -901,7 +901,7 @@ function AdherentView({ onSwitch, isMobile, studioName = "", impersonateUserId =
         <div style={{ textAlign:"center", padding:"40px 20px", color:C.textMuted }}>
           <div style={{ fontSize:32, marginBottom:12 }}>🔒</div>
           <div style={{ fontSize:15, fontWeight:700, color:C.text, marginBottom:6 }}>Paiements non disponibles</div>
-          <div style={{ fontSize:13 }}>Le studio n'a pas encore activé les paiements en ligne. Contactez votre studio pour régler votre abonnement.</div>
+          <div style={{ fontSize:13 }}>Le studio n'a pas encore activé les paiements en ligne. Contactez votre studio pour régler votre formule.</div>
         </div>
       </div>
     );
@@ -946,7 +946,7 @@ function AdherentView({ onSwitch, isMobile, studioName = "", impersonateUserId =
             ))
           }
           {!subsLoading && subs.filter(s=>s.price>0).length===0 && (
-            <div style={{ color:C.textMuted, fontSize:13, fontStyle:"italic" }}>Aucun abonnement disponible.</div>
+            <div style={{ color:C.textMuted, fontSize:13, fontStyle:"italic" }}>Aucune formule disponible.</div>
           )}
         </div>
 

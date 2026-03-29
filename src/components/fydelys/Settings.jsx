@@ -1791,12 +1791,12 @@ function Settings({ isMobile, onImpersonate }) {
 
         </> ) }
 
-        {/* Abonnements vendables */}
+        {/* Formules vendables */}
         <Card>
-          <div style={{ fontSize:14, fontWeight:700, color:C.text, marginBottom:4 }}>Abonnements</div>
-          <div style={{ fontSize:12, color:C.textSoft, marginBottom:12 }}>Configurez le prix de vos abonnements dans l'onglet Studio → Abonnements.</div>
+          <div style={{ fontSize:14, fontWeight:700, color:C.text, marginBottom:4 }}>Formules</div>
+          <div style={{ fontSize:12, color:C.textSoft, marginBottom:12 }}>Configurez le prix de vos formules dans l'onglet Formules.</div>
           <div style={{ fontSize:12, color:C.textMuted, fontStyle:"italic" }}>
-            Les abonnements avec un prix &gt; 0 € seront proposés au paiement par carte aux adhérents.
+            Les formules avec un prix &gt; 0 € seront proposées au paiement par carte aux membres.
           </div>
         </Card>
 

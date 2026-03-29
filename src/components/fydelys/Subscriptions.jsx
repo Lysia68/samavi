@@ -80,7 +80,7 @@ function Subscriptions({ isMobile }) {
         </div>
       )}
       <div style={{ padding:p }}>
-      <div style={{ display:"flex", justifyContent:"flex-end", marginBottom:18 }}><Button sm variant="primary" onClick={()=>setShowAdd(!showAdd)}>＋ Abonnement</Button></div>
+      <div style={{ display:"flex", justifyContent:"flex-end", marginBottom:18 }}><Button sm variant="primary" onClick={()=>setShowAdd(!showAdd)}>＋ Formule</Button></div>
       {showAdd && (
         <Card style={{ marginBottom:18, borderTop:`3px solid ${C.accent}` }}>
           <div style={{ fontSize:14, fontWeight:700, color:C.accent, textTransform:"uppercase", marginBottom:16 }}>Créer un abonnement</div>

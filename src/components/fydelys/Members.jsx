@@ -104,7 +104,7 @@ function Members({ isMobile, onImpersonate }) {
   useEffect(() => {
     if (!studioId) return;
     // Charger les abonnements du studio
-    createClient().from("subscriptions").select("id,name").eq("studio_id",studioId).eq("active",true).order("name")
+    createClient().from("subscriptions").select("id,name,price,period,credits").eq("studio_id",studioId).eq("active",true).order("name")
       .then(({data})=>{ if(data?.length) setSubscriptionsList(data); });
   }, [studioId]);
 
@@ -263,44 +263,77 @@ function Members({ isMobile, onImpersonate }) {
 
   const saveSubscription = async () => {
     const subId = modal.subId ?? (modal.member.subscriptionId || "");
+    const payMode = modal.paymentMode || "";
     setModal(prev => ({...prev, saving:true}));
+    const sub = subscriptionsList.find(s=>s.id===subId);
     const res = await fetch("/api/members", { method:"PATCH", headers:{"Content-Type":"application/json"},
       body: JSON.stringify({ id: modal.member.id, subscription_id: subId || null }) });
+    // Enregistrer le paiement si abonnement + mode de paiement renseigné
+    if (res.ok && subId && payMode && sub?.price) {
+      await createClient().from("member_payments").insert({
+        studio_id: studioId, member_id: modal.member.id,
+        amount: sub.price, status: "payé",
+        payment_date: new Date().toISOString().slice(0,10),
+        payment_type: payMode, source: "manual",
+        notes: sub.name,
+      });
+    }
+    // Ajouter les crédits de l'abonnement au membre
+    if (res.ok && sub?.credits) {
+      const currentCredits = modal.member.credits || 0;
+      const currentTotal = modal.member.creditTotal || 0;
+      await createClient().from("members").update({
+        credits: currentCredits + sub.credits,
+        credits_total: currentTotal + sub.credits,
+      }).eq("id", modal.member.id);
+      setMembers(prev=>prev.map(m => m.id===modal.member.id ? {...m, credits:currentCredits+sub.credits, creditTotal:currentTotal+sub.credits} : m));
+      setSelected(prev=>prev?.id===modal.member.id ? {...prev, credits:currentCredits+sub.credits, creditTotal:currentTotal+sub.credits} : prev);
+    }
     setModal(prev => ({...prev, saving:false}));
     if (res.ok) {
-      const newSub = subscriptionsList.find(s=>s.id===subId)?.name||"—";
+      const newSub = sub?.name||"—";
       setMembers(prev=>prev.map(m => m.id===modal.member.id ? {...m, subscriptionId:subId||null, subscription:newSub} : m));
       setSelected(prev=>prev?.id===modal.member.id ? {...prev, subscriptionId:subId||null, subscription:newSub} : prev);
-      setModal(prev => ({...prev, saved:true}));
-      setTimeout(()=>setModal(null), 1200);
-    } else { showToast("Erreur lors de la sauvegarde",false); }
+      setModal(null);
+      showToast("Formule mise à jour ✓");
+    } else { showToast("Erreur lors de la sauvegarde",false); setModal(prev => ({...prev, saving:false})); }
   };
 
   const SubscriptionModal = () => {
     const subId = modal.subId ?? (modal.member.subscriptionId || "");
+    const payMode = modal.paymentMode ?? "";
     return <Modal>
-      <ModalHeader title={`Abonnement — ${modal.member.firstName} ${modal.member.lastName}`} onClose={()=>setModal(null)}/>
+      <ModalHeader title={`Formule — ${modal.member.firstName} ${modal.member.lastName}`} onClose={()=>setModal(null)}/>
       <div style={{marginBottom:16}}>
-        <div style={{fontSize:12,color:C.textMuted,fontWeight:600,marginBottom:8,textTransform:"uppercase"}}>Abonnement actuel</div>
+        <div style={{fontSize:12,color:C.textMuted,fontWeight:600,marginBottom:8,textTransform:"uppercase"}}>Formule actuel</div>
         <div style={{padding:"10px 14px",background:C.accentBg,borderRadius:8,fontSize:15,fontWeight:700,color:C.accentDark}}>
           {modal.member.subscription||"—"}
         </div>
       </div>
-      <div style={{marginBottom:18}}>
-        <FieldLabel>Nouvel abonnement</FieldLabel>
+      <div style={{marginBottom:14}}>
+        <FieldLabel>Nouvelle formule</FieldLabel>
         <select value={subId} onChange={e=>setModal(prev=>({...prev, subId:e.target.value}))}
           style={{width:"100%",padding:"9px 12px",border:`1.5px solid ${C.border}`,borderRadius:8,fontSize:13,color:C.text,background:C.surfaceWarm,outline:"none"}}>
-          <option value="">— Aucun abonnement —</option>
-          {subscriptionsList.map(s=><option key={s.id} value={s.id}>{s.name}</option>)}
+          <option value="">— Aucune formule —</option>
+          {subscriptionsList.map(s=><option key={s.id} value={s.id}>{s.name}{s.price ? ` — ${s.price} €` : ""}</option>)}
         </select>
       </div>
-      {modal.saved
-        ? <div style={{display:"flex",alignItems:"center",gap:8,padding:"10px 14px",background:C.okBg,borderRadius:8,color:C.ok,fontWeight:600,fontSize:14}}><IcoCheck s={16} c={C.ok}/>Abonnement mis à jour !</div>
-        : <div style={{display:"flex",gap:10}}>
-            <Button variant="primary" onClick={saveSubscription} disabled={modal.saving}>{modal.saving?"Enregistrement…":"Enregistrer"}</Button>
-            <Button variant="ghost" onClick={()=>setModal(null)}>Annuler</Button>
-          </div>
-      }
+      <div style={{marginBottom:18}}>
+        <FieldLabel>Mode de paiement</FieldLabel>
+        <select value={payMode} onChange={e=>setModal(prev=>({...prev, paymentMode:e.target.value}))}
+          style={{width:"100%",padding:"9px 12px",border:`1.5px solid ${C.border}`,borderRadius:8,fontSize:13,color:C.text,background:C.surfaceWarm,outline:"none"}}>
+          <option value="">— Non renseigné —</option>
+          <option value="Carte">Carte bancaire</option>
+          <option value="Espèces">Espèces</option>
+          <option value="Chèque">Chèque</option>
+          <option value="Virement">Virement</option>
+          <option value="Prélèvement">Prélèvement</option>
+        </select>
+      </div>
+      <div style={{display:"flex",gap:10}}>
+        <Button variant="primary" onClick={saveSubscription} disabled={modal.saving}>{modal.saving?"Enregistrement…":"Enregistrer"}</Button>
+        <Button variant="ghost" onClick={()=>setModal(null)} disabled={modal.saving}>Annuler</Button>
+      </div>
     </Modal>;
   };
 
@@ -515,7 +548,7 @@ function Members({ isMobile, onImpersonate }) {
 
             {/* KPIs */}
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:12}}>
-              {[["Abonnement",m.subscription],["Statut",m.status],["Membre depuis",m.joined?new Date(m.joined).toLocaleDateString("fr-FR"):"—"],["Crédits",`${m.credits} séance${m.credits!==1?"s":""}`]].map(([l,v])=>(
+              {[["Formule",m.subscription],["Statut",m.status],["Membre depuis",m.joined?new Date(m.joined).toLocaleDateString("fr-FR"):"—"],["Crédits",`${m.credits} séance${m.credits!==1?"s":""}`]].map(([l,v])=>(
                 <div key={l} style={{background:l==="Crédits"&&m.credits===0?"#FDE8E8":C.bg,borderRadius:8,padding:"10px 12px",border:`1px solid ${l==="Crédits"&&m.credits===0?"#F5C2C2":C.border}`}}>
                   <div style={{fontSize:10,fontWeight:700,color:C.textMuted,textTransform:"uppercase",marginBottom:2}}>{l}</div>
                   <div style={{fontSize:14,fontWeight:600,color:l==="Crédits"&&m.credits===0?"#C43A3A":C.text,textTransform:"capitalize"}}>{v}</div>
@@ -542,7 +575,7 @@ function Members({ isMobile, onImpersonate }) {
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
               {onImpersonate && actionBtn(<>👁 Vue membre</>, ()=>onImpersonate("adherent", m.id, `${m.firstName} ${m.lastName}`.trim()), true)}
               {actionBtn(<><IcoMail s={13} c={onImpersonate?"currentColor":"white"}/> Email</>, ()=>setModal({type:"email",member:m}), !onImpersonate)}
-              {actionBtn(<><IcoTag2 s={13} c={C.textMid}/> Abonnement</>, ()=>setModal({type:"subscription",member:m}))}
+              {actionBtn(<><IcoTag2 s={13} c={C.textMid}/> Formule</>, ()=>setModal({type:"subscription",member:m}))}
               {actionBtn(<><IcoCalendar2 s={13} c={C.textMid}/> Historique</>, ()=>setModal({type:"history",member:m}))}
               {actionBtn(<>🎁 Offrir séances</>, ()=>setModal({type:"gift",member:m}))}
               {m.status !== "suspendu"
@@ -573,12 +606,12 @@ function Members({ isMobile, onImpersonate }) {
                     await createClient().from("members").update({frozen_until:null}).eq("id",m.id);
                     setMembers(prev=>prev.map(x=>x.id===m.id?{...x,frozenUntil:null}:x));
                     setSelected(prev=>prev?{...prev,frozenUntil:null}:prev);
-                    setToast({msg:"Abonnement dégelé",ok:true}); setTimeout(()=>setToast(null),3000);
+                    setToast({msg:"Formule dégelé",ok:true}); setTimeout(()=>setToast(null),3000);
                   })
                 : actionBtn(<>&#10052; Geler</>, ()=>{
                     setConfirmModal({
-                      title: "Geler l'abonnement",
-                      message: `Geler l'abonnement de ${m.firstName} ${m.lastName} jusqu'à quelle date ?`,
+                      title: "Geler la formule",
+                      message: `Geler la formule de ${m.firstName} ${m.lastName} jusqu'à quelle date ?`,
                       inputLabel: "Date de fin (AAAA-MM-JJ)",
                       inputDefault: new Date(Date.now()+30*86400000).toISOString().slice(0,10),
                       onConfirm: async (val) => {

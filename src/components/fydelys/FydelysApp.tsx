@@ -35,7 +35,7 @@ export default function App({
   };
 const PAGE_TITLES = {
   dashboard:"Tableau de bord", planning:"Planning", historique:"Historique", members:"Membres",
-  subscriptions:"Abonnements", payments:"Paiements", disciplines:"Disciplines",
+  subscriptions:"Formules", payments:"Paiements", disciplines:"Disciplines",
   settings:"Paramètres", aide:"Aide"
 };
   const [sharedStudioId, setSharedStudioId] = useState(propStudioId || null);
