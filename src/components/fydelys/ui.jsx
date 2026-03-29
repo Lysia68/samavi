@@ -152,7 +152,12 @@ function MemberRow({ m, onSelect, selected }) {
       </div>
       <div style={{ display:"flex", flexDirection:"column", alignItems:"flex-end", gap:5, flexShrink:0 }}>
         <Tag s={m.status}/>
-        {m.credits>0 && <Pill color={C.info} bg={C.infoBg}>{m.credits} crédits</Pill>}
+        {m.credits > 0
+          ? <Pill color={C.info} bg={C.infoBg}>{m.credits} crédits</Pill>
+          : m.creditTotal > 0
+            ? <Pill color="#C43A3A" bg="#FDE8E8">0 crédit</Pill>
+            : null
+        }
       </div>
     </div>
   );

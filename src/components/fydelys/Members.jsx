@@ -13,7 +13,7 @@ import { Card, SectionHead, Button, Field, FieldLabel, Tag, Pill, MemberRow, Dem
 const EMPTY_FORM = {
   firstName:"", lastName:"", email:"", phone:"",
   address:"", postalCode:"", city:"",
-  birthDate:"", subscription:"", profession:"",
+  birthDate:"", subscription:"", profession:"", facebook:"",
 };
 
 function MemberForm({ value, onChange, errors={}, isMobile }) {
@@ -58,6 +58,19 @@ function MemberForm({ value, onChange, errors={}, isMobile }) {
             <div>{lbl("Ville")}<input value={value.city} onChange={e=>onChange({...value,city:e.target.value})} placeholder="Paris" style={inp()}/></div>
           </div>
           <div>{lbl("Profession")}<input value={value.profession||""} onChange={e=>onChange({...value,profession:e.target.value})} placeholder="Ex : Ingénieur, Enseignant, Retraité…" style={inp()}/></div>
+          <div>{lbl("Facebook")}
+            <div style={{display:"flex",gap:6,alignItems:"center"}}>
+              <input value={value.facebook||""} onChange={e=>onChange({...value,facebook:e.target.value})} placeholder="URL ou nom du profil Facebook" style={{...inp(), flex:1}}/>
+              {value.facebook && (
+                <a href={value.facebook.startsWith("http") ? value.facebook : `https://facebook.com/${value.facebook}`}
+                  target="_blank" rel="noopener noreferrer"
+                  style={{flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",width:36,height:36,borderRadius:8,border:`1.5px solid ${C.border}`,background:C.surface,cursor:"pointer",textDecoration:"none",fontSize:16}}
+                  title="Ouvrir le profil Facebook">
+                  🔗
+                </a>
+              )}
+            </div>
+          </div>
         </div>
       </div>
 
@@ -119,7 +132,7 @@ function Members({ isMobile }) {
       console.log("[Members] trying Supabase client fallback...");
       const { data, error } = await createClient()
         .from("members")
-        .select("id,first_name,last_name,email,phone,address,postal_code,city,birth_date,status,credits,credits_total,joined_at,next_payment,notes,subscription_id,profile_complete,frozen_until,profession,subscriptions(name)")
+        .select("id,first_name,last_name,email,phone,address,postal_code,city,birth_date,status,credits,credits_total,joined_at,next_payment,notes,subscription_id,profile_complete,frozen_until,profession,facebook,subscriptions(name)")
         .eq("studio_id", studioId).order("last_name");
       console.log("[Members] fallback →", { count: data?.length, error: error?.message });
 
@@ -139,7 +152,7 @@ function Members({ isMobile }) {
       status:m.status||"actif", credits:m.credits||0, creditTotal:m.credits_total||0,
       joined:m.joined_at, nextPayment:m.next_payment, notes:m.notes||"",
       subscription:m.subscriptions?.name||"—", subscriptionId:m.subscription_id||null,
-      profileComplete:m.profile_complete, frozenUntil:m.frozen_until||null, profession:m.profession||"",
+      profileComplete:m.profile_complete, frozenUntil:m.frozen_until||null, profession:m.profession||"", facebook:m.facebook||"",
       avatar:(m.first_name?.[0]||"")+(m.last_name?.[0]||""),
     };
   }
@@ -149,7 +162,7 @@ function Members({ isMobile }) {
       first_name:f.firstName, last_name:f.lastName,
       email:f.email.toLowerCase().trim(), phone:f.phone||"",
       address:f.address||null, postal_code:f.postalCode||null, city:f.city||null,
-      birth_date:f.birthDate||null, profession:f.profession||null,
+      birth_date:f.birthDate||null, profession:f.profession||null, facebook:f.facebook||null,
     };
   }
 
@@ -178,7 +191,7 @@ function Members({ isMobile }) {
   };
 
   const startEdit = (m) => {
-    setEditForm({ firstName:m.firstName,lastName:m.lastName,email:m.email,phone:m.phone||"",address:m.address||"",postalCode:m.postalCode||"",city:m.city||"",birthDate:m.birthDate||"",subscription:m.subscription||"",profession:m.profession||"" });
+    setEditForm({ firstName:m.firstName,lastName:m.lastName,email:m.email,phone:m.phone||"",address:m.address||"",postalCode:m.postalCode||"",city:m.city||"",birthDate:m.birthDate||"",subscription:m.subscription||"",profession:m.profession||"",facebook:m.facebook||"" });
     setNMErrors({}); setEditMode(true);
   };
 
@@ -502,10 +515,10 @@ function Members({ isMobile }) {
 
             {/* KPIs */}
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:12}}>
-              {[["Abonnement",m.subscription],["Statut",m.status],["Membre depuis",m.joined?new Date(m.joined).toLocaleDateString("fr-FR"):"—"],["Crédits",m.credits>0?`${m.credits} séances`:"Illimité"]].map(([l,v])=>(
-                <div key={l} style={{background:C.bg,borderRadius:8,padding:"10px 12px",border:`1px solid ${C.border}`}}>
+              {[["Abonnement",m.subscription],["Statut",m.status],["Membre depuis",m.joined?new Date(m.joined).toLocaleDateString("fr-FR"):"—"],["Crédits",`${m.credits} séance${m.credits!==1?"s":""}`]].map(([l,v])=>(
+                <div key={l} style={{background:l==="Crédits"&&m.credits===0?"#FDE8E8":C.bg,borderRadius:8,padding:"10px 12px",border:`1px solid ${l==="Crédits"&&m.credits===0?"#F5C2C2":C.border}`}}>
                   <div style={{fontSize:10,fontWeight:700,color:C.textMuted,textTransform:"uppercase",marginBottom:2}}>{l}</div>
-                  <div style={{fontSize:14,fontWeight:600,color:C.text,textTransform:"capitalize"}}>{v}</div>
+                  <div style={{fontSize:14,fontWeight:600,color:l==="Crédits"&&m.credits===0?"#C43A3A":C.text,textTransform:"capitalize"}}>{v}</div>
                 </div>
               ))}
             </div>
@@ -515,6 +528,7 @@ function Members({ isMobile }) {
               {infoRow("🎂","Date de naissance",birthdayFmt)}
               {infoRow("📍","Adresse",adresseFull||null)}
               {infoRow("💼","Profession",m.profession||null)}
+              {m.facebook && infoRow("📘","Facebook",<a href={m.facebook.startsWith("http")?m.facebook:`https://facebook.com/${m.facebook}`} target="_blank" rel="noopener noreferrer" style={{color:C.accent,textDecoration:"none",fontWeight:600}}>{m.facebook} 🔗</a>)}
             </div>
 
             {/* Gel alert */}
@@ -667,7 +681,13 @@ function Members({ isMobile }) {
 
         {showAdd && (
           <Card style={{marginBottom:16,borderTop:`3px solid ${C.accent}`}}>
-            <div style={{fontSize:13,fontWeight:800,color:C.accent,textTransform:"uppercase",letterSpacing:.6,marginBottom:18}}>Nouvel adhérent</div>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:18}}>
+              <div style={{fontSize:13,fontWeight:800,color:C.accent,textTransform:"uppercase",letterSpacing:.6}}>Nouvel adhérent</div>
+              <div style={{display:"flex",gap:8}}>
+                <Button variant="primary" sm onClick={add}>✦ Valider</Button>
+                <Button variant="ghost" sm onClick={()=>{setShowAdd(false);setNMErrors({});}}>Annuler</Button>
+              </div>
+            </div>
             <MemberForm value={nM} onChange={setNM} errors={nMErrors} isMobile={isMobile}/>
             <div style={{marginTop:18,display:"flex",gap:10}}>
               <Button variant="primary" onClick={add}>✦ Créer l'adhérent</Button>

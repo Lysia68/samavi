@@ -70,6 +70,7 @@ function Dashboard({ isMobile }) {
   const [isDemo, setIsDemo] = useState(false);
   const [loading, setLoading] = useState(true);
   const [publicPageEnabled, setPublicPageEnabled] = useState(null); // null=loading
+  const [closures, setClosures] = useState([]);
 
   const handleToggle = (id) => setExpandedId(prev => prev===id ? null : id);
   const handleChangeStatus = (bid, sid, ns) => {
@@ -85,6 +86,9 @@ function Dashboard({ isMobile }) {
     // Charger le flag page publique
     sb.from("studios").select("public_page_enabled, slug").eq("id", studioId).single()
       .then(({ data }) => setPublicPageEnabled(data?.public_page_enabled === true ? { enabled:true, slug:data.slug } : { enabled:false, slug:data?.slug||"" }));
+    // Charger les fermetures
+    sb.from("studio_closures").select("*").eq("studio_id", studioId).gte("date_end", today).order("date_start")
+      .then(({ data }) => setClosures(data || []));
 
     Promise.all([
       sb.from("sessions").select("id,discipline_id,teacher,room,duration_min,spots,session_date,session_time,status").eq("studio_id", studioId),
@@ -179,7 +183,21 @@ function Dashboard({ isMobile }) {
   // Alertes calculées depuis les vraies données
   const unpaidAmount = payments.filter(p=>p.status==="impayé"||p.status==="unpaid").reduce((s,p)=>s+(p.amount||0),0);
   const waitlistCount = Object.values(bookings).reduce((acc,bl)=>acc+(bl||[]).filter(b=>b.st==="waitlist").length,0);
+  // Fermetures à venir (dans les 14 prochains jours ou en cours)
+  const upcomingClosures = closures.filter(c => {
+    const start = new Date(c.date_start);
+    const diffDays = (start - new Date()) / (1000*60*60*24);
+    return diffDays <= 14 || c.date_start <= todayStr;
+  });
+
   const alerts = [
+    ...upcomingClosures.map(c => {
+      const isNow = c.date_start <= todayStr && c.date_end >= todayStr;
+      const startFmt = new Date(c.date_start+"T12:00:00").toLocaleDateString("fr-FR",{day:"numeric",month:"short"});
+      const endFmt = new Date(c.date_end+"T12:00:00").toLocaleDateString("fr-FR",{day:"numeric",month:"short"});
+      const label = c.date_start === c.date_end ? `${c.label||"Fermeture"} · ${startFmt}` : `${c.label||"Fermeture"} · ${startFmt} → ${endFmt}`;
+      return { label:"closure", closureLabel:label, isNow, c:isNow?"#C43A3A":"#8B6914", bg:isNow?"#FDE8E8":"#FFF8E8" };
+    }),
     unpaidAmount > 0 && { label:"Impayés en cours", value:`${unpaidAmount.toLocaleString("fr-FR")} €`, c:C.warn, bg:C.warnBg },
     waitlistCount > 0 && { label:"Liste d'attente", value:`${waitlistCount} membre${waitlistCount>1?"s":""}`, c:C.info, bg:C.infoBg },
     publicPageEnabled !== null && !publicPageEnabled.enabled && { label:"page_publique", c:C.accent, bg:C.accentBg, slug:publicPageEnabled.slug },
@@ -227,8 +245,14 @@ function Dashboard({ isMobile }) {
           {alerts.length > 0 && (
             <Card noPad>
               <SectionHead><span style={{display:"flex",alignItems:"center",gap:6}}><IcoAlert2 s={15} c={C.warn}/>Alertes</span></SectionHead>
-              {alerts.map(a=>(
-                a.label === "page_publique"
+              {alerts.map((a,i)=>(
+                a.label === "closure"
+                  ? <div key={`closure-${i}`} style={{ display:"flex", alignItems:"center", gap:10, padding:"10px 16px", borderBottom:`1px solid ${C.borderSoft}`, background:a.bg }}>
+                      <span style={{ fontSize:16 }}>🔒</span>
+                      <span style={{ fontSize:13, fontWeight:600, color:a.c, flex:1 }}>{a.closureLabel}</span>
+                      {a.isNow && <span style={{ fontSize:11, fontWeight:700, padding:"2px 8px", borderRadius:8, background:"#C43A3A", color:"#fff" }}>En cours</span>}
+                    </div>
+                : a.label === "page_publique"
                   ? <div key="page_publique" style={{ padding:"12px 16px", borderBottom:`1px solid ${C.borderSoft}` }}>
                       <div style={{ fontSize:13, color:C.text, fontWeight:600, marginBottom:2 }}>
                         Site vitrine non activé

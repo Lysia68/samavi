@@ -169,9 +169,16 @@ function DatePicker({ value, onChange, label, minDate, maxDate }) {
         }
       </button>
       {open && (
-        <div style={{ position:"fixed", left:dropPos.left, top:dropPos.top, bottom:dropPos.bottom, zIndex:9999 }}>
-          <CalendarDropdown value={value} onChange={v=>{onChange(v);setOpen(false);}} minDate={minDate} maxDate={maxDate} onClose={()=>setOpen(false)}/>
-        </div>
+        typeof window !== "undefined" && window.innerWidth < 640
+          ? <div style={{ position:"fixed", inset:0, background:"rgba(42,31,20,.4)", zIndex:9999, display:"flex", alignItems:"center", justifyContent:"center", padding:16 }}
+              onClick={()=>setOpen(false)}>
+              <div onClick={e=>e.stopPropagation()}>
+                <CalendarDropdown value={value} onChange={v=>{onChange(v);setOpen(false);}} minDate={minDate} maxDate={maxDate} onClose={()=>setOpen(false)}/>
+              </div>
+            </div>
+          : <div style={{ position:"fixed", left:dropPos.left, top:dropPos.top, bottom:dropPos.bottom, zIndex:9999 }}>
+              <CalendarDropdown value={value} onChange={v=>{onChange(v);setOpen(false);}} minDate={minDate} maxDate={maxDate} onClose={()=>setOpen(false)}/>
+            </div>
       )}
     </div>
   );

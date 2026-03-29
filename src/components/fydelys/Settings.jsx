@@ -1096,7 +1096,7 @@ function Settings({ isMobile, onImpersonate }) {
     finally { setAccountSaving(false); }
   };
 
-  const TabAccount = () => (
+  const tabAccountContent = (
     <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
       {accountToast && (
         <div style={{ position:"fixed", bottom:24, left:"50%", transform:"translateX(-50%)", zIndex:9999,
@@ -1237,6 +1237,9 @@ function Settings({ isMobile, onImpersonate }) {
     const [coaches, setCoaches]         = useState([]);
     const [pendingInvites, setPendingInvites] = useState([]);
     const [editCoach, setEditCoach]     = useState(null);
+    const [editCoachProfile, setEditCoachProfile] = useState(null);
+    const [coachProfileForm, setCoachProfileForm] = useState({ firstName:"", lastName:"", email:"" });
+    const [coachToDelete, setCoachToDelete] = useState(null);
 
     // Utiliser les données partagées depuis Settings
     useEffect(() => {
@@ -1325,6 +1328,68 @@ function Settings({ isMobile, onImpersonate }) {
     return (
       <div>
         {editCoach && <DiscModal coach={editCoach}/>}
+
+        {/* Modal modifier profil coach */}
+        {editCoachProfile && (
+          <div onClick={e=>e.target===e.currentTarget&&setEditCoachProfile(null)}
+            style={{position:"fixed",inset:0,background:"rgba(42,31,20,.45)",zIndex:600,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
+            <div style={{background:C.surface,borderRadius:16,padding:24,width:"100%",maxWidth:400,boxShadow:"0 24px 60px rgba(0,0,0,.18)"}}>
+              <div style={{fontSize:16,fontWeight:800,color:C.text,marginBottom:16}}>Modifier {editCoachProfile.fn} {editCoachProfile.ln}</div>
+              <div style={{display:"flex",flexDirection:"column",gap:10,marginBottom:18}}>
+                <div>
+                  <div style={{fontSize:11,fontWeight:700,color:C.textMuted,textTransform:"uppercase",marginBottom:4}}>Prénom</div>
+                  <input value={coachProfileForm.firstName} onChange={e=>setCoachProfileForm(f=>({...f,firstName:e.target.value}))}
+                    style={{width:"100%",padding:"9px 12px",border:`1.5px solid ${C.border}`,borderRadius:8,fontSize:14,outline:"none",boxSizing:"border-box",background:C.surfaceWarm,color:C.text}}/>
+                </div>
+                <div>
+                  <div style={{fontSize:11,fontWeight:700,color:C.textMuted,textTransform:"uppercase",marginBottom:4}}>Nom</div>
+                  <input value={coachProfileForm.lastName} onChange={e=>setCoachProfileForm(f=>({...f,lastName:e.target.value}))}
+                    style={{width:"100%",padding:"9px 12px",border:`1.5px solid ${C.border}`,borderRadius:8,fontSize:14,outline:"none",boxSizing:"border-box",background:C.surfaceWarm,color:C.text}}/>
+                </div>
+              </div>
+              <div style={{display:"flex",gap:10}}>
+                <Button variant="primary" onClick={async()=>{
+                  const db = createClient();
+                  await db.from("profiles").update({ first_name:coachProfileForm.firstName, last_name:coachProfileForm.lastName }).eq("id", editCoachProfile.id);
+                  showToast("Coach modifié");
+                  setEditCoachProfile(null);
+                  await loadTeam();
+                }}>Enregistrer</Button>
+                <Button variant="ghost" onClick={()=>setEditCoachProfile(null)}>Annuler</Button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Modal confirmer suppression coach */}
+        {coachToDelete && (
+          <div onClick={e=>e.target===e.currentTarget&&setCoachToDelete(null)}
+            style={{position:"fixed",inset:0,background:"rgba(42,31,20,.45)",zIndex:600,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
+            <div style={{background:C.surface,borderRadius:16,padding:24,width:"100%",maxWidth:380,boxShadow:"0 16px 48px rgba(0,0,0,.2)"}}>
+              <div style={{fontSize:16,fontWeight:800,color:C.text,marginBottom:8}}>Supprimer le coach</div>
+              <div style={{fontSize:14,color:C.textMid,lineHeight:1.5,marginBottom:20}}>
+                Supprimer {coachToDelete.fn} {coachToDelete.ln} de l'équipe ? Les séances assignées ne seront pas supprimées.
+              </div>
+              <div style={{display:"flex",gap:8,justifyContent:"flex-end"}}>
+                <button onClick={()=>setCoachToDelete(null)}
+                  style={{padding:"9px 18px",borderRadius:9,border:`1.5px solid ${C.border}`,background:C.surface,color:C.textMid,fontSize:13,fontWeight:600,cursor:"pointer"}}>
+                  Annuler
+                </button>
+                <button onClick={async()=>{
+                  await createClient().from("profiles").update({ is_coach:false, role:"adherent" }).eq("id", coachToDelete.id);
+                  await createClient().from("coach_disciplines").delete().eq("profile_id", coachToDelete.id).eq("studio_id", studioId);
+                  showToast("Coach retiré de l'équipe");
+                  setCoachToDelete(null);
+                  await loadTeam();
+                }}
+                  style={{padding:"9px 18px",borderRadius:9,border:"none",background:"#A85030",color:"#fff",fontSize:13,fontWeight:700,cursor:"pointer"}}>
+                  Supprimer
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {inviteModal && <InviteCoachModal
         C={C}
         studioSlug={studioSlug}
@@ -1415,11 +1480,21 @@ function Settings({ isMobile, onImpersonate }) {
                     ))}
                   </div>
                 </div>
-                {/* Action */}
-                <button onClick={()=>setEditCoach(coach)}
-                  style={{flexShrink:0,padding:"7px 14px",borderRadius:9,border:`1.5px solid ${C.border}`,background:C.surface,color:C.accent,fontSize:13,fontWeight:600,cursor:"pointer",display:"flex",alignItems:"center",gap:6}}>
-                  ✏ Disciplines
-                </button>
+                {/* Actions */}
+                <div style={{display:"flex",gap:6,flexShrink:0,flexWrap:"wrap",justifyContent:"flex-end"}}>
+                  <button onClick={()=>setEditCoach(coach)}
+                    style={{padding:"7px 14px",borderRadius:9,border:`1.5px solid ${C.border}`,background:C.surface,color:C.accent,fontSize:12,fontWeight:600,cursor:"pointer",display:"flex",alignItems:"center",gap:5}}>
+                    ✏ Disciplines
+                  </button>
+                  <button onClick={()=>{setEditCoachProfile(coach);setCoachProfileForm({firstName:coach.fn,lastName:coach.ln,email:coach.email});}}
+                    style={{padding:"7px 14px",borderRadius:9,border:`1.5px solid ${C.border}`,background:C.surface,color:C.textMid,fontSize:12,fontWeight:600,cursor:"pointer",display:"flex",alignItems:"center",gap:5}}>
+                    👤 Modifier
+                  </button>
+                  <button onClick={()=>setCoachToDelete(coach)}
+                    style={{padding:"7px 10px",borderRadius:9,border:`1.5px solid #EFC8BC`,background:"transparent",color:"#A85030",fontSize:12,fontWeight:600,cursor:"pointer"}}>
+                    ✕
+                  </button>
+                </div>
               </div>
             </div>
           );
@@ -1931,7 +2006,7 @@ function Settings({ isMobile, onImpersonate }) {
     );
   };
 
-  const TAB_CONTENT = { superadmin:<TabSuperAdmin/>, studio:<TabStudio/>, team:<TabTeam/>, users:<TabUsers/>, roles:<TabRoles/>, rooms:<TabRooms/>, payments:<TabPayments/>, account:<TabAccount/> };
+  const TAB_CONTENT = { superadmin:<TabSuperAdmin/>, studio:<TabStudio/>, team:<TabTeam/>, users:<TabUsers/>, roles:<TabRoles/>, rooms:<TabRooms/>, payments:<TabPayments/> };
 
   return (
     <div style={{ padding:p, maxWidth:isSA?"none":720 }}>
@@ -1959,7 +2034,7 @@ function Settings({ isMobile, onImpersonate }) {
           </button>
         ))}
       </div>
-      {TAB_CONTENT[tab] || <TabStudio/>}
+      {tab === "account" ? tabAccountContent : (TAB_CONTENT[tab] || <TabStudio/>)}
     </div>
   );
 }
