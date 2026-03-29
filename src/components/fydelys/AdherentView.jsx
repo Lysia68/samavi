@@ -134,11 +134,11 @@ const AdhAccountPanel = React.memo(function AdhAccountPanel({ me, loading, histo
               { l:"Profession",       v:me?.profession },
               { l:"Email",            v:me?.email, locked:true },
             ].filter(f=>f.v).map(f=>(
-              <div key={f.l} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"9px 0", borderBottom:`1px solid ${C.border}`, gap:8 }}>
-                <span style={{ fontSize:13, color:C.textMuted, flexShrink:0, minWidth:90 }}>{f.l}</span>
-                <span style={{ fontSize:14, fontWeight:600, color:C.text, textAlign:"right", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", minWidth:0, display:"flex", alignItems:"center", gap:6 }}>
+              <div key={f.l} style={{ padding:"9px 0", borderBottom:`1px solid ${C.border}` }}>
+                <div style={{ fontSize:11, color:C.textMuted, fontWeight:600, textTransform:"uppercase", letterSpacing:.5, marginBottom:2 }}>{f.l}</div>
+                <div style={{ fontSize:14, fontWeight:600, color:C.text, display:"flex", alignItems:"center", gap:6 }}>
                   {f.v}{f.locked && <span style={{ fontSize:10, color:C.textMuted, fontWeight:400 }}>🔒</span>}
-                </span>
+                </div>
               </div>
             ))}
           </div>

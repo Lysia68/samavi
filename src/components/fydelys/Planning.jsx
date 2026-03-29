@@ -295,8 +295,9 @@ function BookingModal({ sessId, sessions, studioId, bookings, setBookings, setSe
     if (!v || v.length < 2) { setResults([]); return; }
     setLoading(true);
     const { data } = await createClient().from("members")
-      .select("id, first_name, last_name, email, phone")
+      .select("id, first_name, last_name, email, phone, credits, credits_total, subscription_id, subscriptions(period)")
       .eq("studio_id", studioId)
+      .is("deleted_at", null)
       .or(`first_name.ilike.%${v}%,last_name.ilike.%${v}%,email.ilike.%${v}%`)
       .limit(8);
     if (!data || data.length === 0) {
@@ -353,7 +354,7 @@ function BookingModal({ sessId, sessions, studioId, bookings, setBookings, setSe
       setSessions(prev => prev.map(s => s.id === sessId ? { ...s, booked: s.booked + booked } : s));
     }
     setConfirming(false);
-    setDone(newBookings.length > 0 ? `${newBookings.length} inscrit${newBookings.length > 1 ? "s" : ""}` : "already");
+    if (newBookings.length > 0) onClose();
   }
 
   // Raccourci : clic direct si pas encore en mode multi-select
@@ -377,7 +378,9 @@ function BookingModal({ sessId, sessions, studioId, bookings, setBookings, setSe
         email: member.email || "", phone: member.phone || "" };
       setBookings(prev => ({ ...prev, [sessId]: [...(prev[sessId] || []), nb] }));
       setSessions(prev => prev.map(s => s.id === sessId ? { ...s, booked: s.booked + (data.status === "confirmed" ? 1 : 0) } : s));
-      setDone(data.status);
+      onClose();
+    } else if (!data.already) {
+      setDone(`Erreur : ${data.error || "inscription échouée"}`);
     }
     setSelected([]);
   }
@@ -481,7 +484,17 @@ function BookingModal({ sessId, sessions, studioId, bookings, setBookings, setSe
                             {isSel && <span style={{ color:"#fff", fontSize:12, fontWeight:700 }}>✓</span>}
                           </div>
                           <div style={{ flex:1, minWidth:0 }}>
-                            <div style={{ fontSize: 14, fontWeight: 700, color: C.text }}>{m.first_name} {m.last_name}</div>
+                            <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+                              <span style={{ fontSize: 14, fontWeight: 700, color: C.text }}>{m.first_name} {m.last_name}</span>
+                              {(() => {
+                                const period = m.subscriptions?.period;
+                                const unlimited = period && ["mois","trimestre","année"].includes(period);
+                                if (unlimited) return <span style={{ fontSize:10, fontWeight:700, padding:"1px 6px", borderRadius:8, background:C.okBg, color:C.ok }}>Abo</span>;
+                                if (m.credits > 0) return <span style={{ fontSize:10, fontWeight:700, padding:"1px 6px", borderRadius:8, background:C.infoBg, color:C.info }}>{m.credits}</span>;
+                                if (m.credits_total > 0 || m.subscription_id) return <span style={{ fontSize:10, fontWeight:700, padding:"1px 6px", borderRadius:8, background:"#FDE8E8", color:"#C43A3A" }}>0</span>;
+                                return null;
+                              })()}
+                            </div>
                             <div style={{ fontSize: 12, color: C.textMuted }}>{m.email}{m.phone ? " · " + m.phone : ""}{alreadyBooked ? " · déjà inscrit" : ""}</div>
                           </div>
                         </div>

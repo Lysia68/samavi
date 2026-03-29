@@ -96,7 +96,8 @@ export async function POST(req: NextRequest) {
 
     // Si le studio utilise les paiements, vérifier que le membre peut réserver
     // Les crédits sont déduits à la validation des présences, pas à la réservation
-    if (paymentMode !== "none") {
+    // force=true (admin) bypass cette vérification
+    if (paymentMode !== "none" && !force) {
       if (isUnlimited) {
         // Abonnement mensuel/illimité → OK
       } else if (creditsOk) {
