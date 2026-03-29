@@ -66,7 +66,7 @@ export async function GET(req: NextRequest) {
 
   // ── Fallback : reçu HTML maison ────────────────────────────────────────────
   const member = (pay as any).members as any
-  const memberName = member ? `${member.first_name} ${member.last_name}` : "Adhérent"
+  const memberName = member ? `${member.first_name} ${member.last_name}` : "Membre"
   const dateStr = new Date(pay.payment_date).toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit", year: "numeric" })
   const invoiceNum = `FAC-${pay.id.slice(0,8).toUpperCase()}`
   const studioName = studio?.name || "Studio"

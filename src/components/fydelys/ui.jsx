@@ -154,7 +154,7 @@ function MemberRow({ m, onSelect, selected }) {
         <Tag s={m.status}/>
         {m.credits > 0
           ? <Pill color={C.info} bg={C.infoBg}>{m.credits} crédits</Pill>
-          : m.creditTotal > 0
+          : (m.creditTotal > 0 || m.subscriptionId)
             ? <Pill color="#C43A3A" bg="#FDE8E8">0 crédit</Pill>
             : null
         }

@@ -78,7 +78,7 @@ function MemberForm({ value, onChange, errors={}, isMobile }) {
   );
 }
 
-function Members({ isMobile }) {
+function Members({ isMobile, onImpersonate }) {
   const { studioId } = useContext(AppCtx);
   const [members, setMembers]       = useState([]);
   const [dbLoading, setDbLoading]   = useState(true);
@@ -187,7 +187,7 @@ function Members({ isMobile }) {
     if (!res.ok) {
       setMembers(prev=>prev.filter(m=>m.id!==tempId));
       showToast(json.limit ? json.error : json.error==="EMAIL_EXISTS" ? "Email déjà utilisé dans ce studio" : "Erreur : "+(json.error||"impossible de créer"), false);
-    } else if (json.id) { setMembers(prev=>prev.map(m=>m.id===tempId?{...m,id:json.id}:m)); showToast("Adhérent créé — invitation envoyée par email ✓"); }
+    } else if (json.id) { setMembers(prev=>prev.map(m=>m.id===tempId?{...m,id:json.id}:m)); showToast("Membre créé — invitation envoyée par email ✓"); }
   };
 
   const startEdit = (m) => {
@@ -213,18 +213,18 @@ function Members({ isMobile }) {
     const { count } = await sb.from("bookings").select("id", { count:"exact", head:true })
       .eq("member_id", id).eq("status", "confirmed").gte("session_date", today);
     const m = members.find(x=>x.id===id);
-    const name = m ? `${m.firstName} ${m.lastName}` : "cet adhérent";
+    const name = m ? `${m.firstName} ${m.lastName}` : "ce membre";
     const msg = count && count > 0
       ? `${name} a ${count} réservation${count>1?"s":""} future${count>1?"s":""}. L'historique sera conservé mais le compte sera désactivé.`
       : `Supprimer ${name} ? L'historique sera conservé mais le compte sera désactivé.`;
     setConfirmModal({
-      title: "Supprimer l'adhérent",
+      title: "Supprimer le membre",
       message: msg,
       danger: true,
       onConfirm: async () => {
         setMembers(prev=>prev.filter(x=>x.id!==id)); setSelected(null);
         await fetch(`/api/members?id=${id}`, { method:"DELETE" });
-        showToast("Adhérent supprimé");
+        showToast("Membre supprimé");
         setConfirmModal(null);
       },
     });
@@ -358,7 +358,7 @@ function Members({ isMobile }) {
           <div style={{textAlign:"center",padding:"32px 0"}}>
             <div style={{fontSize:28,marginBottom:8}}>📅</div>
             <div style={{fontSize:14,fontWeight:700,color:C.text}}>Aucune séance</div>
-            <div style={{fontSize:12,color:C.textMuted,marginTop:4}}>Cet adhérent n'a pas encore de réservations.</div>
+            <div style={{fontSize:12,color:C.textMuted,marginTop:4}}>Ce membre n'a pas encore de réservations.</div>
           </div>
         )}
         {history !== null && history.map((s,i)=>(
@@ -474,10 +474,10 @@ function Members({ isMobile }) {
     const isFrozen = m.frozenUntil && new Date(m.frozenUntil) >= new Date(new Date().toISOString().slice(0,10));
     const actionBtn = (label, onClick, primary) => (
       <button onClick={onClick} style={{
-        flex:isMobile?"1 1 calc(50% - 5px)":"0 0 auto", minHeight:40, padding:"8px 14px", borderRadius:10,
+        minHeight:38, padding:"8px 12px", borderRadius:10,
         border:primary?"none":`1.5px solid ${C.border}`, background:primary?"linear-gradient(145deg,#B88050,#9A6030)":C.surface,
-        color:primary?"#fff":C.textMid, fontSize:13, fontWeight:600, cursor:"pointer",
-        display:"flex", alignItems:"center", justifyContent:"center", gap:6,
+        color:primary?"#fff":C.textMid, fontSize:12, fontWeight:600, cursor:"pointer",
+        display:"flex", alignItems:"center", justifyContent:"center", gap:5, whiteSpace:"nowrap",
       }}>{label}</button>
     );
     return (
@@ -539,22 +539,23 @@ function Members({ isMobile }) {
             )}
 
             {/* Actions */}
-            <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-              {actionBtn(<><IcoMail s={13} c="white"/> Envoyer un email</>, ()=>setModal({type:"email",member:m}), true)}
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+              {onImpersonate && actionBtn(<>👁 Vue membre</>, ()=>onImpersonate("adherent", m.id, `${m.firstName} ${m.lastName}`.trim()), true)}
+              {actionBtn(<><IcoMail s={13} c={onImpersonate?"currentColor":"white"}/> Email</>, ()=>setModal({type:"email",member:m}), !onImpersonate)}
               {actionBtn(<><IcoTag2 s={13} c={C.textMid}/> Abonnement</>, ()=>setModal({type:"subscription",member:m}))}
               {actionBtn(<><IcoCalendar2 s={13} c={C.textMid}/> Historique</>, ()=>setModal({type:"history",member:m}))}
               {actionBtn(<>🎁 Offrir séances</>, ()=>setModal({type:"gift",member:m}))}
               {m.status !== "suspendu"
                 ? actionBtn(<>⏸ Suspendre</>, ()=>{
                     setConfirmModal({
-                      title: "Suspendre l'adhérent",
+                      title: "Suspendre le membre",
                       message: `Suspendre ${m.firstName} ${m.lastName} ? Le membre ne pourra plus se connecter.`,
                       danger: true,
                       onConfirm: async () => {
                         await createClient().from("members").update({status:"suspendu"}).eq("id",m.id);
                         setMembers(prev=>prev.map(x=>x.id===m.id?{...x,status:"suspendu"}:x));
                         setSelected(prev=>prev?{...prev,status:"suspendu"}:prev);
-                        showToast("Adhérent suspendu");
+                        showToast("Membre suspendu");
                         setConfirmModal(null);
                       },
                     });
@@ -563,7 +564,7 @@ function Members({ isMobile }) {
                     await createClient().from("members").update({status:"actif"}).eq("id",m.id);
                     setMembers(prev=>prev.map(x=>x.id===m.id?{...x,status:"actif"}:x));
                     setSelected(prev=>prev?{...prev,status:"actif"}:prev);
-                    showToast("Adhérent réactivé");
+                    showToast("Membre réactivé");
                   })
               }
               {actionBtn(<><IcoX s={13} c="#A85030"/> Supprimer</>, ()=>deleteMember(m.id))}
@@ -676,13 +677,13 @@ function Members({ isMobile }) {
               onFocus={e=>e.target.style.borderColor=C.accent} onBlur={e=>e.target.style.borderColor=C.border}/>
           </div>
           <Button sm variant="ghost" onClick={()=>window.open(`/api/export?type=members&studioId=${studioId}`)}>CSV</Button>
-          <Button sm variant="primary" onClick={()=>{setShowAdd(!showAdd);setNM(EMPTY_FORM);setNMErrors({});}}>＋ {!isMobile&&"Adhérent"}</Button>
+          <Button sm variant="primary" onClick={()=>{setShowAdd(!showAdd);setNM(EMPTY_FORM);setNMErrors({});}}>＋ {!isMobile&&"Membre"}</Button>
         </div>
 
         {showAdd && (
           <Card style={{marginBottom:16,borderTop:`3px solid ${C.accent}`}}>
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:18}}>
-              <div style={{fontSize:13,fontWeight:800,color:C.accent,textTransform:"uppercase",letterSpacing:.6}}>Nouvel adhérent</div>
+              <div style={{fontSize:13,fontWeight:800,color:C.accent,textTransform:"uppercase",letterSpacing:.6}}>Nouveau membre</div>
               <div style={{display:"flex",gap:8}}>
                 <Button variant="primary" sm onClick={add}>✦ Valider</Button>
                 <Button variant="ghost" sm onClick={()=>{setShowAdd(false);setNMErrors({});}}>Annuler</Button>
@@ -690,7 +691,7 @@ function Members({ isMobile }) {
             </div>
             <MemberForm value={nM} onChange={setNM} errors={nMErrors} isMobile={isMobile}/>
             <div style={{marginTop:18,display:"flex",gap:10}}>
-              <Button variant="primary" onClick={add}>✦ Créer l'adhérent</Button>
+              <Button variant="primary" onClick={add}>✦ Créer le membre</Button>
               <Button variant="ghost" onClick={()=>{setShowAdd(false);setNMErrors({});}}>Annuler</Button>
             </div>
           </Card>
@@ -699,7 +700,7 @@ function Members({ isMobile }) {
         {dbLoading ? (
           <div style={{textAlign:"center",padding:"40px 0",color:C.textMuted,fontSize:15}}>⏳ Chargement…</div>
         ) : filtered.length===0 ? (
-          <EmptyState icon="👤" title="Aucun adhérent" sub={search?"Aucun résultat":"Créez votre premier adhérent !"}/>
+          <EmptyState icon="👤" title="Aucun membre" sub={search?"Aucun résultat":"Créez votre premier membre !"}/>
         ) : (
           <Card noPad>{filtered.map(m=><MemberRow key={m.id} m={m} onSelect={m=>setSelected(selected?.id===m.id?null:m)} selected={selected?.id===m.id}/>)}</Card>
         )}

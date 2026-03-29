@@ -240,7 +240,7 @@ function AideIllustration({ type, color = "#3A6E90" }) {
       {[
         {x:50, role:"Admin", color:"#A06838", bg:"#F5EBE0"},
         {x:200, role:"Coach", color:"#3A6E90", bg:"#E6EFF5"},
-        {x:350, role:"Adhérent", color:"#4E8A58", bg:"#EAF5EC"},
+        {x:350, role:"Membre", color:"#4E8A58", bg:"#EAF5EC"},
       ].map((r,i)=>(
         <g key={i}>
           <rect x={r.x} y="72" width="100" height="44" rx="9" fill={r.bg} stroke={r.color} strokeWidth="1.5"/>

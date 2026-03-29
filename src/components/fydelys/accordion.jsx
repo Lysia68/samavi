@@ -149,7 +149,7 @@ export function PlanningAccordion({ sess, sessId, bookings, onChangeStatus, onAd
         Aucune réservation pour cette séance
       </div>
       <div style={{ padding:"8px 13px 10px", display:"flex", justifyContent:"center" }}>
-        <button onClick={()=>onAddBooking&&onAddBooking(sessId)} style={{ display:"flex",alignItems:"center",gap:6, fontSize:12, padding:"5px 12px", borderRadius:8, fontWeight:600, border:`1px solid #DFC0A0`, color:C.accentDark, background:C.accentBg, cursor:"pointer" }}><IcoUserPlus2 s={14} c={C.accentDark}/>Inscrire un adhérent</button>
+        <button onClick={()=>onAddBooking&&onAddBooking(sessId)} style={{ display:"flex",alignItems:"center",gap:6, fontSize:12, padding:"5px 12px", borderRadius:8, fontWeight:600, border:`1px solid #DFC0A0`, color:C.accentDark, background:C.accentBg, cursor:"pointer" }}><IcoUserPlus2 s={14} c={C.accentDark}/>Inscrire un membre</button>
       </div>
     </div>
   );
@@ -207,7 +207,7 @@ export function PlanningAccordion({ sess, sessId, bookings, onChangeStatus, onAd
             </div>
           ))}
           <div style={{ padding:"8px 13px 10px", display:"flex", gap:7, flexWrap:"wrap", alignItems:"center", justifyContent:"space-between" }}>
-            <button onClick={()=>onAddBooking&&onAddBooking(sessId)} style={{ display:"flex",alignItems:"center",gap:6, fontSize:12, padding:"5px 12px", borderRadius:8, fontWeight:600, border:`1px solid #DFC0A0`, color:C.accentDark, background:C.accentBg, cursor:"pointer" }}><IcoUserPlus2 s={14} c={C.accentDark}/>Inscrire un adhérent</button>
+            <button onClick={()=>onAddBooking&&onAddBooking(sessId)} style={{ display:"flex",alignItems:"center",gap:6, fontSize:12, padding:"5px 12px", borderRadius:8, fontWeight:600, border:`1px solid #DFC0A0`, color:C.accentDark, background:C.accentBg, cursor:"pointer" }}><IcoUserPlus2 s={14} c={C.accentDark}/>Inscrire un membre</button>
             {isPast && pendingCount>0 && (
               <button onClick={handleValidateAll}
                 style={{ display:"flex", alignItems:"center", gap:5, fontSize:12, padding:"5px 12px", borderRadius:8, fontWeight:600, border:`1px solid #B8DFC4`, color:C.ok, background:C.okBg, cursor:"pointer" }}>

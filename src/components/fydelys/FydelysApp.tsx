@@ -285,7 +285,9 @@ const PAGE_TITLES = {
           <div style={{ flex:1, overflowY:"auto" }}>
             {page === "settings"
               ? <Settings isMobile={isMobile} onImpersonate={startImpersonate}/>
-              : <Page isMobile={isMobile}/>
+              : page === "members"
+                ? <Members isMobile={isMobile} onImpersonate={startImpersonate}/>
+                : <Page isMobile={isMobile}/>
             }
           </div>
         </div>

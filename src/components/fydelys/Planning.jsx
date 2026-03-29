@@ -190,11 +190,6 @@ function PlanningSessionCard({ sess, expandedId, bookings, discs, onToggle, onCh
         {/* Boutons actions inline (séance expanded) */}
         {isExp && (
           <div onClick={e => e.stopPropagation()} style={{ display: "flex", gap: 4, flexShrink: 0, ...(isMobile ? { width:"100%", paddingTop:6, borderTop:`1px solid ${C.borderSoft}`, marginTop:2 } : {}) }}>
-            <button onClick={() => onSendReminder && onSendReminder(sess.id)}
-              title="Envoyer un rappel"
-              style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12, padding: "5px 9px", borderRadius: 8, border: `1px solid ${C.border}`, background: C.surfaceWarm, color: C.textSoft, cursor: "pointer", fontWeight: 600, whiteSpace: "nowrap" }}>
-              <IcoMail s={13} c={C.textSoft} /> Rappel
-            </button>
             {sess.status !== "cancelled" && onCancel && (
               <button onClick={() => onCancel(sess.id)} title="Annuler cette séance"
                 style={{ display:"flex", alignItems:"center", gap:4, fontSize: 12, padding: "5px 9px", borderRadius: 8, border: `1px solid #EFC8BC`, background: "#FFF5F5", color: C.warn, cursor: "pointer", fontWeight: 600, whiteSpace: "nowrap" }}>
@@ -215,8 +210,8 @@ function PlanningSessionCard({ sess, expandedId, bookings, discs, onToggle, onCh
                 ? onConfirm("Supprimer cette séance ?", () => onDelete(sess.id), { subMsg:"Cette action est irréversible.", danger:true })
                 : onDelete(sess.id)
               } title="Supprimer définitivement"
-                style={{ fontSize: 12, padding: "5px 8px", borderRadius: 8, border: `1px solid ${C.border}`, background: C.surface, color: C.textMuted, cursor: "pointer", fontWeight: 600 }}>
-                ✕
+                style={{ display:"flex", alignItems:"center", gap:4, fontSize: 12, padding: "5px 9px", borderRadius: 8, border: `1px solid #EFC8BC`, background: "#FDE8E8", color: "#A85030", cursor: "pointer", fontWeight: 600, whiteSpace:"nowrap" }}>
+                ✕ Supprimer
               </button>
             )}
           </div>
@@ -429,7 +424,7 @@ function BookingModal({ sessId, sessions, studioId, bookings, setBookings, setSe
               {done === "already" ? "Déjà inscrit" : done === "confirmed" ? "Inscrit avec succès" : done?.includes("inscrit") ? done : "Ajouté en liste d'attente"}
             </div>
             <div style={{ fontSize: 13, color: C.textSoft, marginBottom: 18 }}>
-              {done === "already" ? "Cet adhérent est déjà inscrit à cette séance." : done === "confirmed" ? "La réservation est confirmée." : done?.includes("inscrit") ? "Les réservations sont confirmées." : "La séance est complète, en attente."}
+              {done === "already" ? "Ce membre est déjà inscrit à cette séance." : done === "confirmed" ? "La réservation est confirmée." : done?.includes("inscrit") ? "Les réservations sont confirmées." : "La séance est complète, en attente."}
             </div>
             <div style={{ display: "flex", gap: 8 }}>
               <button onClick={() => { setDone(null); setQ(""); setResults([]); setSelected([]); setGuestName(""); setHostId(null); setHostName(""); setHostSearch(""); setHostResults([]); }} style={{ flex: 1, padding: "9px", borderRadius: 9, border: `1px solid ${C.border}`, background: C.surfaceWarm, color: C.textSoft, fontSize: 14, cursor: "pointer", fontWeight: 600 }}>Inscrire un autre</button>
@@ -440,7 +435,7 @@ function BookingModal({ sessId, sessions, studioId, bookings, setBookings, setSe
           <>
             {/* Tabs : Adhérent / Invité */}
             <div style={{ display: "flex", gap: 4, background: C.bg, borderRadius: 10, padding: 3, marginBottom: 16 }}>
-              <button style={tabStyle(mode === "member")} onClick={() => setMode("member")}>Adhérent</button>
+              <button style={tabStyle(mode === "member")} onClick={() => setMode("member")}>Membre</button>
               <button style={tabStyle(mode === "guest")} onClick={() => setMode("guest")}>Invité d'un membre</button>
             </div>
 
@@ -494,14 +489,14 @@ function BookingModal({ sessId, sessions, studioId, bookings, setBookings, setSe
                     })}
                   </div>
                 )}
-                {selected.length > 1 && (
-                  <button onClick={confirmSelected}
+                {selected.length >= 1 && (
+                  <button onClick={selected.length === 1 ? ()=>confirm(selected[0]) : confirmSelected}
                     style={{ width:"100%", padding:"10px", borderRadius:9, border:"none", background:C.accent, color:"#fff", fontSize:14, fontWeight:700, cursor:"pointer", marginBottom:8 }}>
-                    Inscrire {selected.length} adhérents
+                    Valider
                   </button>
                 )}
                 {q.length >= 2 && !loading && results.length === 0 && (
-                  <div style={{ fontSize: 13, color: C.textMuted, textAlign: "center", padding: "14px 0" }}>Aucun adhérent trouvé</div>
+                  <div style={{ fontSize: 13, color: C.textMuted, textAlign: "center", padding: "14px 0" }}>Aucun membre trouvé</div>
                 )}
               </>
             ) : (
@@ -1069,7 +1064,7 @@ function Planning({ isMobile }) {
               <div style={{ fontSize:12, fontWeight:700, color:C.accent, marginBottom:10, textTransform:"uppercase", letterSpacing:.5 }}>
                 {closureEdit ? "Modifier la fermeture" : "Ajouter une fermeture"}
               </div>
-              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
+              <div style={{ display:"grid", gridTemplateColumns:isMobile?"1fr":"1fr 1fr", gap:10 }}>
                 <div style={{ gridColumn:"1/-1" }}>
                   <div style={{ fontSize:11, fontWeight:700, color:C.textMuted, marginBottom:4, textTransform:"uppercase" }}>Label</div>
                   <input value={closureForm.label} onChange={e=>setClosureForm(f=>({...f,label:e.target.value}))}
@@ -1217,7 +1212,7 @@ function Planning({ isMobile }) {
             {!recMode && (
               <>
                 <div style={{ fontSize: 12, fontWeight: 700, color: C.accent, textTransform: "uppercase", letterSpacing: .6, marginBottom: 14 }}>Nouvelle séance</div>
-                <div style={{ display: "grid", gridTemplateColumns: `repeat(${isMobile ? 2 : 4}, 1fr)`, gap: 14, alignItems: "flex-end" }}>
+                <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(4, 1fr)", gap: isMobile ? 10 : 14, alignItems: "flex-end" }}>
                   <DiscSelect label="Discipline" value={nS.disciplineId}
                     options={allDiscOptions}
                     onChange={v => {
@@ -1425,7 +1420,7 @@ function Planning({ isMobile }) {
 
                   {/* Étape 3 — Période */}
                   <div style={{ fontSize: 11, fontWeight: 800, color: C.textMuted, textTransform: "uppercase", letterSpacing: .8, marginBottom: 10 }}>3 · Période <span style={{ fontSize: 10, fontWeight: 600, color: C.warn, marginLeft: 6 }}>max 3 mois</span></div>
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 20, alignItems: "flex-end" }}>
+                  <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 12, marginBottom: 20, alignItems: "flex-end" }}>
                     <DatePicker label="Du" value={recFrom} onChange={v => setRecFrom(v)} />
                     <DatePicker label="Au" value={recTo} onChange={v => {
                       if (recFrom) {

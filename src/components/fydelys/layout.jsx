@@ -113,7 +113,7 @@ function Sidebar({ active, onNav, studioName = "Mon studio", planName = "Essenti
         </div>
         <div>
           <div style={{ fontSize:14, fontWeight:600, color:C.text }}>{userName || "Utilisateur"}</div>
-          <div style={{ fontSize:12, color:C.textMuted }}>{userRole === "admin" ? "Admin" : userRole === "coach" ? "Coach" : userRole === "adherent" ? "Adhérent" : "Admin"}</div>
+          <div style={{ fontSize:12, color:C.textMuted }}>{userRole === "admin" ? "Admin" : userRole === "coach" ? "Coach" : userRole === "adherent" ? "Membre" : "Admin"}</div>
         </div>
       </div>
       <div style={{ padding:"5px 20px 8px", textAlign:"center" }}>

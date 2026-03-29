@@ -206,7 +206,7 @@ const ROLES_DEF = {
   superadmin: { label:"Super Admin", color:"#7C3AED", bg:"#F3EEFF", desc:"Accès complet à tous les tenants, configuration plateforme, facturation" },
   admin:      { label:"Admin",       color:"#B07848", bg:"#F5EBE0", desc:"Gestion complète du studio : membres, planning, paiements, paramètres" },
   staff:      { label:"Staff",       color:"#3A6E90", bg:"#E6EFF5", desc:"Accès planning et membres, pas d'accès aux paramètres ni paiements" },
-  adherent:   { label:"Adhérent",    color:"#4E8A58", bg:"#E6F2E8", desc:"Accès à son espace personnel, réservations et historique de séances" },
+  adherent:   { label:"Membre",      color:"#4E8A58", bg:"#E6F2E8", desc:"Accès à son espace personnel, réservations et historique de séances" },
 };
 
 

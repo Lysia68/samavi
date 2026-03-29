@@ -944,7 +944,7 @@ function Settings({ isMobile, onImpersonate }) {
       setConfirmAction(null);
     };
 
-    const roleLabel = { admin:"Admin", coach:"Coach", adherent:"Adhérent", superadmin:"Super Admin" };
+    const roleLabel = { admin:"Admin", coach:"Coach", adherent:"Membre", superadmin:"Super Admin" };
     const roleColor = { admin:C.accent, coach:"#7C3AED", adherent:"#3A6E46", superadmin:"#C43A3A" };
 
     if (loadingUsers) return <div style={{padding:32,textAlign:"center",color:C.textMuted}}>Chargement…</div>;
@@ -1490,10 +1490,12 @@ function Settings({ isMobile, onImpersonate }) {
                     style={{padding:"7px 14px",borderRadius:9,border:`1.5px solid ${C.border}`,background:C.surface,color:C.textMid,fontSize:12,fontWeight:600,cursor:"pointer",display:"flex",alignItems:"center",gap:5}}>
                     👤 Modifier
                   </button>
-                  <button onClick={()=>setCoachToDelete(coach)}
-                    style={{padding:"7px 10px",borderRadius:9,border:`1.5px solid #EFC8BC`,background:"transparent",color:"#A85030",fontSize:12,fontWeight:600,cursor:"pointer"}}>
-                    ✕
-                  </button>
+                  {coach.role !== "admin" && (
+                    <button onClick={()=>setCoachToDelete(coach)}
+                      style={{padding:"7px 10px",borderRadius:9,border:`1.5px solid #EFC8BC`,background:"transparent",color:"#A85030",fontSize:12,fontWeight:600,cursor:"pointer"}}>
+                      ✕
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
