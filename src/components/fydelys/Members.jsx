@@ -132,7 +132,7 @@ function Members({ isMobile, onImpersonate }) {
       console.log("[Members] trying Supabase client fallback...");
       const { data, error } = await createClient()
         .from("members")
-        .select("id,first_name,last_name,email,phone,address,postal_code,city,birth_date,status,credits,credits_total,joined_at,next_payment,notes,subscription_id,profile_complete,frozen_until,profession,facebook,subscriptions(name)")
+        .select("id,first_name,last_name,email,phone,address,postal_code,city,birth_date,status,credits,credits_total,joined_at,next_payment,notes,subscription_id,profile_complete,frozen_until,profession,facebook,subscriptions(name,period)")
         .eq("studio_id", studioId).order("last_name");
       console.log("[Members] fallback →", { count: data?.length, error: error?.message });
 
@@ -151,7 +151,7 @@ function Members({ isMobile, onImpersonate }) {
       birthDate:m.birth_date||"",
       status:m.status||"actif", credits:m.credits||0, creditTotal:m.credits_total||0,
       joined:m.joined_at, nextPayment:m.next_payment, notes:m.notes||"",
-      subscription:m.subscriptions?.name||"—", subscriptionId:m.subscription_id||null,
+      subscription:m.subscriptions?.name||"—", subscriptionId:m.subscription_id||null, subPeriod:m.subscriptions?.period||null,
       profileComplete:m.profile_complete, frozenUntil:m.frozen_until||null, profession:m.profession||"", facebook:m.facebook||"",
       avatar:(m.first_name?.[0]||"")+(m.last_name?.[0]||""),
     };
@@ -676,7 +676,7 @@ function Members({ isMobile, onImpersonate }) {
               style={{flex:1,padding:isMobile?"9px 12px":"10px 14px",paddingLeft:34,border:`1px solid ${C.border}`,borderRadius:8,fontSize:16,outline:"none",color:C.text,background:C.surfaceWarm,width:"100%"}}
               onFocus={e=>e.target.style.borderColor=C.accent} onBlur={e=>e.target.style.borderColor=C.border}/>
           </div>
-          <Button sm variant="ghost" onClick={()=>window.open(`/api/export?type=members&studioId=${studioId}`)}>CSV</Button>
+          <Button sm variant="ghost" onClick={()=>window.open(`/api/export?type=members&studioId=${studioId}`)}>Exporter</Button>
           <Button sm variant="primary" onClick={()=>{setShowAdd(!showAdd);setNM(EMPTY_FORM);setNMErrors({});}}>＋ {!isMobile&&"Membre"}</Button>
         </div>
 

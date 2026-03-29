@@ -123,7 +123,7 @@ const SUBSCRIPTIONS_INIT = SUBSCRIPTIONS_DEMO;
 
 // ── Plans Fydelys — modifier ici pour changer tarifs/limites ─────────────────
 // NOTE : toutes les formules incluent 15 jours d'essai gratuit avant paiement.
-// "Paiements adhérents" = module Stripe côté studio pour encaisser ses membres.
+// "Paiements membres" = module Stripe côté studio pour encaisser ses membres.
 const FYDELYS_PLANS = [
   {
     id: "essentiel",
@@ -132,18 +132,18 @@ const FYDELYS_PLANS = [
     desc: "Pour démarrer",
     color: "#5D6D7E",
     limits: {
-      members:      50,   // ← adhérents max
+      members:      50,   // ← membres max
       coaches:       1,   // ← coachs max
       disciplines:   1,   // ← disciplines max
     },
     features: [
       { label: "1 discipline",                    ok: true  },
       { label: "1 coach",                         ok: true  },
-      { label: "50 adhérents",                    ok: true  },
+      { label: "50 membres",                    ok: true  },
       { label: "Planning + présences",            ok: true  },
-      { label: "Espace adhérent (magic link)",    ok: true  },
+      { label: "Espace membre (magic link)",    ok: true  },
       { label: "Séances récurrentes",             ok: true  },
-      { label: "Paiements adhérents (Stripe)",    ok: false },
+      { label: "Paiements membres (Stripe)",    ok: false },
       { label: "Invitation d'équipe",             ok: false },
       { label: "Rappel cours 1h avant",                     ok: false },
       { label: "Support prioritaire",             ok: false },
@@ -157,18 +157,18 @@ const FYDELYS_PLANS = [
     color: "#A06838",
     popular: true,
     limits: {
-      members:      100,  // ← adhérents max
+      members:      100,  // ← membres max
       coaches:       3,   // ← coachs max
       disciplines:   3,   // ← disciplines max
     },
     features: [
       { label: "3 disciplines",                   ok: true  },
       { label: "3 coachs",                        ok: true  },
-      { label: "100 adhérents",                   ok: true  },
+      { label: "100 membres",                   ok: true  },
       { label: "Planning + présences",            ok: true  },
-      { label: "Espace adhérent (magic link)",    ok: true  },
+      { label: "Espace membre (magic link)",    ok: true  },
       { label: "Séances récurrentes",             ok: true  },
-      { label: "Paiements adhérents (Stripe)",    ok: true  },
+      { label: "Paiements membres (Stripe)",    ok: true  },
       { label: "Invitation d'équipe",             ok: true  },
       { label: "Rappel cours 1h avant",                     ok: true  },
       { label: "Support prioritaire",             ok: false },
@@ -188,11 +188,11 @@ const FYDELYS_PLANS = [
     features: [
       { label: "Disciplines illimitées",          ok: true  },
       { label: "Coachs illimités",                ok: true  },
-      { label: "Adhérents illimités",             ok: true  },
+      { label: "Membres illimités",             ok: true  },
       { label: "Planning + présences",            ok: true  },
-      { label: "Espace adhérent (magic link)",    ok: true  },
+      { label: "Espace membre (magic link)",    ok: true  },
       { label: "Séances récurrentes",             ok: true  },
-      { label: "Paiements adhérents (Stripe)",    ok: true  },
+      { label: "Paiements membres (Stripe)",    ok: true  },
       { label: "Invitation d'équipe",             ok: true  },
       { label: "Rappel cours 1h avant",                     ok: true  },
       { label: "Support prioritaire",             ok: true  },

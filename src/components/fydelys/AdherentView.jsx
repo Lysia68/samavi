@@ -279,15 +279,29 @@ function AdherentView({ onSwitch, isMobile, studioName = "", impersonateUserId =
       // En mode impersonate admin, utiliser l'userId ciblé ; sinon l'user connecté
       const targetUid = impersonateUserId || user.id;
       let member = null;
-      const { data: byUid } = await sb.from("members")
-        .select("id, first_name, last_name, email, status, credits, credits_total, created_at, phone, birth_date, address, postal_code, city, profession, profile_complete, subscription_id, subscriptions(period)")
-        .eq("studio_id", studioId).eq("auth_user_id", targetUid).maybeSingle();
-      member = byUid;
+      if (impersonateUserId) {
+        // Impersonate : chercher d'abord par member.id, puis par auth_user_id
+        const { data: byId } = await sb.from("members")
+          .select("id, first_name, last_name, email, status, credits, credits_total, created_at, phone, birth_date, address, postal_code, city, profession, facebook, profile_complete, subscription_id, subscriptions(period)")
+          .eq("studio_id", studioId).eq("id", targetUid).maybeSingle();
+        member = byId;
+        if (!member) {
+          const { data: byUid } = await sb.from("members")
+            .select("id, first_name, last_name, email, status, credits, credits_total, created_at, phone, birth_date, address, postal_code, city, profession, facebook, profile_complete, subscription_id, subscriptions(period)")
+            .eq("studio_id", studioId).eq("auth_user_id", targetUid).maybeSingle();
+          member = byUid;
+        }
+      } else {
+        const { data: byUid } = await sb.from("members")
+          .select("id, first_name, last_name, email, status, credits, credits_total, created_at, phone, birth_date, address, postal_code, city, profession, facebook, profile_complete, subscription_id, subscriptions(period)")
+          .eq("studio_id", studioId).eq("auth_user_id", targetUid).maybeSingle();
+        member = byUid;
+      }
 
       // Fallback email uniquement pour l'user réel (pas l'impersonate)
       if (!member && !impersonateUserId && user.email) {
         const { data: byEmail } = await sb.from("members")
-          .select("id, first_name, last_name, email, status, credits, credits_total, created_at, phone, birth_date, address, postal_code, city, profession, profile_complete, subscription_id, subscriptions(period)")
+          .select("id, first_name, last_name, email, status, credits, credits_total, created_at, phone, birth_date, address, postal_code, city, profession, facebook, profile_complete, subscription_id, subscriptions(period)")
           .eq("studio_id", studioId).eq("email", user.email).maybeSingle();
         member = byEmail;
         if (member) {
@@ -305,7 +319,7 @@ function AdherentView({ onSwitch, isMobile, studioName = "", impersonateUserId =
         window.history.replaceState({}, "", window.location.pathname);
         setTimeout(async () => {
           const { data: fresh } = await sb.from("members")
-            .select("id, first_name, last_name, email, status, credits, credits_total, created_at, phone, birth_date, address, postal_code, city, profession, profile_complete, subscription_id, subscriptions(period)")
+            .select("id, first_name, last_name, email, status, credits, credits_total, created_at, phone, birth_date, address, postal_code, city, profession, facebook, profile_complete, subscription_id, subscriptions(period)")
             .eq("id", member.id).maybeSingle();
           if (fresh) setMe(fresh);
         }, 2000);
@@ -550,10 +564,10 @@ function AdherentView({ onSwitch, isMobile, studioName = "", impersonateUserId =
         )}
 
         {/* Filtres disciplines */}
-        <div style={{ display:"flex", gap:8, marginBottom:16, flexWrap:"wrap" }}>
+        <div style={{ display:"flex", gap:8, marginBottom:16, flexWrap:isMobile?"nowrap":"wrap", overflowX:isMobile?"auto":"visible", WebkitOverflowScrolling:"touch", paddingBottom:isMobile?4:0 }}>
           {[{id:0,name:"Toutes",color:C.accent},...allDiscs].map(d=>(
             <button key={d.id} onClick={()=>setFilterDisc(d.id)}
-              style={{ fontSize:13, padding:"5px 14px", borderRadius:20, border:`1.5px solid ${filterDisc===d.id?d.color:C.border}`, background:filterDisc===d.id?d.color+"18":"transparent", color:filterDisc===d.id?d.color:C.textMid, cursor:"pointer", fontWeight:500 }}>
+              style={{ fontSize:13, padding:"5px 14px", borderRadius:20, border:`1.5px solid ${filterDisc===d.id?d.color:C.border}`, background:filterDisc===d.id?d.color+"18":"transparent", color:filterDisc===d.id?d.color:C.textMid, cursor:"pointer", fontWeight:500, flexShrink:0, whiteSpace:"nowrap" }}>
               {d.icon||""} {d.name}
             </button>
           ))}
@@ -601,25 +615,21 @@ function AdherentView({ onSwitch, isMobile, studioName = "", impersonateUserId =
                         ⚠ Séance annulée{isBooked ? " — votre réservation est automatiquement annulée" : ""}
                       </div>
                     )}
-                    <div style={{ display:"flex", alignItems:"flex-start", gap:12, flexWrap: isMobile ? "wrap" : "nowrap" }}>
-                      <div style={{ fontSize:isMobile?15:16, fontWeight:700, color:isCancelled?C.warn:C.accent, width:38, flexShrink:0, paddingTop:2 }}>{s.time}</div>
-                      <div style={{ flex:1, minWidth:0 }}>
-                        <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:2 }}>
-                          <span style={{ fontSize:isMobile?15:16, fontWeight:700, color:isCancelled?C.textMuted:C.text, textDecoration:isCancelled?"line-through":"none" }}>{s.discName}</span>
-                          {!isCancelled && <Pill color={s.discColor} bg={s.discColor+"18"}>{s.level}</Pill>}
-                          {isFull && !isBooked && !isCancelled && <Tag s="complet"/>}
-                        </div>
-                        <div style={{ fontSize:isMobile?14:15, color:C.textSoft, marginBottom:2 }}>{s.teacher} · {s.room} · {s.duration_min} min</div>
-                        {!isCancelled && (
-                          <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-                            <div style={{ flex:1, maxWidth:160, height:4, background:C.bgDeep, borderRadius:2 }}>
-                              <div style={{ height:"100%", width:`${Math.min(pct*100,100)}%`, background:pct>=1?C.warn:C.ok, borderRadius:2 }}/>
-                            </div>
-                            <span style={{ fontSize:12, fontWeight:600, color:pct>=1?C.warn:C.textSoft }}>{s.booked}/{s.spots} places</span>
+                    <div style={{ display:"flex", flexDirection:"column", gap:4 }}>
+                      <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                        <div style={{ fontSize:isMobile?15:16, fontWeight:700, color:isCancelled?C.warn:C.accent, flexShrink:0 }}>{s.time}</div>
+                        <span style={{ fontSize:isMobile?15:16, fontWeight:700, color:isCancelled?C.textMuted:C.text, textDecoration:isCancelled?"line-through":"none" }}>{s.discName}</span>
+                        {!isCancelled && <Pill color={s.discColor} bg={s.discColor+"18"}>{s.level}</Pill>}
+                        {isFull && !isBooked && !isCancelled && <Tag s="complet"/>}
+                        {!isCancelled && <div style={{ marginLeft:"auto", display:"flex", alignItems:"center", gap:6, flexShrink:0 }}>
+                          <div style={{ width:60, height:4, background:C.bgDeep, borderRadius:2 }}>
+                            <div style={{ height:"100%", width:`${Math.min(pct*100,100)}%`, background:pct>=1?C.warn:C.ok, borderRadius:2 }}/>
                           </div>
-                        )}
+                          <span style={{ fontSize:12, fontWeight:600, color:pct>=1?C.warn:C.textSoft, whiteSpace:"nowrap" }}>{s.booked}/{s.spots}</span>
+                        </div>}
                       </div>
-                      <div style={{ flexShrink:0, ...(isMobile ? { width:"100%", marginTop:8 } : {}) }}>
+                      <div style={{ fontSize:13, color:C.textSoft, paddingLeft:isMobile?0:0 }}>{s.teacher} · {s.room} · {s.duration_min} min</div>
+                      <div style={{ display:"flex", alignItems:"center", gap:8, marginTop:2 }}>
                         {isCancelled ? null : isBooked
                           ? (() => {
                               const [y,mo,d] = (s.date||"").split("-").map(Number);
@@ -682,7 +692,7 @@ function AdherentView({ onSwitch, isMobile, studioName = "", impersonateUserId =
       const sb = createClient();
       // Recharger credits + statut
       sb.from("members")
-        .select("id, first_name, last_name, email, status, credits, credits_total, created_at, phone, birth_date, address, postal_code, city, profession, profile_complete, subscription_id, subscriptions(period)")
+        .select("id, first_name, last_name, email, status, credits, credits_total, created_at, phone, birth_date, address, postal_code, city, profession, facebook, profile_complete, subscription_id, subscriptions(period)")
         .eq("id", me.id).maybeSingle()
         .then(({ data }) => { if (data) setMe(data); });
       // Recharger historique pour avoir les présences à jour

@@ -34,7 +34,7 @@ export default function App({
     settings:Settings, aide:AidePage,
   };
 const PAGE_TITLES = {
-  dashboard:"Tableau de bord", planning:"Planning", historique:"Historique", members:"Adhérents",
+  dashboard:"Tableau de bord", planning:"Planning", historique:"Historique", members:"Membres",
   subscriptions:"Abonnements", payments:"Paiements", disciplines:"Disciplines",
   settings:"Paramètres", aide:"Aide"
 };

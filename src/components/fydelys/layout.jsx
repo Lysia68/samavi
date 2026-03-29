@@ -36,7 +36,7 @@ const NAV = [
   {key:"dashboard",     label:"Tableau de bord"},
   {key:"planning",      label:"Planning"},
   {key:"historique",    label:"Historique"},
-  {key:"members",       label:"Adhérents"},
+  {key:"members",       label:"Membres"},
   {key:"subscriptions", label:"Abonnements"},
   {key:"payments",      label:"Paiements"},
   {key:"disciplines",   label:"Disciplines"},

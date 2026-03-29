@@ -152,12 +152,13 @@ function MemberRow({ m, onSelect, selected }) {
       </div>
       <div style={{ display:"flex", flexDirection:"column", alignItems:"flex-end", gap:5, flexShrink:0 }}>
         <Tag s={m.status}/>
-        {m.credits > 0
-          ? <Pill color={C.info} bg={C.infoBg}>{m.credits} crédits</Pill>
-          : (m.creditTotal > 0 || m.subscriptionId)
-            ? <Pill color="#C43A3A" bg="#FDE8E8">0 crédit</Pill>
-            : null
-        }
+        {(() => {
+          const unlimited = m.subPeriod && ["mois","trimestre","année","annuel","monthly","yearly"].includes(m.subPeriod);
+          if (unlimited) return <Pill color={C.ok} bg={C.okBg}>Abonnement</Pill>;
+          if (m.credits > 0) return <Pill color={C.info} bg={C.infoBg}>{m.credits} crédits</Pill>;
+          if (m.creditTotal > 0 || m.subscriptionId) return <Pill color="#C43A3A" bg="#FDE8E8">0 crédit</Pill>;
+          return null;
+        })()}
       </div>
     </div>
   );
