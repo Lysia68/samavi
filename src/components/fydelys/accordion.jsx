@@ -67,7 +67,7 @@ function AttendanceRow({ b, onMark }) {
   );
 }
 
-export function PlanningAccordion({ sess, sessId, bookings, onChangeStatus, onAddBooking, onSendReminder, onAttendanceChange }) {
+export function PlanningAccordion({ sess, sessId, bookings, onChangeStatus, onAddBooking, onSendReminder, onAttendanceChange, onDeleteBooking }) {
   const bl   = bookings[sessId] || [];
   const conf = bl.filter(b=>b.st==="confirmed");
   const wait = bl.filter(b=>b.st==="waitlist");
@@ -188,8 +188,10 @@ export function PlanningAccordion({ sess, sessId, bookings, onChangeStatus, onAd
               onMouseEnter={e=>e.currentTarget.style.background="#F5F0EA"}
               onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
               <div style={{ display:"flex", alignItems:"center", gap:9, marginBottom:6 }}>
-                <div style={{ width:30, height:30, borderRadius:"50%", background:C.accentBg, border:`1px solid #DFC0A0`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:12, fontWeight:700, color:C.accent, flexShrink:0 }}>{b.name?.[0]?.toUpperCase()}</div>
-                <div style={{ fontSize:15, fontWeight:700, color:C.text, flex:1 }}>{b.name}</div>
+                <div onClick={()=>b.memberId && window.dispatchEvent(new CustomEvent("fydelys:openMember", { detail: b.memberId }))}
+                  style={{ width:30, height:30, borderRadius:"50%", background:C.accentBg, border:`1px solid #DFC0A0`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:12, fontWeight:700, color:C.accent, flexShrink:0, cursor:b.memberId?"pointer":"default" }}>{b.name?.[0]?.toUpperCase()}</div>
+                <div onClick={()=>b.memberId && window.dispatchEvent(new CustomEvent("fydelys:openMember", { detail: b.memberId }))}
+                  style={{ fontSize:15, fontWeight:700, color:C.text, flex:1, cursor:b.memberId?"pointer":"default" }}>{b.name}</div>
                 <CreditBadge credits={b.credits} total={b.total} sub={b.sub} subPeriod={b.subPeriod}/>
               </div>
               <div style={{ display:"flex", alignItems:"center", gap:6, paddingLeft:39 }}>
@@ -205,6 +207,12 @@ export function PlanningAccordion({ sess, sessId, bookings, onChangeStatus, onAd
                 {b.st==="waitlist"  && <button onClick={()=>onChangeStatus(b.id,sessId,"confirmed")} style={{ display:"flex",alignItems:"center",gap:4, fontSize:12, padding:"3px 10px", borderRadius:7, fontWeight:600, border:`1px solid #B8DFC4`, color:C.ok,   background:C.okBg,   cursor:"pointer", whiteSpace:"nowrap", flexShrink:0 }}><IcoCheck s={12} c={C.ok}/>Confirmer</button>}
                 {b.st==="confirmed" && <button onClick={()=>onChangeStatus(b.id,sessId,"cancelled")} style={{ display:"flex",alignItems:"center",gap:4, fontSize:12, padding:"3px 10px", borderRadius:7, fontWeight:600, border:`1px solid #EFC8BC`, color:C.warn, background:C.warnBg, cursor:"pointer", whiteSpace:"nowrap", flexShrink:0 }}><IcoX s={12} c={C.warn}/>Annuler</button>}
                 {b.st==="cancelled" && <button onClick={()=>onChangeStatus(b.id,sessId,"confirmed")} style={{ display:"flex",alignItems:"center",gap:4, fontSize:12, padding:"3px 10px", borderRadius:7, fontWeight:600, border:`1px solid #B8CED8`, color:C.info, background:C.infoBg, cursor:"pointer", whiteSpace:"nowrap", flexShrink:0 }}><IcoUndo s={12} c={C.info}/>Remettre</button>}
+                {onDeleteBooking && <button onClick={()=>onDeleteBooking(b.id,sessId)} title="Retirer cette inscription"
+                  style={{ fontSize:11, padding:"2px 7px", borderRadius:6, border:`1px solid transparent`, background:"transparent", color:C.textMuted, cursor:"pointer", flexShrink:0, whiteSpace:"nowrap" }}
+                  onMouseEnter={e=>{e.currentTarget.style.borderColor="#EFC8BC";e.currentTarget.style.color="#A85030";e.currentTarget.style.background="#FDE8E8";}}
+                  onMouseLeave={e=>{e.currentTarget.style.borderColor="transparent";e.currentTarget.style.color=C.textMuted;e.currentTarget.style.background="transparent";}}>
+                  Retirer
+                </button>}
               </div>
             </div>
           ))}

@@ -78,7 +78,7 @@ function MemberForm({ value, onChange, errors={}, isMobile }) {
   );
 }
 
-function Members({ isMobile, onImpersonate }) {
+function Members({ isMobile, onImpersonate, openMemberId, onMemberOpened }) {
   const { studioId } = useContext(AppCtx);
   const [members, setMembers]       = useState([]);
   const [dbLoading, setDbLoading]   = useState(true);
@@ -100,6 +100,13 @@ function Members({ isMobile, onImpersonate }) {
   const filtered = members.filter(m =>
     `${m.firstName} ${m.lastName} ${m.email}`.toLowerCase().includes(search.toLowerCase())
   );
+
+  // Ouvrir le drawer d'un membre depuis le planning (événement fydelys:openMember)
+  useEffect(() => {
+    if (!openMemberId || !members.length) return;
+    const m = members.find(x => x.id === openMemberId);
+    if (m) { setSelected(m); onMemberOpened && onMemberOpened(); }
+  }, [openMemberId, members]);
 
   useEffect(() => {
     if (!studioId) return;

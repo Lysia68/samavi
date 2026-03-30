@@ -118,7 +118,7 @@ function DiscSelect({ label, value, onChange, options }) {
 }
 
 // ── Session card ─────────────────────────────────────────────────────────────
-function PlanningSessionCard({ sess, expandedId, bookings, discs, onToggle, onChangeStatus, onDelete, onCancel, onRestore, onAddBooking, onSendReminder, closures = [], isMobile = false, onConfirm, roomsList = [] }) {
+function PlanningSessionCard({ sess, expandedId, bookings, discs, onToggle, onChangeStatus, onDelete, onCancel, onRestore, onAddBooking, onSendReminder, onDeleteBooking, closures = [], isMobile = false, onConfirm, roomsList = [] }) {
   const allDiscs = discs?.length ? discs : DISCIPLINES;
   const disc = allDiscs.find(d => String(d.id) === String(sess.disciplineId)) || allDiscs[0] || { name: "Cours", color: C.accent, icon: "🧘" };
   const bl     = bookings[sess.id] || [];
@@ -255,7 +255,7 @@ function PlanningSessionCard({ sess, expandedId, bookings, discs, onToggle, onCh
       <style>{`@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }`}</style>
       {isExp && (
         <PlanningAccordion sess={sess} sessId={sess.id} bookings={bookings}
-          onChangeStatus={onChangeStatus} onAddBooking={onAddBooking} onSendReminder={onSendReminder} />
+          onChangeStatus={onChangeStatus} onAddBooking={onAddBooking} onSendReminder={onSendReminder} onDeleteBooking={onDeleteBooking} />
       )}
     </div>
   );
@@ -976,6 +976,17 @@ function Planning({ isMobile }) {
     showPlanToast(`${newSessions.length} séance${newSessions.length > 1 ? "s créées" : " créée"}`, true);
   };
 
+  const handleDeleteBooking = async (bid, sid) => {
+    // Supprimer le booking directement (hard delete, pas d'alerte)
+    setBookings(prev => {
+      const nb = { ...prev };
+      nb[sid] = (nb[sid] || []).filter(b => b.id !== bid);
+      return nb;
+    });
+    setSessions(prev => prev.map(s => s.id === sid ? { ...s, booked: Math.max(0, s.booked - 1) } : s));
+    await createClient().from("bookings").delete().eq("id", bid);
+  };
+
   const handleChangeStatus = async (bid, sid, ns) => {
     setBookings(prev => {
       const nb = { ...prev };
@@ -1519,6 +1530,7 @@ function Planning({ isMobile }) {
                 <PlanningSessionCard key={s.id} sess={s} expandedId={expandedId} bookings={bookings} discs={effectiveDiscs} closures={closures} isMobile={isMobile} onConfirm={openConfirm} roomsList={roomsList}
                   onToggle={id => setExpandedId(prev => prev === id ? null : id)}
                   onChangeStatus={handleChangeStatus}
+                  onDeleteBooking={handleDeleteBooking}
                   onAddBooking={id => setBookingModal(id)}
                   onSendReminder={handleSendReminder}
                   onDelete={deleteSession}

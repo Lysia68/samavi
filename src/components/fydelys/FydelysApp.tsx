@@ -145,10 +145,18 @@ const PAGE_TITLES = {
   };
 
   // Écouter les events de navigation inter-composants (ex: Dashboard → Settings)
+  const [pendingMemberId, setPendingMemberId] = useState<string|null>(null);
   React.useEffect(() => {
     const handler = (e: CustomEvent) => { if (e.detail) handleNav(e.detail); };
+    const memberHandler = (e: CustomEvent) => {
+      if (e.detail) { setPendingMemberId(e.detail); handleNav("members"); }
+    };
     window.addEventListener("fydelys:nav", handler as EventListener);
-    return () => window.removeEventListener("fydelys:nav", handler as EventListener);
+    window.addEventListener("fydelys:openMember", memberHandler as EventListener);
+    return () => {
+      window.removeEventListener("fydelys:nav", handler as EventListener);
+      window.removeEventListener("fydelys:openMember", memberHandler as EventListener);
+    };
   }, []);
 
   const [discs, setDiscs] = useState([]);
@@ -286,7 +294,7 @@ const PAGE_TITLES = {
             {page === "settings"
               ? <Settings isMobile={isMobile} onImpersonate={startImpersonate}/>
               : page === "members"
-                ? <Members isMobile={isMobile} onImpersonate={startImpersonate}/>
+                ? <Members isMobile={isMobile} onImpersonate={startImpersonate} openMemberId={pendingMemberId} onMemberOpened={()=>setPendingMemberId(null)}/>
                 : <Page isMobile={isMobile}/>
             }
           </div>

@@ -594,8 +594,24 @@ function AdherentView({ onSwitch, isMobile, studioName = "", impersonateUserId =
 
         {Object.keys(grouped).length === 0
           ? <EmptyState icon={<IcoCalendar2 s={40} c={C.textMuted}/>} title="Aucun cours planifié" sub="Aucune séance disponible pour le moment"/>
-          : Object.entries(grouped).sort(([a],[b])=>a>b?1:-1).map(([date,daySessions])=>(
+          : Object.entries(grouped).sort(([a],[b])=>a>b?1:-1).map(([date,daySessions])=>{
+            // Afficher les fermetures qui commencent ce jour
+            const closureForDate = closures.filter(c => c.date_start === date);
+            return (
             <div key={date} style={{ marginBottom:20 }}>
+              {closureForDate.map(c => {
+                const startFmt = new Date(c.date_start+"T12:00:00").toLocaleDateString("fr-FR",{day:"numeric",month:"long"});
+                const endFmt = new Date(c.date_end+"T12:00:00").toLocaleDateString("fr-FR",{day:"numeric",month:"long"});
+                return (
+                  <div key={c.id} style={{ display:"flex", alignItems:"center", gap:10, padding:"10px 14px", background:"#FFF8E8", border:"1.5px solid #F0D080", borderRadius:10, marginBottom:10 }}>
+                    <span style={{ fontSize:16 }}>🔒</span>
+                    <div style={{ flex:1 }}>
+                      <div style={{ fontSize:13, fontWeight:700, color:"#8B6914" }}>{c.label || "Fermeture"}</div>
+                      <div style={{ fontSize:12, color:"#8C7B6C" }}>{c.date_start === c.date_end ? startFmt : `Du ${startFmt} au ${endFmt}`}</div>
+                    </div>
+                  </div>
+                );
+              })}
               <DateLabel date={date}/>
               {daySessions.map(s=>{
                 const isBooked   = myBookings.includes(s.id);
@@ -678,7 +694,7 @@ function AdherentView({ onSwitch, isMobile, studioName = "", impersonateUserId =
                 );
               })}
             </div>
-          ))
+          );})
         }
       </div>
     );
