@@ -14,7 +14,7 @@ function ContactForm() {
     try {
       await fetch("/api/contact", {
         method:"POST", headers:{"Content-Type":"application/json"},
-        body: JSON.stringify({ name:`${form.firstName} ${form.lastName}`, email:form.email, subject:`Demande de renseignement — ${form.studio||"Sans studio"}`, message:`Studio: ${form.studio}\nActivité: ${form.activity}\nTel: ${form.phone}\n\n${form.message}` }),
+        body: JSON.stringify({ name:`${form.firstName} ${form.lastName}`.trim(), email:form.email, studio:form.studio, phone:form.phone, activity:form.activity, subject:`Demande de renseignement — ${form.studio||form.firstName}`, message:form.message }),
       });
       setSent(true);
     } catch {}
@@ -55,68 +55,100 @@ function ContactForm() {
   );
 }
 
-function LandingAlbertChat() {
-  const [messages, setMessages] = useState<{role:string,text:string}[]>([]);
-  const [input, setInput] = useState("");
-  const [loading, setLoading] = useState(false);
-  const chatRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    if (chatRef.current) chatRef.current.scrollTop = chatRef.current.scrollHeight;
-  }, [messages]);
 
-  const send = async () => {
-    const q = input.trim();
-    if (!q || loading) return;
-    setInput("");
-    setMessages(prev => [...prev, { role:"user", text:q }]);
-    setLoading(true);
+function FloatingContact() {
+  const [open, setOpen] = useState(false);
+  const [form, setForm] = useState({ firstName:"", lastName:"", email:"", phone:"", studio:"", message:"" });
+  const [sending, setSending] = useState(false);
+  const [sent, setSent] = useState(false);
+  const inp = { width:"100%", padding:"9px 12px", border:"1.5px solid #DDD5C8", borderRadius:8, fontSize:13, outline:"none", boxSizing:"border-box" as const, color:"#2A1F14", background:"#FDFAF7", fontFamily:"inherit" };
+  const lbl = { fontSize:10, fontWeight:700 as const, color:"#8C7B6C", textTransform:"uppercase" as const, letterSpacing:0.6, display:"block" as const, marginBottom:4 };
+
+  const handleSend = async () => {
+    if (!form.firstName || !form.email || !form.message) return;
+    setSending(true);
     try {
-      const res = await fetch("/api/albert", {
+      await fetch("/api/contact", {
         method:"POST", headers:{"Content-Type":"application/json"},
-        body: JSON.stringify({ question:q, studioName:"Visiteur", history:messages.slice(-6) }),
+        body: JSON.stringify({ name:`${form.firstName} ${form.lastName}`.trim(), email:form.email, studio:form.studio, phone:form.phone, subject:`Contact landing — ${form.studio||form.firstName}`, message:form.message }),
       });
-      const data = await res.json();
-      setMessages(prev => [...prev, { role:"albert", text:data.answer||"Je ne suis pas sûr de comprendre. Reformulez ou contactez-nous via le formulaire ci-dessus." }]);
-    } catch {
-      setMessages(prev => [...prev, { role:"albert", text:"Erreur réseau. Réessayez." }]);
-    }
-    setLoading(false);
+      setSent(true);
+    } catch {}
+    setSending(false);
   };
 
   return (
-    <div style={{background:"#2A1F14",borderRadius:16,padding:24,color:"#fff"}}>
-      <div style={{display:"flex",alignItems:"center",gap:14,marginBottom:messages.length?16:0}}>
-        <img src="/images/albert-sm.png" alt="Albert" width={64} height={64} style={{borderRadius:"50%",objectFit:"cover",flexShrink:0}}/>
-        <div>
-          <div style={{fontSize:18,fontWeight:800}}>Je suis Albert</div>
-          <div style={{fontSize:13,color:"rgba(255,255,255,.6)"}}>Posez-moi une question sur Fydelys !</div>
-        </div>
-      </div>
-      {messages.length > 0 && (
-        <div ref={chatRef} style={{maxHeight:300,overflowY:"auto",marginBottom:12,padding:"12px 0",borderTop:"1px solid rgba(255,255,255,.1)"}}>
-          {messages.map((m,i) => (
-            <div key={i} style={{display:"flex",gap:10,marginBottom:10,justifyContent:m.role==="user"?"flex-end":"flex-start"}}>
-              {m.role==="albert" && <img src="/images/albert-sm.png" alt="" width={28} height={28} style={{borderRadius:"50%",objectFit:"cover",flexShrink:0}}/>}
-              <div style={{maxWidth:"80%",padding:"10px 14px",borderRadius:12,background:m.role==="user"?"rgba(255,255,255,.15)":"rgba(245,213,168,.15)",color:"#fff",fontSize:13,lineHeight:1.6}}>
-                {m.text}
-              </div>
+    <>
+      {/* Bulle */}
+      <button onClick={()=>setOpen(o=>!o)}
+        style={{ position:"fixed", bottom:24, right:24, zIndex:9000, width:56, height:56, borderRadius:"50%",
+          background:"linear-gradient(145deg,#B88050,#9A6030)", border:"none", cursor:"pointer",
+          boxShadow:"0 4px 20px rgba(42,31,20,.3)", display:"flex", alignItems:"center", justifyContent:"center",
+          transition:"transform .2s", transform:open?"rotate(45deg)":"none" }}>
+        {open
+          ? <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          : <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        }
+      </button>
+
+      {/* Badge compteur */}
+      {!open && !sent && (
+        <div style={{ position:"fixed", bottom:68, right:24, zIndex:9001, background:"#C43A3A", color:"#fff", fontSize:11, fontWeight:700, width:20, height:20, borderRadius:"50%", display:"flex", alignItems:"center", justifyContent:"center", pointerEvents:"none" }}>1</div>
+      )}
+
+      {/* Panel */}
+      {open && (
+        <div style={{ position:"fixed", bottom:92, right:24, zIndex:9000, width:340, maxWidth:"calc(100vw - 48px)",
+          background:"#fff", borderRadius:16, border:"1.5px solid #DDD5C8", boxShadow:"0 12px 48px rgba(42,31,20,.18)",
+          overflow:"hidden", animation:"slideUp .2s ease" }}>
+          <style>{`@keyframes slideUp { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:none; } }`}</style>
+
+          {/* Header */}
+          <div style={{ background:"linear-gradient(135deg,#2A1F14,#5C3D20)", padding:"16px 20px", display:"flex", alignItems:"center", gap:10 }}>
+            <div style={{ width:36, height:36, borderRadius:"50%", background:"#F5D5A8", display:"flex", alignItems:"center", justifyContent:"center", fontSize:18, flexShrink:0 }}>💬</div>
+            <div>
+              <div style={{ fontSize:15, fontWeight:700, color:"#fff" }}>Contactez-nous</div>
+              <div style={{ fontSize:11, color:"rgba(255,255,255,.5)" }}>Réponse sous 24h</div>
             </div>
-          ))}
-          {loading && <div style={{display:"flex",gap:10}}><img src="/images/albert-sm.png" alt="" width={28} height={28} style={{borderRadius:"50%",objectFit:"cover",flexShrink:0}}/><div style={{padding:"10px 14px",borderRadius:12,background:"rgba(245,213,168,.15)",color:"rgba(255,255,255,.5)",fontSize:13}}>Albert réfléchit...</div></div>}
+          </div>
+
+          {/* Body */}
+          <div style={{ padding:16, maxHeight:400, overflowY:"auto" }}>
+            {sent ? (
+              <div style={{ textAlign:"center", padding:"24px 0" }}>
+                <div style={{ fontSize:32, marginBottom:10 }}>✅</div>
+                <div style={{ fontSize:15, fontWeight:700, color:"#2A6638", marginBottom:6 }}>Message envoyé !</div>
+                <div style={{ fontSize:13, color:"#4E8A58" }}>Nous vous répondrons rapidement.</div>
+                <button onClick={()=>{setSent(false);setForm({firstName:"",lastName:"",email:"",phone:"",studio:"",message:""});}}
+                  style={{ marginTop:14, padding:"6px 16px", borderRadius:8, border:"1.5px solid #A8D5B0", background:"transparent", color:"#4E8A58", fontSize:12, fontWeight:600, cursor:"pointer" }}>
+                  Nouveau message
+                </button>
+              </div>
+            ) : (
+              <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
+                <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8 }}>
+                  <div><label style={lbl}>Prénom *</label><input value={form.firstName} onChange={e=>setForm(f=>({...f,firstName:e.target.value}))} style={inp} placeholder="Jean"/></div>
+                  <div><label style={lbl}>Nom</label><input value={form.lastName} onChange={e=>setForm(f=>({...f,lastName:e.target.value}))} style={inp} placeholder="Dupont"/></div>
+                </div>
+                <div><label style={lbl}>Email *</label><input type="email" value={form.email} onChange={e=>setForm(f=>({...f,email:e.target.value}))} style={inp} placeholder="jean@studio.fr"/></div>
+                <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8 }}>
+                  <div><label style={lbl}>Téléphone</label><input type="tel" value={form.phone} onChange={e=>setForm(f=>({...f,phone:e.target.value}))} style={inp} placeholder="06 12 34 56 78"/></div>
+                  <div><label style={lbl}>Studio</label><input value={form.studio} onChange={e=>setForm(f=>({...f,studio:e.target.value}))} style={inp} placeholder="Mon Studio"/></div>
+                </div>
+                <div><label style={lbl}>Message *</label><textarea value={form.message} onChange={e=>setForm(f=>({...f,message:e.target.value}))} rows={3} style={{...inp,resize:"vertical" as any}} placeholder="Votre question..."/></div>
+                <button onClick={handleSend} disabled={sending || !form.firstName || !form.email || !form.message}
+                  style={{ width:"100%", padding:"11px", borderRadius:10, border:"none",
+                    background:sending||!form.firstName||!form.email||!form.message?"#DDD5C8":"linear-gradient(145deg,#B88050,#9A6030)",
+                    color:"#fff", fontSize:14, fontWeight:700, cursor:sending?"wait":"pointer" }}>
+                  {sending ? "Envoi..." : "Envoyer"}
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       )}
-      <div style={{display:"flex",gap:8,marginTop:messages.length?0:12}}>
-        <input value={input} onChange={e=>setInput(e.target.value)}
-          onKeyDown={e=>{if(e.key==="Enter"){e.preventDefault();send();}}}
-          placeholder="Ex : Comment fonctionne Fydelys ?"
-          style={{flex:1,padding:"10px 14px",borderRadius:10,border:"1.5px solid rgba(255,255,255,.2)",background:"rgba(255,255,255,.1)",color:"#fff",fontSize:14,outline:"none",fontFamily:"inherit"}}/>
-        <button onClick={send} disabled={loading||!input.trim()}
-          style={{padding:"10px 18px",borderRadius:10,border:"none",background:"#F5D5A8",color:"#2A1F14",fontSize:14,fontWeight:700,cursor:loading?"wait":"pointer",opacity:loading||!input.trim()?.5:1}}>
-          Envoyer
-        </button>
-      </div>
-    </div>
+    </>
   );
 }
 
@@ -811,19 +843,6 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── ASSISTANCE ALBERT ── */}
-      <section id="assistance" style={{padding:"64px 0",background:"var(--bg2)"}}>
-        <div style={{maxWidth:600,margin:"0 auto",padding:"0 20px"}}>
-          <h2 style={{fontFamily:"var(--D)",fontSize:"clamp(28px,4vw,40px)",fontWeight:700,color:"var(--dark)",textAlign:"center",marginBottom:8,letterSpacing:"-0.5px"}}>
-            Assistance
-          </h2>
-          <p style={{textAlign:"center",color:"var(--muted)",fontSize:15,marginBottom:32}}>
-            Albert, notre assistant IA, répond à vos questions en temps réel.
-          </p>
-          <LandingAlbertChat/>
-        </div>
-      </section>
-
       {/* ── FOOTER ── */}
       <footer>
         <div className="footer-top">
@@ -853,7 +872,7 @@ export default function LandingPage() {
             <div className="footer-h">Support</div>
             <div className="footer-links">
               <a href="#contact" className="footer-link">Contact</a>
-              <a href="#assistance" className="footer-link">Assistance</a>
+              <a href="mailto:support@fydelys.fr" className="footer-link">Assistance</a>
             </div>
           </div>
           {/* Légal */}
@@ -875,6 +894,9 @@ export default function LandingPage() {
           </div>
         </div>
       </footer>
+
+      {/* ── BULLE CONTACT FLOTTANTE ── */}
+      <FloatingContact/>
     </>
   )
 }
