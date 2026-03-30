@@ -664,17 +664,19 @@ function AdherentView({ onSwitch, isMobile, studioName = "", impersonateUserId =
                     <div style={{ display:"flex", flexDirection:"column", gap:4 }}>
                       <div style={{ display:"flex", alignItems:"center", gap:8 }}>
                         <div style={{ fontSize:isMobile?15:16, fontWeight:700, color:isCancelled?C.warn:C.accent, flexShrink:0 }}>{s.time}</div>
-                        <span style={{ fontSize:isMobile?15:16, fontWeight:700, color:isCancelled?C.textMuted:C.text, textDecoration:isCancelled?"line-through":"none" }}>{s.discName}</span>
-                        {!isCancelled && <Pill color={s.discColor} bg={s.discColor+"18"}>{s.level}</Pill>}
+                        <span style={{ fontSize:isMobile?15:16, fontWeight:700, color:isCancelled?C.textMuted:C.text, textDecoration:isCancelled?"line-through":"none", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{s.discName}</span>
                         {isFull && !isBooked && !isCancelled && <Tag s="complet"/>}
                         {!isCancelled && <div style={{ marginLeft:"auto", display:"flex", alignItems:"center", gap:6, flexShrink:0 }}>
-                          <div style={{ width:60, height:4, background:C.bgDeep, borderRadius:2 }}>
+                          <div style={{ width:50, height:4, background:C.bgDeep, borderRadius:2 }}>
                             <div style={{ height:"100%", width:`${Math.min(pct*100,100)}%`, background:pct>=1?C.warn:C.ok, borderRadius:2 }}/>
                           </div>
                           <span style={{ fontSize:12, fontWeight:600, color:pct>=1?C.warn:C.textSoft, whiteSpace:"nowrap" }}>{s.booked}/{s.spots}</span>
                         </div>}
                       </div>
-                      <div style={{ fontSize:13, color:C.textSoft, paddingLeft:isMobile?0:0 }}>{s.teacher} · {s.room} · {s.duration_min} min</div>
+                      <div style={{ fontSize:13, color:C.textSoft, display:"flex", alignItems:"center", gap:6 }}>
+                        {s.teacher} · {s.room} · {s.duration_min} min
+                        {!isCancelled && <Pill color={s.discColor} bg={s.discColor+"18"}>{s.level}</Pill>}
+                      </div>
                       <div style={{ display:"flex", alignItems:"center", gap:8, marginTop:2 }}>
                         {isCancelled ? null : isBooked
                           ? (() => {
