@@ -857,7 +857,7 @@ function AideIllustration({ type, color = "#3A6E90" }) {
 
 const AlbertAvatar = ({ size = 64 }) => {
   const [err, setErr] = React.useState(false);
-  const s = { width:size, height:size, minWidth:size, minHeight:size, maxWidth:size, maxHeight:size, borderRadius:"50%", flexShrink:0, objectFit:"cover" as const };
+  const s = { width:size, height:size, minWidth:size, minHeight:size, maxWidth:size, maxHeight:size, borderRadius:"50%", flexShrink:0, objectFit:"cover" };
   if (err) return <div style={{...s, background:"#F5D5A8", display:"flex", alignItems:"center", justifyContent:"center", fontSize:size*0.4}}>🤓</div>;
   return <img src="/images/albert-sm.png" alt="Albert" onError={()=>setErr(true)} style={s}/>;
 };
