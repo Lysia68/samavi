@@ -200,7 +200,13 @@ function Members({ isMobile, onImpersonate }) {
     if (Object.keys(errs).length) return;
     const id=selected.id;
     const updated={...selected,...editForm,postalCode:editForm.postalCode,avatar:(editForm.firstName[0]||"")+(editForm.lastName[0]||"")};
-    setMembers(prev=>prev.map(m=>m.id===id?updated:m)); setSelected(updated); setEditMode(false);
+    // Fermer le mode edit d'abord, puis mettre à jour les données en un seul batch
+    setEditMode(false);
+    // Petit délai pour laisser la modale se fermer avant de mettre à jour le drawer
+    requestAnimationFrame(() => {
+      setMembers(prev=>prev.map(m=>m.id===id?updated:m));
+      setSelected(updated);
+    });
     const res = await fetch("/api/members", { method:"PATCH", headers:{"Content-Type":"application/json"},
       body: JSON.stringify({ id, ...dbPayload(editForm) }) });
     const json = await res.json();

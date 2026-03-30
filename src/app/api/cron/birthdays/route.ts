@@ -28,7 +28,7 @@ export async function GET(request: Request) {
     .select("id, first_name, last_name, email, birth_date, studio_id, studios(name, slug, email)")
     .not("birth_date", "is", null)
     .not("email", "is", null)
-    .eq("status", "Actif")
+    .in("status", ["actif", "Actif", "nouveau"])
 
   if (!members?.length) return NextResponse.json({ ok: true, sent: 0 })
 
