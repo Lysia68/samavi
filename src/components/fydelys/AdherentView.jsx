@@ -592,26 +592,56 @@ function AdherentView({ onSwitch, isMobile, studioName = "", impersonateUserId =
           );
         })}
 
-        {Object.keys(grouped).length === 0
-          ? <EmptyState icon={<IcoCalendar2 s={40} c={C.textMuted}/>} title="Aucun cours planifié" sub="Aucune séance disponible pour le moment"/>
-          : Object.entries(grouped).sort(([a],[b])=>a>b?1:-1).map(([date,daySessions])=>{
-            // Afficher les fermetures qui commencent ce jour
-            const closureForDate = closures.filter(c => c.date_start === date);
-            return (
-            <div key={date} style={{ marginBottom:20 }}>
-              {closureForDate.map(c => {
-                const startFmt = new Date(c.date_start+"T12:00:00").toLocaleDateString("fr-FR",{day:"numeric",month:"long"});
-                const endFmt = new Date(c.date_end+"T12:00:00").toLocaleDateString("fr-FR",{day:"numeric",month:"long"});
-                return (
-                  <div key={c.id} style={{ display:"flex", alignItems:"center", gap:10, padding:"10px 14px", background:"#FFF8E8", border:"1.5px solid #F0D080", borderRadius:10, marginBottom:10 }}>
+        {(() => {
+          // Construire une timeline mixte : jours de sessions + fermetures
+          const timeline = [];
+          // Ajouter les jours de sessions
+          Object.entries(grouped).forEach(([date, daySessions]) => {
+            timeline.push({ type: "day", date, sessions: daySessions });
+          });
+          // Ajouter les fermetures (même sans sessions ce jour-là)
+          const seenClosures = new Set();
+          closures.forEach(c => {
+            if (seenClosures.has(c.id)) return;
+            seenClosures.add(c.id);
+            // Insérer la fermeture à sa date de début
+            const alreadyHasDay = timeline.some(t => t.type === "day" && t.date === c.date_start);
+            timeline.push({ type: "closure", date: c.date_start, closure: c, standalone: !alreadyHasDay });
+          });
+          // Trier par date, fermetures avant sessions du même jour
+          timeline.sort((a, b) => {
+            if (a.date !== b.date) return a.date > b.date ? 1 : -1;
+            if (a.type === "closure" && b.type === "day") return -1;
+            return 1;
+          });
+
+          if (timeline.filter(t => t.type === "day").length === 0 && closures.length === 0)
+            return <EmptyState icon={<IcoCalendar2 s={40} c={C.textMuted}/>} title="Aucun cours planifié" sub="Aucune séance disponible pour le moment"/>;
+
+          return timeline.map((item, idx) => {
+            if (item.type === "closure") {
+              const c = item.closure;
+              const startFmt = new Date(c.date_start+"T12:00:00").toLocaleDateString("fr-FR",{day:"numeric",month:"long"});
+              const endFmt = new Date(c.date_end+"T12:00:00").toLocaleDateString("fr-FR",{day:"numeric",month:"long"});
+              const isNow = c.date_start <= new Date().toISOString().slice(0,10) && c.date_end >= new Date().toISOString().slice(0,10);
+              return (
+                <div key={`closure-${c.id}`} style={{ marginBottom:12 }}>
+                  <div style={{ display:"flex", alignItems:"center", gap:10, padding:"10px 14px", background:isNow?"#FDE8E8":"#FFF8E8", border:`1.5px solid ${isNow?"#F5C2C2":"#F0D080"}`, borderRadius:10 }}>
                     <span style={{ fontSize:16 }}>🔒</span>
                     <div style={{ flex:1 }}>
-                      <div style={{ fontSize:13, fontWeight:700, color:"#8B6914" }}>{c.label || "Fermeture"}</div>
-                      <div style={{ fontSize:12, color:"#8C7B6C" }}>{c.date_start === c.date_end ? startFmt : `Du ${startFmt} au ${endFmt}`}</div>
+                      <div style={{ fontSize:13, fontWeight:700, color:isNow?"#C43A3A":"#8B6914" }}>{c.label || "Fermeture"}</div>
+                      <div style={{ fontSize:12, color:isNow?"#A85030":"#8C7B6C" }}>{c.date_start === c.date_end ? startFmt : `Du ${startFmt} au ${endFmt}`}</div>
                     </div>
+                    {isNow && <span style={{ fontSize:11, fontWeight:700, padding:"2px 8px", borderRadius:8, background:"#C43A3A", color:"#fff" }}>En cours</span>}
                   </div>
-                );
-              })}
+                </div>
+              );
+            }
+
+            const date = item.date;
+            const daySessions = item.sessions;
+            return (
+            <div key={date} style={{ marginBottom:20 }}>
               <DateLabel date={date}/>
               {daySessions.map(s=>{
                 const isBooked   = myBookings.includes(s.id);
@@ -694,8 +724,9 @@ function AdherentView({ onSwitch, isMobile, studioName = "", impersonateUserId =
                 );
               })}
             </div>
-          );})
-        }
+          );
+          });
+        })()}
       </div>
     );
   }

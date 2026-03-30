@@ -194,21 +194,21 @@ export function PlanningAccordion({ sess, sessId, bookings, onChangeStatus, onAd
                   style={{ fontSize:15, fontWeight:700, color:C.text, flex:1, cursor:b.memberId?"pointer":"default" }}>{b.name}</div>
                 <CreditBadge credits={b.credits} total={b.total} sub={b.sub} subPeriod={b.subPeriod}/>
               </div>
-              <div style={{ display:"flex", alignItems:"center", gap:5, paddingLeft:isMobile?0:39, flexWrap:"wrap" }}>
-                <span style={{ padding:"3px 8px", borderRadius:20, fontSize:11, fontWeight:600, whiteSpace:"nowrap", flexShrink:0, ...stStyle(b.st) }}>
+              <div style={{ display:"flex", alignItems:"center", gap:6, paddingLeft:39, flexWrap:"wrap" }}>
+                <span style={{ padding:"3px 10px", borderRadius:20, fontSize:12, fontWeight:600, whiteSpace:"nowrap", flexShrink:0, ...stStyle(b.st) }}>
                   {stLbl(b.st)}{b.st==="cancelled" && b.cancelledBy ? ` · ${b.cancelledBy}` : ""}
                 </span>
                 {b.phone && (
                   <a href={`tel:${b.phone}`}
-                    style={{ display:"flex", alignItems:"center", gap:3, fontSize:11, color:C.textSoft, textDecoration:"none", padding:"2px 6px", borderRadius:7, border:`1px solid ${C.borderSoft}`, background:C.surface, flexShrink:0, whiteSpace:"nowrap" }}>
-                    <IcoPhone s={11} c={C.textMuted}/> {isMobile ? b.phone.replace(/\s/g,"").slice(-4) : b.phone}
+                    style={{ display:"flex", alignItems:"center", gap:3, fontSize:12, color:C.textSoft, textDecoration:"none", padding:"3px 7px", borderRadius:7, border:`1px solid ${C.borderSoft}`, background:C.surface, flexShrink:0, whiteSpace:"nowrap" }}>
+                    <IcoPhone s={12} c={C.textMuted}/> {b.phone}
                   </a>
                 )}
-                {b.st==="waitlist"  && <button onClick={()=>onChangeStatus(b.id,sessId,"confirmed")} style={{ display:"flex",alignItems:"center",gap:3, fontSize:11, padding:"2px 8px", borderRadius:7, fontWeight:600, border:`1px solid #B8DFC4`, color:C.ok,   background:C.okBg,   cursor:"pointer", whiteSpace:"nowrap", flexShrink:0 }}><IcoCheck s={11} c={C.ok}/>{isMobile?"OK":"Confirmer"}</button>}
-                {b.st==="confirmed" && <button onClick={()=>onChangeStatus(b.id,sessId,"cancelled")} style={{ display:"flex",alignItems:"center",gap:3, fontSize:11, padding:"2px 8px", borderRadius:7, fontWeight:600, border:`1px solid #EFC8BC`, color:C.warn, background:C.warnBg, cursor:"pointer", whiteSpace:"nowrap", flexShrink:0 }}><IcoX s={11} c={C.warn}/>{isMobile?"":"Annuler"}</button>}
-                {b.st==="cancelled" && <button onClick={()=>onChangeStatus(b.id,sessId,"confirmed")} style={{ display:"flex",alignItems:"center",gap:3, fontSize:11, padding:"2px 8px", borderRadius:7, fontWeight:600, border:`1px solid #B8CED8`, color:C.info, background:C.infoBg, cursor:"pointer", whiteSpace:"nowrap", flexShrink:0 }}><IcoUndo s={11} c={C.info}/>{isMobile?"":"Remettre"}</button>}
-                {onDeleteBooking && !isMobile && <button onClick={()=>onDeleteBooking(b.id,sessId)} title="Retirer cette inscription"
-                  style={{ fontSize:11, padding:"2px 7px", borderRadius:6, border:`1px solid transparent`, background:"transparent", color:C.textMuted, cursor:"pointer", flexShrink:0, whiteSpace:"nowrap" }}
+                {b.st==="waitlist"  && <button onClick={()=>onChangeStatus(b.id,sessId,"confirmed")} style={{ display:"flex",alignItems:"center",gap:4, fontSize:12, padding:"3px 10px", borderRadius:7, fontWeight:600, border:`1px solid #B8DFC4`, color:C.ok,   background:C.okBg,   cursor:"pointer", whiteSpace:"nowrap", flexShrink:0 }}><IcoCheck s={12} c={C.ok}/>Confirmer</button>}
+                {b.st==="confirmed" && <button onClick={()=>onChangeStatus(b.id,sessId,"cancelled")} style={{ display:"flex",alignItems:"center",gap:4, fontSize:12, padding:"3px 10px", borderRadius:7, fontWeight:600, border:`1px solid #EFC8BC`, color:C.warn, background:C.warnBg, cursor:"pointer", whiteSpace:"nowrap", flexShrink:0 }}><IcoX s={12} c={C.warn}/>Annuler</button>}
+                {b.st==="cancelled" && <button onClick={()=>onChangeStatus(b.id,sessId,"confirmed")} style={{ display:"flex",alignItems:"center",gap:4, fontSize:12, padding:"3px 10px", borderRadius:7, fontWeight:600, border:`1px solid #B8CED8`, color:C.info, background:C.infoBg, cursor:"pointer", whiteSpace:"nowrap", flexShrink:0 }}><IcoUndo s={12} c={C.info}/>Remettre</button>}
+                {onDeleteBooking && <button onClick={()=>onDeleteBooking(b.id,sessId)} title="Retirer cette inscription"
+                  style={{ fontSize:12, padding:"3px 8px", borderRadius:7, border:`1px solid transparent`, background:"transparent", color:C.textMuted, cursor:"pointer", flexShrink:0, whiteSpace:"nowrap" }}
                   onMouseEnter={e=>{e.currentTarget.style.borderColor="#EFC8BC";e.currentTarget.style.color="#A85030";e.currentTarget.style.background="#FDE8E8";}}
                   onMouseLeave={e=>{e.currentTarget.style.borderColor="transparent";e.currentTarget.style.color=C.textMuted;e.currentTarget.style.background="transparent";}}>
                   Retirer

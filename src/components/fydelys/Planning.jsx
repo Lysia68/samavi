@@ -224,6 +224,24 @@ function PlanningSessionCard({ sess, expandedId, bookings, discs, onToggle, onCh
         {sessionStatus === "closed"    && <span style={{ fontSize:12 }}>🔒</span>}
         {displayStatus === "full"      && <span style={{ fontSize:12 }}>🔒</span>}
         <span style={{ fontSize:11, fontWeight:700, color:statusStyle.color, letterSpacing:.3, textTransform:"uppercase" }}>{statusLabel[displayStatus]}</span>
+        {(sessionStatus === "upcoming" || sessionStatus === "ongoing") && (() => {
+          const bl = bookings[sess.id] || [];
+          const confirmed = bl.filter(b => b.st === "confirmed").length;
+          const waitlisted = bl.filter(b => b.st === "waitlist").length;
+          if (confirmed === 0 && waitlisted === 0) return null;
+          return (
+            <span style={{ marginLeft:"auto", display:"flex", alignItems:"center", gap:6 }}>
+              <span style={{ fontSize:11, fontWeight:700, padding:"1px 7px", borderRadius:10, background:C.okBg, color:C.ok }}>
+                {confirmed} inscrit{confirmed>1?"s":""}
+              </span>
+              {waitlisted > 0 && (
+                <span style={{ fontSize:11, fontWeight:700, padding:"1px 7px", borderRadius:10, background:C.accentBg, color:C.accent }}>
+                  {waitlisted} att.
+                </span>
+              )}
+            </span>
+          );
+        })()}
         {sessionStatus === "past" && (() => {
           const bl = bookings[sess.id] || [];
           const confirmed = bl.filter(b => b.st === "confirmed");
