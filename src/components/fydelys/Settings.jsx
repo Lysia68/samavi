@@ -370,65 +370,47 @@ function Settings({ isMobile, onImpersonate }) {
   };
 
   // ── Modal: 2FA ────────────────────────────────────────────────────────────
-  const TwoFAModal = () => {
-    const [step, setStep] = useState(1);
-    const [code, setCode] = useState("");
-    return (
-      <Modal>
-        <MHead title="Authentification à 2 facteurs"/>
-        {step===1 && (
-          <>
-            <div style={{ textAlign:"center", padding:"20px 0" }}>
-              <div style={{ width:160, height:160, background:"#F0EBE3", borderRadius:12, margin:"0 auto 16px", display:"flex", alignItems:"center", justifyContent:"center", fontSize:13, color:C.textMuted }}>QR Code<br/>2FA</div>
-              <div style={{ fontSize:13, color:C.textSoft }}>Scannez ce QR code avec<br/><strong>Google Authenticator</strong> ou <strong>Authy</strong></div>
-            </div>
-            <div style={{ padding:"8px 14px", background:C.bg, borderRadius:8, fontFamily:"monospace", fontSize:13, color:C.text, textAlign:"center", marginBottom:16, letterSpacing:2 }}>JBSWY3DPEHPK3PXP</div>
-            <Button variant="primary" onClick={()=>setStep(2)} block>J'ai scanné le QR code</Button>
-          </>
-        )}
-        {step===2 && (
-          <>
-            <div style={{ fontSize:14, color:C.textSoft, marginBottom:16 }}>Entrez le code à 6 chiffres généré par votre application :</div>
-            <input value={code} onChange={e=>setCode(e.target.value)} maxLength={6} placeholder="000000"
-              style={{ width:"100%", padding:"12px", border:`1.5px solid ${C.border}`, borderRadius:8, fontSize:24, outline:"none", boxSizing:"border-box", color:C.text, background:C.surfaceWarm, textAlign:"center", letterSpacing:8, fontWeight:700, marginBottom:16 }}
-              onFocus={e=>e.target.style.borderColor=C.accent} onBlur={e=>e.target.style.borderColor=C.border}/>
-            <div style={{ display:"flex", gap:10 }}>
-              <Button variant="primary" onClick={()=>{ if(code.length===6){ setModal(null); showToast("2FA activé avec succès !"); }}}>Activer</Button>
-              <Button variant="ghost" onClick={()=>setModal(null)}>Annuler</Button>
-            </div>
-          </>
-        )}
-      </Modal>
-    );
-  };
+  const TwoFAModal = () => (
+    <Modal>
+      <MHead title="Authentification à 2 facteurs"/>
+      <div style={{ textAlign:"center", padding:"24px 0" }}>
+        <div style={{ fontSize:40, marginBottom:12 }}>🔐</div>
+        <div style={{ fontSize:15, fontWeight:700, color:C.text, marginBottom:8 }}>Bientôt disponible</div>
+        <div style={{ fontSize:13, color:C.textSoft, lineHeight:1.6 }}>
+          L'authentification à 2 facteurs sera disponible prochainement.<br/>
+          Vos connexions sont déjà sécurisées via les magic links (liens de connexion par email).
+        </div>
+      </div>
+      <Button variant="ghost" onClick={()=>setModal(null)}>Fermer</Button>
+    </Modal>
+  );
 
   // ── Modal: Sessions ───────────────────────────────────────────────────────
   const SessionsModal = () => {
-    const [sessions, setSessions] = useState([
-      { id:1, device:"iPhone 14 Pro", location:"Paris, France", current:true,  last:"Maintenant",      icon:"📱" },
-      { id:2, device:"MacBook Pro",   location:"Paris, France", current:false, last:"Il y a 2 heures", icon:"💻" },
-      { id:3, device:"Chrome / Windows", location:"Lyon, France", current:false, last:"Il y a 3 jours", icon:"🌐" },
-    ]);
+    const [done, setDone] = useState(false);
     return (
       <Modal>
         <MHead title="Sessions actives"/>
-        <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
-          {sessions.map(s=>(
-            <div key={s.id} style={{ display:"flex", alignItems:"center", gap:12, padding:"12px 14px", borderRadius:10, background:s.current?C.okBg:C.bg, border:`1.5px solid ${s.current?"#B8DFC4":C.border}` }}>
-              <span style={{ fontSize:22 }}>{s.icon}</span>
-              <div style={{ flex:1 }}>
-                <div style={{ fontSize:14, fontWeight:700, color:C.text }}>{s.device} {s.current && <span style={{ fontSize:11, color:C.ok, fontWeight:600 }}>● Session actuelle</span>}</div>
-                <div style={{ fontSize:12, color:C.textSoft }}>{s.location} · {s.last}</div>
-              </div>
-              {!s.current && <button onClick={()=>setSessions(prev=>prev.filter(x=>x.id!==s.id))} style={{ fontSize:12, padding:"4px 10px", borderRadius:7, border:`1px solid #EFC8BC`, background:C.warnBg, color:C.warn, cursor:"pointer", fontWeight:600 }}>Déconnecter</button>}
-            </div>
-          ))}
+        <div style={{ padding:"12px 14px", borderRadius:10, background:C.okBg, border:`1.5px solid #B8DFC4`, display:"flex", alignItems:"center", gap:12, marginBottom:16 }}>
+          <span style={{ fontSize:22 }}>💻</span>
+          <div style={{ flex:1 }}>
+            <div style={{ fontSize:14, fontWeight:700, color:C.text }}>Session actuelle <span style={{ fontSize:11, color:C.ok, fontWeight:600 }}>● Connecté</span></div>
+            <div style={{ fontSize:12, color:C.textSoft }}>Ce navigateur</div>
+          </div>
         </div>
-        {sessions.filter(s=>!s.current).length > 0 && (
-          <button onClick={()=>setSessions(prev=>prev.filter(s=>s.current))} style={{ marginTop:14, width:"100%", padding:"10px", borderRadius:8, border:`1.5px solid #EFC8BC`, background:C.warnBg, color:C.warn, cursor:"pointer", fontWeight:700, fontSize:13 }}>
-            Déconnecter toutes les autres sessions
-          </button>
-        )}
+        <div style={{ fontSize:13, color:C.textSoft, lineHeight:1.6, marginBottom:16 }}>
+          Si vous pensez que votre compte est compromis ou que vous êtes connecté sur un autre appareil, vous pouvez forcer la déconnexion de toutes les autres sessions.
+        </div>
+        {done
+          ? <div style={{ padding:"12px", background:C.okBg, borderRadius:8, textAlign:"center", fontSize:13, fontWeight:600, color:C.ok }}>Toutes les autres sessions ont été déconnectées.</div>
+          : <button onClick={async()=>{
+              await createClient().auth.signOut({ scope:"others" });
+              setDone(true);
+              showToast("Autres sessions déconnectées");
+            }} style={{ width:"100%", padding:"10px", borderRadius:8, border:`1.5px solid #EFC8BC`, background:C.warnBg, color:C.warn, cursor:"pointer", fontWeight:700, fontSize:13 }}>
+              Déconnecter toutes les autres sessions
+            </button>
+        }
       </Modal>
     );
   };
@@ -1216,7 +1198,6 @@ function Settings({ isMobile, onImpersonate }) {
         <SectionHead>Sécurité</SectionHead>
         <div style={{ padding:"14px 18px", display:"flex", flexDirection:"column", gap:10 }}>
           {[
-            ["Changer le mot de passe", ()=>setModal({type:"password"}),   "Modifier"],
             ["Authentification 2 facteurs", ()=>setModal({type:"2fa"}),    "Configurer"],
             ["Sessions actives",         ()=>setModal({type:"sessions"}),  "3 appareils"],
           ].map(([lbl, action, label])=>(
@@ -2027,7 +2008,6 @@ function Settings({ isMobile, onImpersonate }) {
       {modal?.type==="newTenant"     && <NewTenantModal/>}
       {modal?.type==="inviteUser"    && <InviteUserModal/>}
       {modal?.type==="editUser"      && <EditUserModal/>}
-      {modal?.type==="password"      && <PasswordModal/>}
       {modal?.type==="2fa"           && <TwoFAModal/>}
       {modal?.type==="sessions"      && <SessionsModal/>}
       {modal?.type==="deleteAccount" && <DeleteAccountModal/>}
