@@ -232,11 +232,11 @@ function PlanningSessionCard({ sess, expandedId, bookings, discs, onToggle, onCh
           return (
             <span style={{ marginLeft:"auto", display:"flex", alignItems:"center", gap:6 }}>
               <span style={{ fontSize:11, fontWeight:700, padding:"1px 7px", borderRadius:10, background:C.okBg, color:C.ok }}>
-                {confirmed} inscrit{confirmed>1?"s":""}
+                {confirmed} confirmé{confirmed>1?"s":""}
               </span>
               {waitlisted > 0 && (
-                <span style={{ fontSize:11, fontWeight:700, padding:"1px 7px", borderRadius:10, background:C.accentBg, color:C.accent }}>
-                  {waitlisted} att.
+                <span style={{ fontSize:11, fontWeight:700, padding:"1px 7px", borderRadius:10, background:"#FEF3C7", color:"#92400E" }}>
+                  {waitlisted} en attente
                 </span>
               )}
             </span>
@@ -1281,7 +1281,7 @@ function Planning({ isMobile }) {
                     <div style={{ fontSize: 11, fontWeight: 700, color: C.textMuted, textTransform: "uppercase", letterSpacing: .8, marginBottom: 5 }}>Heure</div>
                     <TimePicker value={nS.time} onChange={v => setNS({ ...nS, time: v })} />
                   </div>
-                  <Field label="Durée (min)" type="number" value={nS.duration} onChange={v => setNS({ ...nS, duration: v })} />
+                  <Field label="Durée (min)" type="number" value={nS.duration} onChange={v => setNS({ ...nS, duration: Math.min(180, Math.max(15, parseInt(v)||60)) })} min={15} max={180} />
                   <div>
                     <div style={{ fontSize:11, fontWeight:700, color:C.textMuted, textTransform:"uppercase", letterSpacing:.8, marginBottom:5 }}>Salle</div>
                     {roomsList.length > 0 ? (
@@ -1301,7 +1301,7 @@ function Planning({ isMobile }) {
                   </div>
                   <div>
                     <div style={{ fontSize:11, fontWeight:700, color:C.textMuted, textTransform:"uppercase", letterSpacing:.8, marginBottom:5 }}>Places</div>
-                    <input type="number" min={1} value={nS.spots} onChange={e => setNS({ ...nS, spots: parseInt(e.target.value)||1 })}
+                    <input type="number" min={1} max={30} value={nS.spots} onChange={e => setNS({ ...nS, spots: Math.min(30, Math.max(1, parseInt(e.target.value)||1)) })}
                       style={{ width:"100%", padding:"9px 12px", border:`1.5px solid ${C.border}`, borderRadius:8, fontSize:14, outline:"none", background:C.surfaceWarm, color:C.text, boxSizing:"border-box" }}/>
                     {nS.room && roomsList.find(r => r.name === nS.room) && nS.spots !== roomsList.find(r => r.name === nS.room).capacity && (
                       <div style={{ fontSize:11, color:C.textMuted, marginTop:3 }}>
@@ -1456,7 +1456,7 @@ function Planning({ isMobile }) {
                     </div>
                     <div>
                       <div style={{ fontSize:11, fontWeight:700, color:C.textMuted, textTransform:"uppercase", letterSpacing:.8, marginBottom:5 }}>Places</div>
-                      <input type="number" min={1} value={nS.spots} onChange={e => setNS({ ...nS, spots: parseInt(e.target.value)||1 })}
+                      <input type="number" min={1} max={30} value={nS.spots} onChange={e => setNS({ ...nS, spots: Math.min(30, Math.max(1, parseInt(e.target.value)||1)) })}
                         style={{ width:"100%", padding:"9px 12px", border:`1.5px solid ${C.border}`, borderRadius:8, fontSize:14, outline:"none", background:C.surfaceWarm, color:C.text, boxSizing:"border-box" }}/>
                     </div>
                   </div>

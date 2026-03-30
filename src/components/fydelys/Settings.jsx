@@ -537,11 +537,16 @@ function Settings({ isMobile, onImpersonate }) {
 
   // ── Tab: Studio settings ──────────────────────────────────────────────────
   const TabStudio = () => {
-    const SI = ({ label, fkey, type="text", placeholder="" }) => (
+    const SI = ({ label, fkey, type="text", placeholder="", min, max }) => (
       <div>
         <FieldLabel>{label}</FieldLabel>
-        <input type={type} value={studioForm[fkey]||""} placeholder={placeholder} disabled={!isAdmin}
-          onChange={e=>setStudioForm(f=>({...f,[fkey]:e.target.value}))}
+        <input type={type} value={studioForm[fkey]||""} placeholder={placeholder} disabled={!isAdmin} min={min} max={max}
+          onChange={e=>{
+            let v = e.target.value;
+            if (type==="number" && v && min!==undefined) v = String(Math.max(min, parseInt(v)||0));
+            if (type==="number" && v && max!==undefined) v = String(Math.min(max, parseInt(v)||0));
+            setStudioForm(f=>({...f,[fkey]:v}));
+          }}
           style={{ width:"100%", padding:"9px 12px", border:`1.5px solid ${C.border}`, borderRadius:8, fontSize:14, outline:"none", boxSizing:"border-box", color:C.text, background:isAdmin?C.surfaceWarm:"#F8F5F2", opacity:isAdmin?1:0.7, transition:"border-color .15s" }}
           onFocus={e=>{ if(isAdmin) e.target.style.borderColor=C.accent; }}
           onBlur={e=>e.target.style.borderColor=C.border}/>
@@ -584,9 +589,9 @@ function Settings({ isMobile, onImpersonate }) {
         <Card noPad style={{ marginBottom:14 }}>
           <SectionHead>Paramètres de réservation</SectionHead>
           <div style={{ padding:"16px 18px", display:"grid", gridTemplateColumns:isMobile?"1fr 1fr":"1fr 1fr 1fr", gap:12 }}>
-            <SI label="Annulation (h avant)" fkey="cancel_delay_hours" type="number"/>
-            <SI label="Résa ouverte (j avant)" fkey="booking_days_ahead" type="number"/>
-            <SI label="Attente max" fkey="waitlist_max" type="number"/>
+            <SI label="Annulation (h avant)" fkey="cancel_delay_hours" type="number" min={0} max={72}/>
+            <SI label="Résa ouverte (j avant)" fkey="booking_days_ahead" type="number" min={1} max={90}/>
+            <SI label="Attente max" fkey="waitlist_max" type="number" min={0} max={20}/>
           </div>
           <div style={{ padding:"0 18px 16px" }}>
             <div onClick={()=>setStudioForm(f=>({...f,sms_enabled:!f.sms_enabled}))}
@@ -1863,9 +1868,9 @@ function Settings({ isMobile, onImpersonate }) {
             <div style={{ fontSize:16, fontWeight:700, color:C.text }}>Salles</div>
             <div style={{ fontSize:13, color:C.textMuted, marginTop:2 }}>{rooms.length} salle{rooms.length!==1?"s":""} configurée{rooms.length!==1?"s":""}</div>
           </div>
-          <button onClick={openAdd}
-            style={{ display:"flex", alignItems:"center", gap:6, padding:"8px 16px", borderRadius:8, border:"none", background:C.accent, color:"white", fontSize:13, fontWeight:700, cursor:"pointer" }}>
-            + Ajouter une salle
+          <button onClick={openAdd} disabled={rooms.length >= 10}
+            style={{ display:"flex", alignItems:"center", gap:6, padding:"8px 16px", borderRadius:8, border:"none", background:rooms.length>=10?C.bgDeep:C.accent, color:rooms.length>=10?C.textMuted:"white", fontSize:13, fontWeight:700, cursor:rooms.length>=10?"not-allowed":"pointer" }}>
+            {rooms.length >= 10 ? "Max 10 salles" : "+ Ajouter une salle"}
           </button>
         </div>
 

@@ -117,7 +117,7 @@ function Payments({ isMobile }) {
             <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
               <div>
                 <div style={{ fontSize:11, fontWeight:700, color:C.textMuted, textTransform:"uppercase", letterSpacing:.8, marginBottom:5 }}>Montant (EUR) *</div>
-                <input type="number" min="0" step="0.01" value={addForm.amount} onChange={e=>setAddForm(f=>({...f,amount:e.target.value}))} placeholder="0.00"
+                <input type="number" min={0} max={9999} step="0.01" value={addForm.amount} onChange={e=>{ const v=parseFloat(e.target.value); setAddForm(f=>({...f,amount:isNaN(v)?"":String(Math.min(9999,Math.max(0,v)))})); }} placeholder="0.00"
                   style={{ width:"100%", padding:"9px 12px", borderRadius:9, border:`1.5px solid ${C.border}`, fontSize:14, outline:"none", boxSizing:"border-box", background:"#FDFAF7" }}/>
               </div>
               <div>
@@ -146,7 +146,7 @@ function Payments({ isMobile }) {
             {/* Crédits */}
             <div>
               <div style={{ fontSize:11, fontWeight:700, color:C.textMuted, textTransform:"uppercase", letterSpacing:.8, marginBottom:5 }}>Crédits à ajouter</div>
-              <input type="number" min="0" value={addForm.credits} onChange={e=>setAddForm(f=>({...f,credits:e.target.value}))} placeholder="0"
+              <input type="number" min={0} max={200} value={addForm.credits} onChange={e=>{ const v=parseInt(e.target.value); setAddForm(f=>({...f,credits:isNaN(v)?"0":String(Math.min(200,Math.max(0,v)))})); }} placeholder="0"
                 style={{ width:"100%", padding:"9px 12px", borderRadius:9, border:`1.5px solid ${C.border}`, fontSize:14, outline:"none", boxSizing:"border-box", background:"#FDFAF7" }}/>
               <div style={{ fontSize:11, color:C.textMuted, marginTop:3 }}>Nombre de séances ajoutées au solde du membre (0 = pas de modification)</div>
             </div>

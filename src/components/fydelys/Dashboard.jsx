@@ -203,6 +203,54 @@ function Dashboard({ isMobile }) {
     publicPageEnabled !== null && !publicPageEnabled.enabled && { label:"page_publique", c:C.accent, bg:C.accentBg, slug:publicPageEnabled.slug },
   ].filter(Boolean);
 
+  // Prochaine séance (future la plus proche)
+  const nextSession = (() => {
+    const now = new Date();
+    const future = sessions
+      .filter(s => s.status !== "cancelled" && s.date >= todayStr)
+      .sort((a,b) => {
+        if (a.date !== b.date) return a.date > b.date ? 1 : -1;
+        return (a.time||"").localeCompare(b.time||"");
+      })
+      .find(s => {
+        const [y,m,d] = (s.date||"").split("-").map(Number);
+        const [h,mi] = (s.time||"00:00").split(":").map(Number);
+        return new Date(y, m-1, d, h, mi) > now;
+      });
+    if (!future) return null;
+    const allD = discs.length ? discs : localDiscs;
+    const disc = allD.find(d => String(d.id) === String(future.disciplineId));
+    const bk = (bookings[future.id]||[]).filter(b=>b.st==="confirmed").length;
+    const [y,m,d] = (future.date||"").split("-").map(Number);
+    const [h,mi] = (future.time||"00:00").split(":").map(Number);
+    const sessDate = new Date(y, m-1, d, h, mi);
+    const diffMs = sessDate - now;
+    const diffH = Math.floor(diffMs / 3600000);
+    const diffMin = Math.floor((diffMs % 3600000) / 60000);
+    const countdown = diffH > 24 ? `dans ${Math.ceil(diffH/24)}j` : diffH > 0 ? `dans ${diffH}h${diffMin>0?String(diffMin).padStart(2,"0"):""}` : `dans ${diffMin} min`;
+    return { ...future, discName: disc?.name||"Séance", discIcon: disc?.icon||"", discColor: disc?.color||C.accent, booked: bk, countdown };
+  })();
+
+  // Membres inactifs (pas de réservation confirmée depuis 30j)
+  const inactiveMembers = (() => {
+    if (isDemo || !members.length) return [];
+    const d30ago = new Date(); d30ago.setDate(d30ago.getDate() - 30);
+    const d30str = d30ago.toISOString().slice(0,10);
+    // Collecter les member IDs qui ont un booking confirmé sur une session récente
+    const activeIds = new Set();
+    sessions.forEach(s => {
+      if (s.date >= d30str) {
+        (bookings[s.id]||[]).forEach(b => {
+          if (b.st === "confirmed" && b.id) activeIds.add(b.fn ? `${b.fn}|${b.ln}` : b.memberId);
+          if (b.memberId) activeIds.add(b.memberId);
+        });
+      }
+    });
+    return members
+      .filter(m => (m.status === "actif" || m.status === "Actif" || m.status === "active") && !activeIds.has(m.id))
+      .slice(0, 5);
+  })();
+
   // Membres récents triés par date d'inscription
   const recentMembers = [...members].sort((a,b)=>{
     const da = a.joinedAt||a.joined_at||a.created_at||"";
@@ -239,6 +287,52 @@ function Dashboard({ isMobile }) {
                 <DashboardSessionCard key={s.id} sess={s} expandedId={expandedId} bookings={bookings} onToggle={handleToggle} onChangeStatus={handleChangeStatus} isDemo={isDemo} discs={discs}/>
               ))}
         </Card>
+
+        {/* Prochaine séance + Membres inactifs */}
+        <div style={{ display:"grid", gridTemplateColumns:isMobile?"1fr":"1fr 1fr", gap:isMobile?12:16, marginBottom:isMobile?12:16 }}>
+          {nextSession && (
+            <Card style={{ borderLeft:`3px solid ${nextSession.discColor}` }}>
+              <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:10 }}>
+                <div style={{ fontSize:12, fontWeight:700, color:C.textMuted, textTransform:"uppercase", letterSpacing:.5 }}>Prochaine séance</div>
+                <span style={{ fontSize:11, fontWeight:700, padding:"2px 8px", borderRadius:8, background:C.accentBg, color:C.accent }}>{nextSession.countdown}</span>
+              </div>
+              <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+                <div style={{ width:40, height:40, borderRadius:10, background:`${nextSession.discColor}18`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:20, flexShrink:0 }}>{nextSession.discIcon}</div>
+                <div style={{ flex:1, minWidth:0 }}>
+                  <div style={{ fontSize:16, fontWeight:700, color:C.text }}>{nextSession.discName}</div>
+                  <div style={{ fontSize:13, color:C.textSoft }}>{new Date(nextSession.date+"T12:00:00").toLocaleDateString("fr-FR",{weekday:"short",day:"numeric",month:"short"})} · {nextSession.time}</div>
+                  <div style={{ fontSize:12, color:C.textMuted, marginTop:2 }}>{nextSession.teacher} · {nextSession.room}</div>
+                </div>
+                <div style={{ textAlign:"right", flexShrink:0 }}>
+                  <div style={{ fontSize:18, fontWeight:800, color:nextSession.booked>=nextSession.spots?C.warn:C.ok }}>{nextSession.booked}/{nextSession.spots}</div>
+                  <div style={{ fontSize:11, color:C.textMuted }}>inscrits</div>
+                </div>
+              </div>
+            </Card>
+          )}
+          {inactiveMembers.length > 0 && (
+            <Card noPad>
+              <SectionHead><span style={{display:"flex",alignItems:"center",gap:6}}>😴 Membres inactifs <span style={{fontSize:11,fontWeight:700,padding:"1px 7px",borderRadius:10,background:C.warnBg,color:C.warn}}>{inactiveMembers.length}</span></span></SectionHead>
+              <div style={{ padding:"0 2px" }}>
+                {inactiveMembers.map(m => (
+                  <div key={m.id} onClick={()=>window.dispatchEvent(new CustomEvent("fydelys:openMember",{detail:m.id}))}
+                    style={{ display:"flex", alignItems:"center", gap:10, padding:"8px 14px", borderBottom:`1px solid ${C.borderSoft}`, cursor:"pointer" }}
+                    onMouseEnter={e=>e.currentTarget.style.background=C.bg}
+                    onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
+                    <div style={{ width:28, height:28, borderRadius:"50%", background:C.accentBg, border:`1px solid #DFC0A0`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:11, fontWeight:700, color:C.accent, flexShrink:0 }}>
+                      {(m.first_name||m.firstName||"?")[0]}{(m.last_name||m.lastName||"")[0]}
+                    </div>
+                    <div style={{ flex:1, minWidth:0 }}>
+                      <div style={{ fontSize:13, fontWeight:600, color:C.text, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{m.first_name||m.firstName} {m.last_name||m.lastName}</div>
+                      <div style={{ fontSize:11, color:C.textMuted }}>{m.email}</div>
+                    </div>
+                    <span style={{ fontSize:11, color:C.warn, fontWeight:600, flexShrink:0 }}>30j+</span>
+                  </div>
+                ))}
+              </div>
+            </Card>
+          )}
+        </div>
 
         {/* Alertes + Derniers inscrits — côte à côte desktop, empilé mobile */}
         <div style={{ display:"grid", gridTemplateColumns:isMobile?"1fr":"1fr 1fr", gap:isMobile?12:16 }}>

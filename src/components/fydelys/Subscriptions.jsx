@@ -86,7 +86,7 @@ function Subscriptions({ isMobile }) {
           <div style={{ fontSize:14, fontWeight:700, color:C.accent, textTransform:"uppercase", marginBottom:16 }}>Créer un abonnement</div>
           <div style={{ display:"grid", gridTemplateColumns:`repeat(${isMobile?1:2},1fr)`, gap:14 }}>
             <Field label="Nom" value={nSub.name} onChange={v=>setNSub({...nSub,name:v})} placeholder="Ex: Mensuel illimité"/>
-            <Field label="Prix (€)" type="number" value={nSub.price} onChange={v=>setNSub({...nSub,price:v})} placeholder="89"/>
+            <Field label="Prix (€)" type="number" value={nSub.price} onChange={v=>setNSub({...nSub,price:Math.min(999, Math.max(0, parseFloat(v)||0))})} placeholder="89" min={0} max={999}/>
             <Field label="Période" value={nSub.period} onChange={v=>setNSub({...nSub,period:v})} opts={["mois","séance","carnet","trimestre","année"]}/>
             <Field label="Description" value={nSub.description} onChange={v=>setNSub({...nSub,description:v})} placeholder="Courte description…"/>
           </div>
@@ -122,13 +122,13 @@ function Subscriptions({ isMobile }) {
                 <div style={{ display:"flex", flexDirection:"column", gap:10, marginBottom:14 }}>
                   <div><FieldLabel>Nom</FieldLabel><input value={editData.name} onChange={e=>setEditData({...editData,name:e.target.value})} style={{ width:"100%", padding:"8px 11px", border:`1.5px solid ${C.border}`, borderRadius:8, fontSize:14, outline:"none", boxSizing:"border-box", color:C.text, background:C.surfaceWarm }} onFocus={e=>e.target.style.borderColor=C.accent} onBlur={e=>e.target.style.borderColor=C.border}/></div>
                   <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
-                    <div><FieldLabel>Prix (€)</FieldLabel><input type="number" value={editData.price} onChange={e=>setEditData({...editData,price:e.target.value})} style={{ width:"100%", padding:"8px 11px", border:`1.5px solid ${C.border}`, borderRadius:8, fontSize:14, outline:"none", boxSizing:"border-box", color:C.text, background:C.surfaceWarm }} onFocus={e=>e.target.style.borderColor=C.accent} onBlur={e=>e.target.style.borderColor=C.border}/></div>
+                    <div><FieldLabel>Prix (€)</FieldLabel><input type="number" min={0} max={999} value={editData.price} onChange={e=>setEditData({...editData,price:Math.min(999,Math.max(0,parseFloat(e.target.value)||0))})} style={{ width:"100%", padding:"8px 11px", border:`1.5px solid ${C.border}`, borderRadius:8, fontSize:14, outline:"none", boxSizing:"border-box", color:C.text, background:C.surfaceWarm }} onFocus={e=>e.target.style.borderColor=C.accent} onBlur={e=>e.target.style.borderColor=C.border}/></div>
                     <Field label="Période" value={editData.period} onChange={v=>setEditData({...editData,period:v})} opts={["mois","séance","carnet","trimestre","année"]}/>
                   </div>
                   <div>
                     <FieldLabel>Crédits attribués</FieldLabel>
-                    <input type="number" min="0" value={editData.credits ?? 1}
-                      onChange={e=>setEditData({...editData,credits:e.target.value})}
+                    <input type="number" min={0} max={200} value={editData.credits ?? 1}
+                      onChange={e=>setEditData({...editData,credits:Math.min(200,Math.max(0,parseInt(e.target.value)||0))})}
                       placeholder="0 = illimité"
                       style={{ width:"100%", padding:"8px 11px", border:`1.5px solid ${C.border}`, borderRadius:8, fontSize:14, outline:"none", boxSizing:"border-box", color:C.text, background:C.surfaceWarm }}
                       onFocus={e=>e.target.style.borderColor=C.accent} onBlur={e=>e.target.style.borderColor=C.border}/>
