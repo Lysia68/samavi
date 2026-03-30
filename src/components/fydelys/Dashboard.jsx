@@ -253,9 +253,36 @@ function Dashboard({ isMobile }) {
   // Membres récents triés par date d'inscription
   const recentMembers = [...members].sort((a,b)=>{
     const da = a.joinedAt||a.joined_at||a.created_at||"";
-    const db = b.joinedAt||b.joined_at||b.created_at||"";
-    return db.localeCompare(da);
+    const db2 = b.joinedAt||b.joined_at||b.created_at||"";
+    return db2.localeCompare(da);
   }).slice(0,3);
+
+  // Dernières réservations (inscrits à une séance)
+  const recentBookings = (() => {
+    const allDiscs = discs.length ? discs : localDiscs;
+    const list = [];
+    sessions.forEach(s => {
+      const disc = allDiscs.find(d => String(d.id) === String(s.disciplineId));
+      (bookings[s.id]||[]).forEach(b => {
+        if (b.st === "confirmed") {
+          list.push({
+            name: b.name || `${b.fn||""} ${b.ln||""}`.trim() || "—",
+            discName: disc?.name || "Séance",
+            discIcon: disc?.icon || "",
+            discColor: disc?.color || C.accent,
+            date: s.date,
+            time: s.time,
+            memberId: b.id,
+          });
+        }
+      });
+    });
+    // Trier par date de séance décroissante
+    return list.sort((a,b) => {
+      if (a.date !== b.date) return b.date.localeCompare(a.date);
+      return (b.time||"").localeCompare(a.time||"");
+    }).slice(0, 5);
+  })();
 
   const EmptyCard = ({label}) => (
     <div style={{padding:"28px 16px",textAlign:"center",color:C.textMuted,fontSize:14,fontStyle:"italic"}}>
@@ -320,7 +347,38 @@ function Dashboard({ isMobile }) {
           </Card>
         </div>
 
-        {/* Alertes + Membres inactifs + Derniers inscrits */}
+        {/* Dernières inscriptions + Nouveaux membres */}
+        <div style={{ display:"grid", gridTemplateColumns:isMobile?"1fr":"1fr 1fr", gap:isMobile?12:16, marginBottom:isMobile?12:16 }}>
+          <Card noPad>
+            <SectionHead><span style={{display:"flex",alignItems:"center",gap:6}}><IcoCalendar2 s={15} c={C.ok}/>Dernières inscriptions</span></SectionHead>
+            {recentBookings.length === 0
+              ? <EmptyCard label="Aucune inscription récente"/>
+              : recentBookings.map((rb,i) => (
+                <div key={i} onClick={()=>rb.memberId && window.dispatchEvent(new CustomEvent("fydelys:openMember",{detail:rb.memberId}))}
+                  style={{ display:"flex", alignItems:"center", gap:10, padding:"9px 16px", borderBottom:`1px solid ${C.borderSoft}`, cursor:rb.memberId?"pointer":"default" }}
+                  onMouseEnter={e=>{if(rb.memberId)e.currentTarget.style.background=C.bg;}}
+                  onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
+                  <div style={{ width:28, height:28, borderRadius:8, background:`${rb.discColor}18`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:14, flexShrink:0 }}>{rb.discIcon}</div>
+                  <div style={{ flex:1, minWidth:0 }}>
+                    <div style={{ fontSize:13, fontWeight:600, color:C.text, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{rb.name}</div>
+                    <div style={{ fontSize:11, color:C.textMuted }}>{rb.discName} · {new Date(rb.date+"T12:00:00").toLocaleDateString("fr-FR",{day:"numeric",month:"short"})} · {rb.time}</div>
+                  </div>
+                </div>
+              ))
+            }
+          </Card>
+          <Card noPad>
+            <SectionHead>Nouveaux membres</SectionHead>
+            {loading
+              ? <EmptyCard label="Chargement…"/>
+              : recentMembers.length === 0
+                ? <EmptyCard label="Aucun membre pour le moment"/>
+                : recentMembers.map(m=><MemberRow key={m.id} m={m} onSelect={()=>{}} selected={false}/>)
+            }
+          </Card>
+        </div>
+
+        {/* Alertes + Sans réservation */}
         <div style={{ display:"grid", gridTemplateColumns:isMobile?"1fr":"1fr 1fr", gap:isMobile?12:16 }}>
           {alerts.length > 0 && (
             <Card noPad>
@@ -334,15 +392,11 @@ function Dashboard({ isMobile }) {
                     </div>
                 : a.label === "page_publique"
                   ? <div key="page_publique" style={{ padding:"12px 16px", borderBottom:`1px solid ${C.borderSoft}` }}>
-                      <div style={{ fontSize:13, color:C.text, fontWeight:600, marginBottom:2 }}>
-                        Site vitrine non activé
-                      </div>
-                      <div style={{ fontSize:12, color:C.textSoft, marginBottom:8, lineHeight:1.5 }}>
-                        Vous n'avez pas de site web ? Activez votre page vitrine gratuite pour présenter votre studio et afficher votre planning en ligne.
-                      </div>
+                      <div style={{ fontSize:13, color:C.text, fontWeight:600, marginBottom:2 }}>Site vitrine non activé</div>
+                      <div style={{ fontSize:12, color:C.textSoft, marginBottom:8, lineHeight:1.5 }}>Activez votre page vitrine gratuite pour présenter votre studio.</div>
                       <button onClick={()=>{ window.dispatchEvent(new CustomEvent("fydelys:nav", { detail:"settings" })); }}
                         style={{ fontSize:12, fontWeight:700, color:C.accent, background:C.accentBg, border:`1px solid ${C.accent}40`, borderRadius:7, padding:"6px 14px", cursor:"pointer" }}>
-                        Configurer mon site vitrine →
+                        Configurer →
                       </button>
                     </div>
                   : <div key={a.label} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"10px 16px", borderBottom:`1px solid ${C.borderSoft}` }}>
@@ -352,15 +406,6 @@ function Dashboard({ isMobile }) {
               ))}
             </Card>
           )}
-          <Card noPad>
-            <SectionHead>Derniers inscrits</SectionHead>
-            {loading
-              ? <EmptyCard label="Chargement…"/>
-              : recentMembers.length === 0
-                ? <EmptyCard label="Aucun membre pour le moment"/>
-                : recentMembers.map(m=><MemberRow key={m.id} m={m} onSelect={()=>{}} selected={false}/>)
-            }
-          </Card>
           {inactiveMembers.length > 0 && (
             <Card noPad>
               <SectionHead><span style={{display:"flex",alignItems:"center",gap:6}}>😴 Sans réservation depuis 30j <span style={{fontSize:11,fontWeight:700,padding:"1px 7px",borderRadius:10,background:C.warnBg,color:C.warn}}>{inactiveMembers.length}</span></span></SectionHead>
