@@ -255,7 +255,7 @@ function formatPostalCode(raw) {
 
 /** Capitalise la première lettre de chaque mot (prénom/nom) */
 function formatName(raw) {
-  return raw.replace(/\b\w/g, c => c.toUpperCase());
+  return raw.toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
 }
 
 /** Formate un numéro français en "06 12 34 56 78" à la saisie */
