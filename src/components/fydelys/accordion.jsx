@@ -32,7 +32,8 @@ function AttendanceRow({ b, onMark }) {
       </div>
       {isPresent && <span style={{ fontSize:12, fontWeight:700, padding:"2px 9px", borderRadius:20, color:C.ok,      background:C.okBg,    whiteSpace:"nowrap" }}>✓ Présent</span>}
       {isAbsent  && <span style={{ fontSize:12, fontWeight:700, padding:"2px 9px", borderRadius:20, color:C.warn,    background:C.warnBg,  whiteSpace:"nowrap" }}>✗ Absent</span>}
-      {isPending && <span style={{ fontSize:12, fontWeight:600, padding:"2px 9px", borderRadius:20, color:C.textMuted, background:"#EDE9E3", whiteSpace:"nowrap" }}>⏳ En attente</span>}
+      {isPending && <span style={{ fontSize:12, fontWeight:600, padding:"2px 9px", borderRadius:20, color:C.accent, background:C.accentBg, whiteSpace:"nowrap" }}><span style={{ display:"inline-block", animation:"hourglass 2s ease-in-out infinite" }}>⏳</span> En attente</span>}
+      <style>{`@keyframes hourglass { 0%,100% { transform:rotate(0deg); } 50% { transform:rotate(180deg); } }`}</style>
       <div style={{ display:"flex", gap:5, flexShrink:0, flexWrap:"wrap", justifyContent:"flex-end", maxWidth:160 }}>
         {isPresent ? (
           <button onClick={()=>mark(null)} disabled={loading} title="Annuler présence"
@@ -166,10 +167,10 @@ export function PlanningAccordion({ sess, sessId, bookings, onChangeStatus, onAd
                 borderBottom: tab===key ? `2px solid ${C.accent}` : "2px solid transparent" }}>
               <span style={{display:"flex",alignItems:"center",gap:5,justifyContent:"center"}}>
                 <Icon s={13} c={tab===key ? C.accent : C.textMuted}/> {label}
+                {key==="presences" && pendingCount>0 && (
+                  <span style={{ fontSize:11, padding:"1px 6px", borderRadius:10, background:C.accentBg, color:C.accent }}>{pendingCount}</span>
+                )}
               </span>
-              {key==="presences" && pendingCount>0 && (
-                <span style={{ marginLeft:5, fontSize:11, padding:"1px 6px", borderRadius:10, background:C.accentBg, color:C.accent }}>{pendingCount}</span>
-              )}
             </button>
           ))}
         </div>
@@ -231,14 +232,13 @@ export function PlanningAccordion({ sess, sessId, bookings, onChangeStatus, onAd
       {tab==="presences" && isPast && (
         <>
           <div style={{ display:"flex", gap:5, padding:"8px 13px", flexWrap:"wrap", alignItems:"center" }}>
-            <span style={{ fontSize:12, fontWeight:700, padding:"2px 9px", borderRadius:20, color:C.ok, background:C.okBg }}>{presentCount} présent{presentCount>1?"s":""}</span>
-            {absentCount>0 && <span style={{ fontSize:12, fontWeight:700, padding:"2px 9px", borderRadius:20, color:C.warn, background:C.warnBg }}>{absentCount} absent{absentCount>1?"s":""}</span>}
-            {pendingCount>0 && <span style={{ fontSize:12, fontWeight:700, padding:"2px 9px", borderRadius:20, color:C.textMuted, background:"#EDE9E3" }}>{pendingCount} en attente</span>}
-            <div style={{ flex:1 }}/>
+            <span style={{ fontSize:11, fontWeight:700, padding:"2px 8px", borderRadius:20, color:C.ok, background:C.okBg }}>{presentCount} présent{presentCount>1?"s":""}</span>
+            {absentCount>0 && <span style={{ fontSize:11, fontWeight:700, padding:"2px 8px", borderRadius:20, color:C.warn, background:C.warnBg }}>{absentCount} absent{absentCount>1?"s":""}</span>}
+            {pendingCount>0 && <span style={{ fontSize:11, fontWeight:700, padding:"2px 8px", borderRadius:20, color:C.textMuted, background:"#EDE9E3" }}>{pendingCount} en att.</span>}
             {pendingCount>0 && (
               <button onClick={handleValidateAll}
-                style={{ display:"flex", alignItems:"center", gap:5, fontSize:12, padding:"4px 12px", borderRadius:8, fontWeight:600, border:`1px solid #B8DFC4`, color:C.ok, background:C.okBg, cursor:"pointer" }}>
-                <IcoCheck s={12} c={C.ok}/> Tous présents
+                style={{ marginLeft:"auto", display:"flex", alignItems:"center", gap:4, fontSize:11, padding:"3px 10px", borderRadius:8, fontWeight:600, border:`1px solid #B8DFC4`, color:C.ok, background:C.okBg, cursor:"pointer", whiteSpace:"nowrap" }}>
+                <IcoCheck s={11} c={C.ok}/> Tous présents
               </button>
             )}
           </div>

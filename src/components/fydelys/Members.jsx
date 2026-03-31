@@ -598,7 +598,7 @@ function Members({ isMobile, onImpersonate, openMemberId, onMemberOpened }) {
                   else showToast("Erreur lors de l'envoi", false);
                 } catch { showToast("Erreur réseau", false); }
               })}
-              {actionBtn(<><IcoTag2 s={13} c={C.textMid}/> Pack</>, ()=>setModal({type:"subscription",member:m}))}
+              {actionBtn(<><IcoTag2 s={13} c={C.textMid}/> Abo / Crédits</>, ()=>setModal({type:"subscription",member:m}))}
               {actionBtn(<><IcoCalendar2 s={13} c={C.textMid}/> Historique</>, ()=>setModal({type:"history",member:m}))}
               {actionBtn(<>🎁 Offrir séances</>, ()=>setModal({type:"gift",member:m}))}
               {m.status !== "suspendu"
