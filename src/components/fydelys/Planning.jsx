@@ -218,7 +218,7 @@ function PlanningSessionCard({ sess, expandedId, bookings, discs, onToggle, onCh
         )}
         <span style={{ flexShrink: 0, display: "inline-flex", transition: "transform .2s", transform: isExp ? "rotate(180deg)" : "none" }}><IcoChevron s={16} c={C.textMuted} /></span>
       </div>
-      <div style={{ padding:"4px 14px 5px", display:"flex", alignItems:"center", gap:5, background:statusStyle.bg, borderTop:`1.5px solid ${statusStyle.color}44` }}>
+      <div style={{ padding:"4px 14px 5px", display:"flex", alignItems:"center", gap:5, background:statusStyle.bg, borderTop:`1.5px solid ${statusStyle.color}44`, flexWrap:"wrap", minHeight:24 }}>
         {sessionStatus === "ongoing"   && <span style={{ width:7, height:7, borderRadius:"50%", background:C.ok, display:"inline-block", animation:"pulse 1.2s ease-in-out infinite" }}/>}
         {sessionStatus === "cancelled" && <span style={{ fontSize:12 }}>⚠</span>}
         {sessionStatus === "closed"    && <span style={{ fontSize:12 }}>🔒</span>}

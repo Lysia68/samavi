@@ -235,7 +235,12 @@ export function PlanningAccordion({ sess, sessId, bookings, onChangeStatus, onAd
             {absentCount>0 && <span style={{ fontSize:12, fontWeight:700, padding:"2px 9px", borderRadius:20, color:C.warn, background:C.warnBg }}>{absentCount} absent{absentCount>1?"s":""}</span>}
             {pendingCount>0 && <span style={{ fontSize:12, fontWeight:700, padding:"2px 9px", borderRadius:20, color:C.textMuted, background:"#EDE9E3" }}>{pendingCount} en attente</span>}
             <div style={{ flex:1 }}/>
-
+            {pendingCount>0 && (
+              <button onClick={handleValidateAll}
+                style={{ display:"flex", alignItems:"center", gap:5, fontSize:12, padding:"4px 12px", borderRadius:8, fontWeight:600, border:`1px solid #B8DFC4`, color:C.ok, background:C.okBg, cursor:"pointer" }}>
+                <IcoCheck s={12} c={C.ok}/> Tous présents
+              </button>
+            )}
           </div>
           {conf.length===0
             ? <div style={{ padding:"20px", textAlign:"center", color:C.textMuted, fontSize:14 }}>Aucun membre confirmé</div>

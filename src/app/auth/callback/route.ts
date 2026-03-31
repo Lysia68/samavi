@@ -287,6 +287,12 @@ export async function GET(request: NextRequest) {
       if (profileErr) console.error("[auth/callback] profile upsert error:", profileErr)
       else console.log("[auth/callback] Profile created:", role, "studio_id:", studio.id)
 
+      // Mettre à jour le display_name du user auth
+      const displayName = [firstName, lastName].filter(Boolean).join(" ").trim()
+      if (displayName) {
+        await db.auth.admin.updateUserById(userId, { user_metadata: { display_name: displayName, first_name: firstName, last_name: lastName } })
+      }
+
       if (invite) {
         await db.from("invitations").update({ used: true })
           .eq("email", userEmail).eq("studio_id", studio.id)
