@@ -32,7 +32,6 @@ function AttendanceRow({ b, onMark, isMobile }) {
         </div>
         {isPresent && <span style={{ fontSize:11, fontWeight:700, padding:"2px 8px", borderRadius:20, color:C.ok, background:C.okBg, whiteSpace:"nowrap", flexShrink:0 }}>✓ Présent</span>}
         {isAbsent  && <span style={{ fontSize:11, fontWeight:700, padding:"2px 8px", borderRadius:20, color:C.warn, background:C.warnBg, whiteSpace:"nowrap", flexShrink:0 }}>✗ Absent</span>}
-        {isPending && <span style={{ fontSize:11, fontWeight:600, padding:"2px 8px", borderRadius:20, color:C.accent, background:C.accentBg, whiteSpace:"nowrap", flexShrink:0 }}>⏳ En attente</span>}
         <div style={{ display:"flex", gap:5, flexShrink:0 }}>
           {isPresent ? (
             <button onClick={()=>mark(null)} disabled={loading}
