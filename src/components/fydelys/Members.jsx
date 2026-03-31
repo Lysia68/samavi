@@ -10,6 +10,46 @@ import { IcoUserPlus2, IcoMail, IcoUser2, IcoCalendar2, IcoX, IcoCheck, IcoTag2,
 import { Card, SectionHead, Button, Field, FieldLabel, Tag, Pill, MemberRow, DemoBanner, EmptyState, CreditBadge, formatPhone, formatPostalCode, formatName } from "./ui";
 
 
+function GuestsList({ memberId, studioId }) {
+  const [guests, setGuests] = React.useState(null);
+  React.useEffect(() => {
+    if (!memberId) return;
+    createClient().from("member_guests").select("id, name, phone")
+      .eq("member_id", memberId).order("name")
+      .then(({ data }) => setGuests(data || []));
+  }, [memberId]);
+
+  if (!guests || guests.length === 0) return null;
+
+  const handleDelete = async (guestId) => {
+    await createClient().from("member_guests").delete().eq("id", guestId);
+    setGuests(prev => prev.filter(g => g.id !== guestId));
+  };
+
+  return (
+    <div style={{marginBottom:14,background:C.bg,borderRadius:10,padding:"10px 14px",border:`1px solid ${C.borderSoft}`}}>
+      <div style={{fontSize:11,fontWeight:700,color:C.textMuted,textTransform:"uppercase",letterSpacing:.5,marginBottom:8}}>Invités enregistrés ({guests.length})</div>
+      {guests.map(g => (
+        <div key={g.id} style={{display:"flex",alignItems:"center",gap:8,padding:"5px 0",borderBottom:`1px solid ${C.borderSoft}`}}>
+          <div style={{width:24,height:24,borderRadius:"50%",background:C.accentBg,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:700,color:C.accent,flexShrink:0}}>
+            {g.name?.[0]?.toUpperCase()||"?"}
+          </div>
+          <div style={{flex:1,minWidth:0}}>
+            <div style={{fontSize:13,fontWeight:600,color:C.text}}>{g.name}</div>
+            {g.phone && <div style={{fontSize:11,color:C.textMuted}}>{g.phone}</div>}
+          </div>
+          <button onClick={()=>handleDelete(g.id)}
+            style={{fontSize:11,padding:"2px 6px",borderRadius:6,border:"none",background:"transparent",color:C.textMuted,cursor:"pointer"}}
+            onMouseEnter={e=>{e.currentTarget.style.color="#A85030";}}
+            onMouseLeave={e=>{e.currentTarget.style.color=C.textMuted;}}>
+            ✕
+          </button>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 const EMPTY_FORM = {
   firstName:"", lastName:"", email:"", phone:"",
   address:"", postalCode:"", city:"",
@@ -576,6 +616,9 @@ function Members({ isMobile, onImpersonate, openMemberId, onMemberOpened }) {
               {infoRow("💼","Profession",m.profession||null)}
               {m.facebook && infoRow("📘","Facebook",<a href={m.facebook.startsWith("http")?m.facebook:`https://facebook.com/${m.facebook}`} target="_blank" rel="noopener noreferrer" style={{color:C.accent,textDecoration:"none",fontWeight:600}}>{m.facebook} 🔗</a>)}
             </div>
+
+            {/* Invités enregistrés */}
+            <GuestsList memberId={m.id} studioId={studioId}/>
 
             {/* Gel alert */}
             {isFrozen && (

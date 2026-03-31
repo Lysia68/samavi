@@ -48,6 +48,12 @@ export async function POST(req: NextRequest) {
 
     // ── Guest booking ─────────────────────────────────────────────────
     if (isGuest) {
+      // Vérifier doublon invité (même nom + même hôte + même séance)
+      const { data: existingGuest } = await db.from("bookings")
+        .select("id, status").eq("session_id", sessionId).eq("guest_name", guestName).eq("host_member_id", hostMemberId)
+        .neq("status", "cancelled").maybeSingle()
+      if (existingGuest) return NextResponse.json({ already: true, status: existingGuest.status })
+
       // Compter les inscrits confirmés vs spots
       const [{ data: sess }, { count: confirmedCount }] = await Promise.all([
         db.from("sessions").select("spots").eq("id", sessionId).single(),
