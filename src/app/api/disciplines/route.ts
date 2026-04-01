@@ -5,6 +5,22 @@ import { checkPlanLimit } from "@/lib/plan-limits"
 
 export const dynamic = "force-dynamic"
 
+// GET /api/disciplines?studioId=xxx
+export async function GET(req: NextRequest) {
+  const studioId = req.nextUrl.searchParams.get("studioId")
+  if (!studioId) return NextResponse.json({ error: "studioId requis" }, { status: 400 })
+
+  const db = createServiceSupabase()
+  const { data } = await db.from("disciplines")
+    .select("id, name, icon, color, slots")
+    .eq("studio_id", studioId)
+    .order("created_at")
+
+  const res = NextResponse.json({ disciplines: data || [] })
+  res.headers.set("Cache-Control", "private, s-maxage=30, stale-while-revalidate=60")
+  return res
+}
+
 // POST /api/disciplines — créer une discipline (avec vérification plan)
 export async function POST(req: NextRequest) {
   const { studioId, name, icon, color, slots } = await req.json()

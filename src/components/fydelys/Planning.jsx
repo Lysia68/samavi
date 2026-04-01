@@ -769,9 +769,15 @@ function Planning({ isMobile }) {
   useEffect(() => {
     if (!studioId) return;
     const sb = createClient();
-    // Toujours charger les disciplines depuis Supabase pour éviter race condition au premier rendu
-    sb.from("disciplines").select("id,name,icon,color,slots").eq("studio_id", studioId).order("created_at")
-      .then(({ data }) => { setLocalDiscs(data?.length ? data.map(d => ({ ...d, slots: d.slots || [] })) : []); setDiscsLoading(false); });
+    // Charger disciplines via service role (contourne RLS pour impersonate SuperAdmin)
+    fetch(`/api/disciplines?studioId=${studioId}`)
+      .then(r => r.ok ? r.json() : null)
+      .then(json => { setLocalDiscs(json?.disciplines?.length ? json.disciplines.map(d => ({ ...d, slots: d.slots || [] })) : []); setDiscsLoading(false); })
+      .catch(() => {
+        // Fallback client direct
+        sb.from("disciplines").select("id,name,icon,color,slots").eq("studio_id", studioId).order("created_at")
+          .then(({ data }) => { setLocalDiscs(data?.length ? data.map(d => ({ ...d, slots: d.slots || [] })) : []); setDiscsLoading(false); });
+      });
     // Coachs — via /api/team (service role) pour contourner RLS profiles
     fetch(`/api/team?studioId=${studioId}`)
       .then(r => r.ok ? r.json() : null)

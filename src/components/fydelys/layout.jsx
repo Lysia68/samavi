@@ -45,7 +45,7 @@ const NAV = [
 ];
 
 function Sidebar({ active, onNav, studioName = "Mon studio", planName = "Essentiel", membersCount = 0, userName = "", userRole = "Admin", trialEndsAt = null, billingStatus = "active" }) {
-  const TRIAL_DAYS = 15;
+  const TRIAL_DAYS = 30;
   const trialDaysLeft = trialEndsAt
     ? Math.max(0, Math.ceil((new Date(trialEndsAt).getTime() - Date.now()) / 86400000))
     : null;

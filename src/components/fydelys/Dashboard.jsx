@@ -115,7 +115,7 @@ function Dashboard({ isMobile }) {
       sb.from("sessions").select("id,discipline_id,teacher,room,duration_min,spots,session_date,session_time,status").eq("studio_id", studioId),
       sb.from("members").select("id,first_name,last_name,email,phone,status,joined_at,subscription_id,subscriptions(name)").eq("studio_id", studioId),
       sb.from("member_payments").select("id,amount,status,payment_date,payment_type,notes,members(first_name,last_name)").eq("studio_id", studioId),
-      sb.from("disciplines").select("id,name,color,icon").eq("studio_id", studioId),
+      fetch(`/api/disciplines?studioId=${studioId}`).then(r=>r.json()).then(j=>({data:j.disciplines||[]})).catch(()=>sb.from("disciplines").select("id,name,color,icon").eq("studio_id", studioId)),
     ]).then(async ([sessRes, membRes, payRes, discRes]) => {
       const sessData = sessRes.data || [];
       const membData = membRes.data || [];
