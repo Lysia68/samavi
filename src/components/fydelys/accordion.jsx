@@ -114,9 +114,8 @@ export function PlanningAccordion({ sess, sessId, bookings, onChangeStatus, onAd
         const { data: memberData } = await sb.from("members").select("credits").eq("id", creditMemberId).single();
         const currentCredits = memberData?.credits ?? 0;
         if (val === true && prevVal !== true) {
-          if (currentCredits > 0) {
-            await sb.from("members").update({ credits: currentCredits - 1 }).eq("id", creditMemberId);
-          }
+          // Toujours déduire (même en négatif) pour que le solde soit juste après achat de crédits
+          await sb.from("members").update({ credits: currentCredits - 1 }).eq("id", creditMemberId);
         } else if (val !== true && prevVal === true) {
           await sb.from("members").update({ credits: currentCredits + 1 }).eq("id", creditMemberId);
         }
@@ -138,8 +137,8 @@ export function PlanningAccordion({ sess, sessId, bookings, onChangeStatus, onAd
       const UNLIMITED_PERIODS = ["mois", "trimestre", "année", "annuel", "annee", "monthly", "yearly"];
       for (const b of toMark) {
         const isUnlimited = b.subPeriod && UNLIMITED_PERIODS.includes(b.subPeriod.toLowerCase());
-        if (!isUnlimited && b.memberId && b.credits > 0) {
-          await sb.from("members").update({ credits: b.credits - 1 }).eq("id", b.memberId);
+        if (!isUnlimited && b.memberId) {
+          await sb.from("members").update({ credits: (b.credits ?? 0) - 1 }).eq("id", b.memberId);
         }
       }
     }
@@ -195,6 +194,14 @@ export function PlanningAccordion({ sess, sessId, bookings, onChangeStatus, onAd
                 <div onClick={()=>b.memberId && window.dispatchEvent(new CustomEvent("fydelys:openMember", { detail: b.memberId }))}
                   style={{ fontSize:15, fontWeight:700, color:C.text, flex:1, cursor:b.memberId?"pointer":"default" }}>{b.name}</div>
                 <CreditBadge credits={b.credits} total={b.total} sub={b.sub} subPeriod={b.subPeriod}/>
+                {(() => {
+                  const UNLIM = ["mois","trimestre","année","annuel"];
+                  const isUnlimited = b.subPeriod && UNLIM.includes(b.subPeriod);
+                  if (!isUnlimited && b.credits !== null && b.credits !== undefined && b.credits <= 0 && b.st === "confirmed") {
+                    return <span style={{ fontSize:10, fontWeight:700, padding:"2px 7px", borderRadius:8, background:"#FDE8E8", color:"#C43A3A", whiteSpace:"nowrap" }}>⚠ Impayé</span>;
+                  }
+                  return null;
+                })()}
               </div>
               <div style={{ display:"flex", alignItems:"center", gap:6, paddingLeft:39, flexWrap:"wrap" }}>
                 <span style={{ padding:"3px 10px", borderRadius:20, fontSize:12, fontWeight:600, whiteSpace:"nowrap", flexShrink:0, ...stStyle(b.st) }}>
