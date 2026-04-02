@@ -155,8 +155,8 @@ function MemberRow({ m, onSelect, selected }) {
         {(() => {
           const unlimited = m.subPeriod && ["mois","trimestre","année","annuel","monthly","yearly"].includes(m.subPeriod);
           if (unlimited) return <Pill color={C.ok} bg={C.okBg}>Abo</Pill>;
-          if (m.credits > 0) return <Pill color={C.info} bg={C.infoBg}>{m.credits} crédits</Pill>;
-          return <Pill color="#C43A3A" bg="#FDE8E8">0 crédit</Pill>;
+          if (m.credits > 0) return <Pill color={C.info} bg={C.infoBg}>{m.credits} crédit{m.credits>1?"s":""}</Pill>;
+          return <Pill color="#C43A3A" bg="#FDE8E8">{m.credits||0} crédit</Pill>;
         })()}
       </div>
     </div>

@@ -612,10 +612,10 @@ function Members({ isMobile, onImpersonate, openMemberId, onMemberOpened }) {
 
             {/* KPIs */}
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:12}}>
-              {[["Pack",m.subscription],["Statut",m.status],["Membre depuis",m.joined?new Date(m.joined).toLocaleDateString("fr-FR"):"—"],["Crédits",`${m.credits} séance${m.credits!==1?"s":""}`]].map(([l,v])=>(
-                <div key={l} style={{background:l==="Crédits"&&m.credits===0?"#FDE8E8":C.bg,borderRadius:8,padding:"10px 12px",border:`1px solid ${l==="Crédits"&&m.credits===0?"#F5C2C2":C.border}`}}>
+              {[["Abonnement",m.subscription],["Statut",m.status],["Membre depuis",m.joined?new Date(m.joined).toLocaleDateString("fr-FR"):"—"],["Crédits",`${m.credits} séance${Math.abs(m.credits)!==1?"s":""}`]].map(([l,v])=>(
+                <div key={l} style={{background:l==="Crédits"&&m.credits<=0?"#FDE8E8":C.bg,borderRadius:8,padding:"10px 12px",border:`1px solid ${l==="Crédits"&&m.credits<=0?"#F5C2C2":C.border}`}}>
                   <div style={{fontSize:10,fontWeight:700,color:C.textMuted,textTransform:"uppercase",marginBottom:2}}>{l}</div>
-                  <div style={{fontSize:14,fontWeight:600,color:l==="Crédits"&&m.credits===0?"#C43A3A":C.text,textTransform:"capitalize"}}>{v}</div>
+                  <div style={{fontSize:14,fontWeight:600,color:l==="Crédits"&&m.credits<=0?"#C43A3A":C.text,textTransform:"capitalize"}}>{v}</div>
                 </div>
               ))}
             </div>
