@@ -7,14 +7,37 @@ export const dynamic = "force-dynamic"
 
 // Route utilisée pour envoyer un magic link brandé au nom du studio
 export async function POST(request: NextRequest) {
-  // Rate limit strict : max 5 magic links/min par IP
-  const rl = rateLimit(getIP(request), { max: 5, windowSec: 60 })
+  // Rate limit strict : max 3 magic links/min par IP
+  const rl = rateLimit(getIP(request), { max: 3, windowSec: 60 })
   if (!rl.ok) return NextResponse.json({ error: "Trop de demandes. Réessayez dans quelques instants." }, { status: 429 })
 
-  const { email, tenantSlug } = await request.json()
+  const { email, tenantSlug, captchaToken } = await request.json()
 
   if (!email || !tenantSlug) {
     return NextResponse.json({ error: "email et tenantSlug requis" }, { status: 400 })
+  }
+
+  // Vérification CAPTCHA Cloudflare Turnstile (si configuré)
+  const turnstileSecret = process.env.TURNSTILE_SECRET_KEY
+  if (turnstileSecret && captchaToken) {
+    try {
+      const verifyRes = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: `secret=${turnstileSecret}&response=${captchaToken}`,
+      })
+      const verifyData = await verifyRes.json()
+      if (!verifyData.success) {
+        console.warn("[send-magic-link] CAPTCHA failed:", verifyData)
+        return NextResponse.json({ error: "Vérification CAPTCHA échouée. Rechargez la page." }, { status: 403 })
+      }
+    } catch (e: any) {
+      console.warn("[send-magic-link] CAPTCHA verify error:", e.message)
+    }
+  } else if (turnstileSecret && !captchaToken) {
+    // CAPTCHA configuré mais pas de token → suspect
+    console.warn("[send-magic-link] No captcha token for", email)
+    return NextResponse.json({ error: "Vérification requise. Rechargez la page." }, { status: 403 })
   }
 
   const SENDGRID_API_KEY = process.env.SENDGRID_API_KEY
@@ -70,7 +93,7 @@ export async function POST(request: NextRequest) {
   const studioName = studio.name || "Votre studio"
   const studioEmail = studio.email || "noreply@fydelys.fr"
 
-  // Vérifier si l'utilisateur existe par email (listUsers paginé)
+  // Vérifier si l'utilisateur existe par email
   const { data: { users } } = await db.auth.admin.listUsers({ perPage: 1000 })
   const existingUser = users?.find((u: any) => u.email?.toLowerCase() === email.toLowerCase())
 

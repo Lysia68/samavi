@@ -1,6 +1,56 @@
 "use client"
-import React, { useState, useEffect } from "react"
+import React, { useState, useEffect, useRef, useCallback } from "react"
 import { createClient } from "@/lib/supabase"
+
+// Cloudflare Turnstile CAPTCHA invisible
+function useTurnstile() {
+  const tokenRef = useRef<string>("")
+  const widgetRef = useRef<string>("")
+  const containerRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const siteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY
+    if (!siteKey) return
+
+    // Charger le script Turnstile
+    if (!document.getElementById("cf-turnstile-script")) {
+      const s = document.createElement("script")
+      s.id = "cf-turnstile-script"
+      s.src = "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit"
+      s.async = true
+      document.head.appendChild(s)
+    }
+
+    const init = () => {
+      if (!containerRef.current || !(window as any).turnstile) return
+      if (widgetRef.current) return // déjà initialisé
+      widgetRef.current = (window as any).turnstile.render(containerRef.current, {
+        sitekey: siteKey,
+        callback: (token: string) => { tokenRef.current = token },
+        "expired-callback": () => { tokenRef.current = "" },
+        size: "invisible",
+      })
+    }
+
+    // Attendre que le script soit chargé
+    const interval = setInterval(() => {
+      if ((window as any).turnstile) { init(); clearInterval(interval) }
+    }, 200)
+    const timeout = setTimeout(() => clearInterval(interval), 10000)
+
+    return () => { clearInterval(interval); clearTimeout(timeout) }
+  }, [])
+
+  const getToken = useCallback(() => tokenRef.current, [])
+  const reset = useCallback(() => {
+    tokenRef.current = ""
+    if (widgetRef.current && (window as any).turnstile) {
+      (window as any).turnstile.reset(widgetRef.current)
+    }
+  }, [])
+
+  return { containerRef, getToken, reset }
+}
 
 function FleurDeLys({ size = 46 }: { size?: number }) {
   return (
@@ -202,6 +252,7 @@ export default function LoginPage({ initialStudioName }: { initialStudioName?: s
   const [hydrated, setHydrated] = useState(false)
   const [error, setError]       = useState<string|null>(null)
   const [focused, setFocused]   = useState(false)
+  const turnstile = useTurnstile()
   const [reg, setReg] = useState({
     studioName:"", slug:"", city:"", zip:"", address:"",
     type:"Yoga", firstName:"", lastName:"", email:"", phone:"",
@@ -304,8 +355,9 @@ export default function LoginPage({ initialStudioName }: { initialStudioName?: s
         const res = await fetch("/api/send-magic-link", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email, tenantSlug: slug }),
+          body: JSON.stringify({ email, tenantSlug: slug, captchaToken: turnstile.getToken() }),
         })
+        turnstile.reset()
         if (!res.ok) {
           const { error: apiErr } = await res.json()
           setError(apiErr || "Erreur lors de l'envoi")
@@ -487,6 +539,7 @@ export default function LoginPage({ initialStudioName }: { initialStudioName?: s
                 </p>
               </div>
               <form onSubmit={handleLogin}>
+                <div ref={turnstile.containerRef}/>
                 <div style={{marginBottom:14}}>
                   <label style={{...lbl,color:focused?C.accent:C.label}}>Adresse email</label>
                   <input type="email" value={email} onChange={e=>setEmail(e.target.value)}
