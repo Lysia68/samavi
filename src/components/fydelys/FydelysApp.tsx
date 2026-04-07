@@ -101,8 +101,11 @@ const PAGE_TITLES = {
   }, [impersonating, propStudioId]);
 
   const startImpersonateStudio = React.useCallback(async (studioSlugTarget) => {
-    setImpersonating({ as: "admin", fromRole: "superadmin", studioSlug: studioSlugTarget });
-    setRole("admin");
+    // Réinitialiser les données avant de switcher (évite le flash)
+    setDiscs([]);
+    setSharedStudioId(null);
+    setImpersonatedStudioName(studioSlugTarget);
+
     // Charger le studioId via l'API service role (bypass RLS depuis fydelys.fr)
     try {
       const res = await fetch("/api/sa/studios");
@@ -113,13 +116,16 @@ const PAGE_TITLES = {
         setImpersonatedStudioName(target.name || studioSlugTarget);
         const count = (memberCounts || {})[target.id] ?? null;
         setDynamicMembersCount(count !== null ? Number(count) : null);
-        // Charger billing_status et plan_slug pour l'impersonation
         if (target.billing_status) setDynamicBillingStatus(target.billing_status);
         if (target.plan_slug) setDynamicPlanName(target.plan_slug);
         if (target.trial_ends_at) setDynamicTrialEndsAt(target.trial_ends_at);
         else setDynamicTrialEndsAt(null);
       }
     } catch(e) { console.error("impersonate studioId load error", e); }
+
+    // Passer en mode admin seulement après le chargement
+    setImpersonating({ as: "admin", fromRole: "superadmin", studioSlug: studioSlugTarget });
+    setRole("admin");
   }, []);
 
   // Lire la page initiale depuis l'URL (ex: /members → "members")
