@@ -5,6 +5,13 @@ export async function middleware(request: NextRequest) {
   const hostname = request.headers.get("host") || ""
   const { pathname, searchParams } = request.nextUrl
 
+  // Geo-blocking : bloquer les IPs hors France (sauf localhost et assets)
+  const country = request.headers.get("x-vercel-ip-country") || ""
+  const ALLOWED_COUNTRIES = ["FR", "BE", "CH", "LU", "MC", "DE", ""] // France + voisins + vide (localhost/dev)
+  if (country && !ALLOWED_COUNTRIES.includes(country) && !pathname.startsWith("/_next") && !pathname.startsWith("/api/stripe")) {
+    return new NextResponse("Accès restreint à la France et pays limitrophes.", { status: 403 })
+  }
+
   // ── Détecter le contexte domaine ─────────────────────────────────────────────
   const isApp      = hostname === "fydelys.fr" || hostname === "fydelys.fr:3000" || hostname === "localhost" || hostname === "localhost:3000"
   const isLocal    = hostname === "localhost:3000" || hostname === "localhost"
