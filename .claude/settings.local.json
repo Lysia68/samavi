@@ -10,7 +10,18 @@
       "Bash(node scripts/seed-yogaplus.mjs)",
       "Bash(npx tsc:*)",
       "Bash(find /c/Users/Bernard/Fydelys_v6/fydelys -type f \\\\\\(-name *.sql -o -name *schema* -o -name *migration* \\\\\\))",
-      "Bash(grep -r \"member_payments\\\\|deleted_at\\\\|deleted\" /c/Users/Bernard/Fydelys_v6/fydelys/supabase/*.sql)"
+      "Bash(grep -r \"member_payments\\\\|deleted_at\\\\|deleted\" /c/Users/Bernard/Fydelys_v6/fydelys/supabase/*.sql)",
+      "mcp__claude_ai_Vercel__deploy_to_vercel",
+      "Bash(vercel --version)",
+      "Bash(npx vercel:*)",
+      "Bash(git add:*)",
+      "Bash(git commit -m ':*)",
+      "Bash(git push:*)",
+      "mcp__claude_ai_Vercel__list_teams",
+      "mcp__claude_ai_Vercel__list_projects",
+      "mcp__claude_ai_Vercel__list_deployments",
+      "mcp__claude_ai_Vercel__get_project",
+      "mcp__claude_ai_Vercel__web_fetch_vercel_url"
     ]
   }
 }
