@@ -1,10 +1,11 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useContext } from "react";
 import { C } from "./theme";
 import { IcoCheck, IcoX, IcoUndo, IcoUserPlus2, IcoMail, IcoPhone, IcoClipboard, IcoUsers } from "./icons";
 import { CreditBadge } from "./ui";
 import { createClient } from "@/lib/supabase";
+import { AppCtx } from "./context";
 
 export function stLbl(s) { return s==="confirmed"?"Confirmé":s==="waitlist"?"En attente":"Annulé"; }
 export function stStyle(s) {
@@ -68,6 +69,7 @@ function AttendanceRow({ b, onMark, isMobile }) {
 }
 
 export function PlanningAccordion({ sess, sessId, bookings, onChangeStatus, onAddBooking, onSendReminder, onAttendanceChange, onDeleteBooking, isMobile }) {
+  const { studioId } = useContext(AppCtx) || {};
   const bl   = bookings[sessId] || [];
   const conf = bl.filter(b=>b.st==="confirmed");
   const wait = bl.filter(b=>b.st==="waitlist");
@@ -105,19 +107,32 @@ export function PlanningAccordion({ sess, sessId, bookings, onChangeStatus, onAd
       const booking = conf.find(b => b.id === bookingId);
       // Pour un invité, déduire le crédit du membre hôte
       const creditMemberId = booking?.hostMemberId || booking?.memberId;
-      // Abonnements récurrents (mois/trimestre/année) = crédits illimités, pas de déduction
-      const UNLIMITED_PERIODS = ["mois", "trimestre", "année", "annuel", "annee", "monthly", "yearly"];
-      const isUnlimited = booking?.subPeriod && UNLIMITED_PERIODS.includes(booking.subPeriod.toLowerCase());
 
-      if (!isUnlimited && creditMemberId) {
+      // Log activité (présence/absence)
+      if (booking?.memberId && studioId) {
+        const action = val === true ? "booking_attended" : val === false ? "booking_absent" : "booking_created";
+        await sb.from("member_activity").insert({
+          member_id: booking.memberId, studio_id: studioId,
+          actor_role: "admin", action,
+          details: { booking_id: bookingId, session_id: sessId, session_date: sess?.date, session_time: sess?.time },
+        });
+      }
+
+      if (creditMemberId) {
         // Charger les crédits actuels du membre (hôte ou direct)
-        const { data: memberData } = await sb.from("members").select("credits").eq("id", creditMemberId).single();
+        const { data: memberData } = await sb.from("members").select("credits, credits_total").eq("id", creditMemberId).single();
         const currentCredits = memberData?.credits ?? 0;
-        if (val === true && prevVal !== true) {
-          // Toujours déduire (même en négatif) pour que le solde soit juste après achat de crédits
-          await sb.from("members").update({ credits: currentCredits - 1 }).eq("id", creditMemberId);
-        } else if (val !== true && prevVal === true) {
-          await sb.from("members").update({ credits: currentCredits + 1 }).eq("id", creditMemberId);
+        const totalCredits   = memberData?.credits_total ?? 0;
+        // Déduire si le membre utilise le système de crédits (credits_total > 0),
+        // même s'il a aussi un abonnement illimité (studios mixant abonnements + carnets)
+        if (totalCredits > 0) {
+          if (val === true && prevVal !== true) {
+            await sb.from("members").update({ credits: currentCredits - 1 }).eq("id", creditMemberId);
+            if (studioId) await sb.from("member_activity").insert({ member_id: creditMemberId, studio_id: studioId, actor_role: "admin", action: "credit_deduct", details: { amount: 1, reason: "attendance", booking_id: bookingId, session_date: sess?.date } });
+          } else if (val !== true && prevVal === true) {
+            await sb.from("members").update({ credits: currentCredits + 1 }).eq("id", creditMemberId);
+            if (studioId) await sb.from("member_activity").insert({ member_id: creditMemberId, studio_id: studioId, actor_role: "admin", action: "credit_restore", details: { amount: 1, reason: "attendance_undone", booking_id: bookingId, session_date: sess?.date } });
+          }
         }
       }
     }
@@ -133,12 +148,15 @@ export function PlanningAccordion({ sess, sessId, bookings, onChangeStatus, onAd
       setAttended(prev => { const n={...prev}; ids.forEach(id=>{n[id]=true;}); return n; });
       // Notifier le parent pour chaque booking marqué
       ids.forEach(id => onAttendanceChange && onAttendanceChange(id, true));
-      // Déduire 1 crédit par membre présent (si crédits > 0)
-      const UNLIMITED_PERIODS = ["mois", "trimestre", "année", "annuel", "annee", "monthly", "yearly"];
+      // Déduire 1 crédit par membre présent si le membre utilise le système de crédits
+      // (credits_total > 0) — même avec un abonnement illimité
       for (const b of toMark) {
-        const isUnlimited = b.subPeriod && UNLIMITED_PERIODS.includes(b.subPeriod.toLowerCase());
-        if (!isUnlimited && b.memberId) {
+        if (studioId && b.memberId) {
+          await sb.from("member_activity").insert({ member_id: b.memberId, studio_id: studioId, actor_role: "admin", action: "booking_attended", details: { booking_id: b.id, session_id: sessId, session_date: sess?.date, bulk: true } });
+        }
+        if ((b.total ?? 0) > 0 && b.memberId) {
           await sb.from("members").update({ credits: (b.credits ?? 0) - 1 }).eq("id", b.memberId);
+          if (studioId) await sb.from("member_activity").insert({ member_id: b.memberId, studio_id: studioId, actor_role: "admin", action: "credit_deduct", details: { amount: 1, reason: "attendance_bulk", booking_id: b.id, session_date: sess?.date } });
         }
       }
     }

@@ -11,6 +11,45 @@ function formatDate(dateStr) {
   });
 }
 
+function actionColor(action) {
+  if (action.startsWith("credit_add") || action === "credit_restore") return { bg: "#E8F5E9", icon: "➕" };
+  if (action === "credit_deduct" || action === "credit_manual")       return { bg: "#FEE2E2", icon: "➖" };
+  if (action === "booking_attended")   return { bg: "#E8F5E9", icon: "✓" };
+  if (action === "booking_absent")     return { bg: "#FEE2E2", icon: "✕" };
+  if (action === "booking_cancelled")  return { bg: "#FEF3E2", icon: "⊘" };
+  if (action === "booking_created")    return { bg: "#E3F2FD", icon: "📅" };
+  if (action === "payment")            return { bg: "#FDF4E3", icon: "💶" };
+  if (action === "subscription_change") return { bg: "#F3E5F5", icon: "🔄" };
+  if (action === "member_created")     return { bg: "#E8F5E9", icon: "👤" };
+  if (action === "member_deleted" || action === "member_suspended") return { bg: "#FEE2E2", icon: "🗑" };
+  if (action === "member_frozen")      return { bg: "#E3F2FD", icon: "❄" };
+  return { bg: "#F5F5F5", icon: "•" };
+}
+
+function actionLabel(action, details) {
+  const d = details || {};
+  switch (action) {
+    case "credit_add":        return `+${d.amount || "?"} crédit${(d.amount || 0) > 1 ? "s" : ""}${d.label ? ` — ${d.label}` : d.source === "admin_gift" ? " (offert)" : ""}`;
+    case "credit_deduct":     return `−1 crédit${d.reason === "attendance" ? " (présence validée)" : d.reason === "attendance_bulk" ? " (validation groupée)" : ""}`;
+    case "credit_restore":    return `+1 crédit restitué${d.reason === "attendance_undone" ? " (présence annulée)" : ""}`;
+    case "credit_manual":     return `Ajustement manuel des crédits (${d.from ?? "?"} → ${d.to ?? "?"})`;
+    case "booking_created":   return `Réservation — ${d.session_date || ""} ${d.session_time?.slice(0, 5) || ""}${d.discipline ? ` · ${d.discipline}` : ""}`;
+    case "booking_attended":  return `Présence validée — ${d.session_date || ""}`;
+    case "booking_absent":    return `Marqué absent — ${d.session_date || ""}`;
+    case "booking_cancelled": return `Réservation annulée${d.by ? ` par ${d.by}` : ""} — ${d.session_date || ""}`;
+    case "payment":           return `Paiement ${d.amount ? `${d.amount} €` : ""}${d.type ? ` · ${d.type}` : ""}${d.notes ? ` — ${d.notes}` : ""}`;
+    case "subscription_change": return `Abonnement changé → ${d.name || "—"}${d.price ? ` (${d.price}€)` : ""}`;
+    case "member_created":    return `Membre créé`;
+    case "member_updated":    return `Membre modifié`;
+    case "member_deleted":    return `Membre supprimé`;
+    case "member_suspended":  return `Membre suspendu`;
+    case "member_reactivated": return `Membre réactivé`;
+    case "member_frozen":     return `Compte gelé jusqu'au ${d.to || "?"}`;
+    case "member_unfrozen":   return `Compte dégelé`;
+    default: return action;
+  }
+}
+
 function KpiCard({ label, value, color, bg, sub }) {
   return (
     <div style={{ background: bg || C.surface, border: `1.5px solid ${color || C.border}40`, borderRadius: 12, padding: "16px 20px", minWidth: 120, flex: 1 }}>
@@ -28,9 +67,11 @@ export function Historique({ isMobile }) {
   const [loading, setLoading]       = useState(true);
   const [expandedId, setExpandedId] = useState(null);
   const [bookings, setBookings]     = useState({});
-  const [activeTab, setActiveTab]   = useState("seances"); // "seances" | "compta"
+  const [activeTab, setActiveTab]   = useState("seances"); // "seances" | "compta" | "activite"
   const [compta, setCompta]         = useState(null); // { year, months: [{month,amount,count,avg}] }
   const [comptaYear, setComptaYear] = useState(new Date().getFullYear());
+  const [activity, setActivity]     = useState(null); // null=loading, [...]=data
+  const [activityFilter, setActivityFilter] = useState("all"); // all | credit | booking | payment | member
 
   const today = toISO(new Date());
   const [dateFrom, setDateFrom] = useState(() => {
@@ -46,6 +87,17 @@ export function Historique({ isMobile }) {
       .eq("studio_id", studioId).order("name")
       .then(({ data }) => { if (data) setDisciplines(data); });
   }, [studioId]);
+
+  // Charger l'activité
+  useEffect(() => {
+    if (!studioId || activeTab !== "activite") return;
+    setActivity(null);
+    const params = new URLSearchParams({ studioId, limit: "200", from: dateFrom, to: dateTo });
+    fetch(`/api/activity?${params}`)
+      .then(r => r.json())
+      .then(json => setActivity(json?.activity || []))
+      .catch(() => setActivity([]));
+  }, [studioId, activeTab, dateFrom, dateTo]);
 
   // Charger comptabilité
   useEffect(() => {
@@ -201,7 +253,7 @@ export function Historique({ isMobile }) {
       <div style={{ marginBottom: 20 }}>
         <div style={{ fontSize: 20, fontWeight: 800, color: C.text, marginBottom: 12 }}>Historique</div>
         <div style={{ display: "flex", gap: 4, background: C.bg, borderRadius: 10, padding: 3 }}>
-          {[{key:"seances",label:"Séances"},{key:"compta",label:"Comptabilité"}].map(t => (
+          {[{key:"seances",label:"Séances"},{key:"compta",label:"Comptabilité"},{key:"activite",label:"Activité"}].map(t => (
             <button key={t.key} onClick={() => setActiveTab(t.key)}
               style={{ flex: 1, padding: "8px", borderRadius: 8, border: "none", fontSize: 13, fontWeight: 700, cursor: "pointer",
                 background: activeTab === t.key ? C.accent : "transparent", color: activeTab === t.key ? "#fff" : C.textMuted }}>
@@ -256,6 +308,89 @@ export function Historique({ isMobile }) {
               </div>
             )}
           </div>
+        </div>
+      )}
+
+      {/* ── Activité ── */}
+      {activeTab === "activite" && (
+        <div>
+          {/* Filtres période + type */}
+          <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 12, padding: "14px 16px", marginBottom: 16 }}>
+            <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "flex-end" }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                <label style={{ fontSize: 10, fontWeight: 700, color: C.textMuted, textTransform: "uppercase" }}>DU</label>
+                <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)}
+                  style={{ padding: "7px 10px", border: `1.5px solid ${C.border}`, borderRadius: 8, fontSize: 13, color: C.text, background: C.surfaceWarm }}/>
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                <label style={{ fontSize: 10, fontWeight: 700, color: C.textMuted, textTransform: "uppercase" }}>AU</label>
+                <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)}
+                  style={{ padding: "7px 10px", border: `1.5px solid ${C.border}`, borderRadius: 8, fontSize: 13, color: C.text, background: C.surfaceWarm }}/>
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                <label style={{ fontSize: 10, fontWeight: 700, color: C.textMuted, textTransform: "uppercase" }}>TYPE</label>
+                <select value={activityFilter} onChange={e => setActivityFilter(e.target.value)}
+                  style={{ padding: "7px 10px", border: `1.5px solid ${C.border}`, borderRadius: 8, fontSize: 13, color: C.text, background: C.surfaceWarm }}>
+                  <option value="all">Tout</option>
+                  <option value="credit">Crédits</option>
+                  <option value="booking">Réservations</option>
+                  <option value="payment">Paiements</option>
+                  <option value="member">Membres</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          {activity === null && <div style={{ textAlign: "center", padding: 40, color: C.textMuted }}>Chargement…</div>}
+          {activity?.length === 0 && <div style={{ textAlign: "center", padding: 40, color: C.textMuted, fontSize: 14 }}>Aucune activité sur cette période</div>}
+          {activity?.length > 0 && (() => {
+            const filtered = activity.filter(a => {
+              if (activityFilter === "all") return true;
+              if (activityFilter === "credit")  return a.action.startsWith("credit_");
+              if (activityFilter === "booking") return a.action.startsWith("booking_");
+              if (activityFilter === "payment") return a.action === "payment";
+              if (activityFilter === "member")  return a.action.startsWith("member_") || a.action === "subscription_change";
+              return true;
+            });
+            // Grouper par jour
+            const byDay = {};
+            filtered.forEach(a => {
+              const d = a.created_at.slice(0, 10);
+              if (!byDay[d]) byDay[d] = [];
+              byDay[d].push(a);
+            });
+            const days = Object.keys(byDay).sort((a, b) => b.localeCompare(a));
+            return (
+              <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                {days.map(day => (
+                  <div key={day}>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: C.textMuted, textTransform: "uppercase", padding: "6px 10px", background: C.bg, borderRadius: 16, display: "inline-block", marginBottom: 8 }}>
+                      {formatDate(day)}
+                    </div>
+                    <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 12, overflow: "hidden" }}>
+                      {byDay[day].map(a => {
+                        const time = a.created_at.slice(11, 16);
+                        const memberName = a.members ? `${a.members.first_name || ""} ${a.members.last_name || ""}`.trim() : "—";
+                        const label = actionLabel(a.action, a.details);
+                        const color = actionColor(a.action);
+                        return (
+                          <div key={a.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 14px", borderBottom: `1px solid ${C.borderSoft}` }}>
+                            <div style={{ fontSize: 11, color: C.textMuted, fontVariantNumeric: "tabular-nums", minWidth: 40 }}>{time}</div>
+                            <div style={{ width: 28, height: 28, borderRadius: 8, background: color.bg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, flexShrink: 0 }}>{color.icon}</div>
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <div style={{ fontSize: 13, fontWeight: 600, color: C.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{memberName}</div>
+                              <div style={{ fontSize: 12, color: C.textSoft, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{label}</div>
+                            </div>
+                            <div style={{ fontSize: 11, color: C.textMuted, background: C.bg, padding: "2px 8px", borderRadius: 10, flexShrink: 0 }}>{a.actor_role || "—"}</div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            );
+          })()}
         </div>
       )}
 

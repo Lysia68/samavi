@@ -19,7 +19,8 @@ function Payments({ isMobile }) {
   const [memberSearch, setMemberSearch] = useState("");
   const [memberResults, setMemberResults] = useState([]);
   const [addSaving, setAddSaving] = useState(false);
-  const total  = payments.filter(p=>p.status==="payé").reduce((s,p)=>s+p.amount,0);
+  const monthStr = new Date().toISOString().slice(0,7); // YYYY-MM
+  const total  = payments.filter(p=>p.status==="payé" && (p.date||"").startsWith(monthStr)).reduce((s,p)=>s+p.amount,0);
   const unpaid = payments.filter(p=>p.status==="impayé").reduce((s,p)=>s+p.amount,0);
   const p = isMobile?12:28;
 

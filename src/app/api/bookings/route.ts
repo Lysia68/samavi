@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { createServiceSupabase } from "@/lib/supabase-server"
 import { sendEmail } from "@/lib/email"
 import { rateLimit, getIP } from "@/lib/rate-limit"
+import { logActivity } from "@/lib/activity"
 
 export const dynamic = "force-dynamic"
 
@@ -142,6 +143,8 @@ export async function POST(req: NextRequest) {
       console.error("[bookings POST] insert error:", bookErr?.message, bookErr?.details, bookErr?.hint, { sessionId, memberId, status })
       return NextResponse.json({ error: bookErr?.message }, { status: 500 })
     }
+
+    await logActivity(db, { memberId, studioId, action: "booking_created", actorRole: force ? "admin" : "adherent", details: { booking_id: booking.id, session_id: sessionId, status, session_date: sess.session_date, session_time: sess.session_time, discipline: (sess as any).disciplines?.name } })
 
     // Crédits déduits à la validation des présences (accordion.jsx), pas à la réservation
 

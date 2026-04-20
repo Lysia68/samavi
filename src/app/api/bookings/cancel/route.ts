@@ -3,6 +3,7 @@ import { createServiceSupabase } from "@/lib/supabase-server"
 import { sendEmail } from "@/lib/email"
 import { sendSMS, smsConfirmation } from "@/lib/sms"
 import { checkAuth } from "@/lib/auth-check"
+import { logActivity } from "@/lib/activity"
 
 export const dynamic = "force-dynamic"
 
@@ -31,6 +32,12 @@ export async function POST(req: NextRequest) {
       // Annuler le booking (admin)
       await db.from("bookings").update({ status: "cancelled", cancelled_by: "admin" }).eq("id", bookingId)
 
+      // Log
+      const { data: sessForLog } = await db.from("sessions").select("session_date, session_time, studio_id, disciplines(name)").eq("id", booking.session_id).maybeSingle()
+      if (sessForLog && booking.member_id) {
+        await logActivity(db, { memberId: booking.member_id, studioId: (sessForLog as any).studio_id, action: "booking_cancelled", actorRole: "admin", details: { booking_id: bookingId, session_id: booking.session_id, by: "admin", session_date: (sessForLog as any).session_date, session_time: (sessForLog as any).session_time, discipline: (sessForLog as any).disciplines?.name } })
+      }
+
       // Restituer le crédit si applicable
       await restoreCredit(db, booking.member_id)
 
@@ -53,6 +60,12 @@ export async function POST(req: NextRequest) {
       if (!booking) return NextResponse.json({ error: "Booking introuvable" }, { status: 404 })
 
       await db.from("bookings").update({ status: "cancelled", cancelled_by: "membre" }).eq("id", booking.id)
+
+      const { data: sessForLog } = await db.from("sessions").select("session_date, session_time, studio_id, disciplines(name)").eq("id", sessionId).maybeSingle()
+      if (sessForLog) {
+        await logActivity(db, { memberId, studioId: (sessForLog as any).studio_id, action: "booking_cancelled", actorRole: "adherent", details: { booking_id: booking.id, session_id: sessionId, by: "membre", session_date: (sessForLog as any).session_date, session_time: (sessForLog as any).session_time, discipline: (sessForLog as any).disciplines?.name } })
+      }
+
       await restoreCredit(db, memberId)
       const promoted = await promoteWaitlist(db, sessionId)
 
@@ -69,18 +82,16 @@ export async function POST(req: NextRequest) {
   }
 }
 
-/** Restitue 1 crédit au membre si son abonnement est basé sur des crédits */
+/** Restitue 1 crédit au membre s'il utilise le système de crédits (credits_total > 0) */
 async function restoreCredit(db: any, memberId: string) {
   const { data: member } = await db.from("members")
-    .select("credits, credits_total, subscription_id, subscriptions(period)")
+    .select("credits, credits_total")
     .eq("id", memberId).single()
 
   if (!member) return
-  const period = (member as any).subscriptions?.period
-  const isUnlimited = period === "mois" || period === "trimestre" || period === "année"
   const hasCredits = (member.credits_total ?? 0) > 0
 
-  if (hasCredits && !isUnlimited) {
+  if (hasCredits) {
     const newCredits = Math.min((member.credits ?? 0) + 1, member.credits_total ?? 999)
     await db.from("members").update({ credits: newCredits }).eq("id", memberId)
     console.log(`[cancel] Crédit restitué — membre ${memberId} : ${member.credits} → ${newCredits}`)
@@ -114,11 +125,9 @@ async function promoteWaitlist(db: any, sessionId: string): Promise<{ memberName
   // Promouvoir : waitlist → confirmed
   await db.from("bookings").update({ status: "confirmed" }).eq("id", booking.id)
 
-  // Déduire un crédit si applicable
-  const period = member?.subscriptions?.period
-  const isUnlimited = period === "mois" || period === "trimestre" || period === "année"
+  // Déduire un crédit si le membre utilise le système de crédits
   const hasCredits = (member?.credits_total ?? 0) > 0
-  if (hasCredits && !isUnlimited) {
+  if (hasCredits) {
     await db.from("members").update({
       credits: Math.max(0, (member.credits ?? 1) - 1)
     }).eq("id", booking.member_id)

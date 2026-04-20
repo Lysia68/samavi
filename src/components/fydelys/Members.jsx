@@ -342,8 +342,10 @@ function Members({ isMobile, onImpersonate, openMemberId, onMemberOpened }) {
         notes: sub.name,
       });
     }
-    // Ajouter les crédits de l'abonnement au membre
-    if (res.ok && sub?.credits) {
+    // Ajouter les crédits de l'abonnement au membre (uniquement si changement réel d'abonnement)
+    const previousSubId = modal.member.subscriptionId || null;
+    const subChanged = subId && subId !== previousSubId;
+    if (res.ok && sub?.credits && subChanged) {
       const currentCredits = modal.member.credits || 0;
       const currentTotal = modal.member.creditTotal || 0;
       await createClient().from("members").update({
@@ -496,6 +498,12 @@ function Members({ isMobile, onImpersonate, openMemberId, onMemberOpened }) {
           method: "PATCH",
           headers: {"Content-Type":"application/json"},
           body: JSON.stringify({ id: m.id, credits: newCredits, credits_total: newTotal }),
+        });
+        // Log activité "offre de séances" (plus précis que le log auto PATCH)
+        await createClient().from("member_activity").insert({
+          member_id: m.id, studio_id: studioId,
+          actor_role: "admin", action: "credit_add",
+          details: { amount: parseInt(qty), source: "admin_gift", reason: reason || null },
         });
         setMembers(prev => prev.map(mb => mb.id === m.id
           ? { ...mb, credits: newCredits, creditTotal: newTotal }

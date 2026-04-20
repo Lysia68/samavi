@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import Stripe from "stripe"
 import { createServiceSupabase } from "@/lib/supabase-server"
+import { logActivity } from "@/lib/activity"
 
 export const dynamic = "force-dynamic"
 
@@ -115,6 +116,7 @@ export async function POST(req: NextRequest) {
           }).eq("id", memberId)
           if (uErr) L.err("Échec update crédits membre", uErr)
           else L.ok(`Crédits membre mis à jour: ${(member.credits||0)} → ${(member.credits||0)+creditsToAdd}`)
+          await logActivity(db, { memberId, studioId, actorRole: "stripe", action: "credit_add", details: { amount: creditsToAdd, source: "subscription_once", label: subName, amount_eur: (session.amount_total || 0) / 100 } })
           const { error: pErr } = await db.from("member_payments").insert({
             studio_id: studioId, member_id: memberId,
             amount: (session.amount_total || 0) / 100,
@@ -125,6 +127,7 @@ export async function POST(req: NextRequest) {
           })
           if (pErr) L.err("Échec insert member_payments", pErr)
           else L.ok("member_payments inséré")
+          await logActivity(db, { memberId, studioId, actorRole: "stripe", action: "payment", details: { amount: (session.amount_total || 0) / 100, type: "Carte", source: "card_subscription_once", notes: subName } })
           break
         }
 
@@ -146,6 +149,7 @@ export async function POST(req: NextRequest) {
           }).eq("id", memberId)
           if (uErr) L.err("Échec update crédits membre", uErr)
           else L.ok(`Crédits membre mis à jour: ${(member.credits||0)} → ${(member.credits||0)+creditsAmount}`)
+          await logActivity(db, { memberId, studioId, actorRole: "stripe", action: "credit_add", details: { amount: creditsAmount, source: "credits_pack", label: packName, amount_eur: (session.amount_total || 0) / 100 } })
           const { error: pErr } = await db.from("member_payments").insert({
             studio_id: studioId, member_id: memberId,
             amount: (session.amount_total || 0) / 100,
@@ -156,6 +160,7 @@ export async function POST(req: NextRequest) {
           })
           if (pErr) L.err("Échec insert member_payments", pErr)
           else L.ok("member_payments inséré")
+          await logActivity(db, { memberId, studioId, actorRole: "stripe", action: "payment", details: { amount: (session.amount_total || 0) / 100, type: "Carte", source: "card_credits", notes: packName } })
           break
         }
 

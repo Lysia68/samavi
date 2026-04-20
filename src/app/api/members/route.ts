@@ -3,6 +3,7 @@ import { createServiceSupabase } from "@/lib/supabase-server"
 import { checkAuth } from "@/lib/auth-check"
 import { checkPlanLimit } from "@/lib/plan-limits"
 import { rateLimit, getIP } from "@/lib/rate-limit"
+import { logActivity } from "@/lib/activity"
 
 export const dynamic = "force-dynamic"
 
@@ -68,6 +69,10 @@ export async function POST(request: NextRequest) {
     .insert({ studio_id: studioId, ...payload })
     .select("id").single()
 
+  if (data?.id) {
+    await logActivity(db, { memberId: data.id, studioId, action: "member_created", actorId: (auth as any).user?.id, actorRole: (auth as any).profile?.role || "admin", details: { email: payload.email, name: `${payload.first_name || ""} ${payload.last_name || ""}`.trim() } })
+  }
+
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
   // Envoyer une invitation magic link à l'adhérent
@@ -107,29 +112,47 @@ export async function PATCH(request: NextRequest) {
 
   const db = createServiceSupabase()
 
-  // Si on assigne un abonnement, récupérer les infos avant la mise à jour
-  const isSubChange = updates.subscription_id !== undefined
-  let oldSubId: string | null = null
-  let member: any = null
-  if (isSubChange) {
-    const { data } = await db.from("members")
-      .select("subscription_id, studio_id, first_name, last_name")
-      .eq("id", id).single()
-    oldSubId = data?.subscription_id || null
-    member = data
-  }
+  // Récupérer l'état avant pour journaliser les changements
+  const { data: beforeData } = await db.from("members")
+    .select("subscription_id, studio_id, first_name, last_name, credits, credits_total, status, frozen_until")
+    .eq("id", id).single()
+  const oldSubId: string | null = beforeData?.subscription_id || null
+  const member: any = beforeData
+  const isSubChange = updates.subscription_id !== undefined && updates.subscription_id !== oldSubId
 
   const { error } = await db.from("members").update(updates).eq("id", id)
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
+  const actorId = (auth as any).user?.id
+  const actorRole = (auth as any).profile?.role || "admin"
+  const studioId = member?.studio_id
+
+  // Log changements de crédits (hors cas abonnement, géré plus bas)
+  if (studioId && (updates.credits !== undefined || updates.credits_total !== undefined) && !isSubChange) {
+    const delta = (updates.credits ?? member?.credits ?? 0) - (member?.credits ?? 0)
+    if (delta !== 0) {
+      await logActivity(db, { memberId: id, studioId, actorId, actorRole, action: delta > 0 ? "credit_add" : "credit_manual", details: { delta, from: member?.credits, to: updates.credits, source: "admin_manual" } })
+    }
+  }
+  // Log changement de statut
+  if (studioId && updates.status !== undefined && updates.status !== member?.status) {
+    const action = updates.status === "suspendu" ? "member_suspended" : updates.status === "actif" || updates.status === "Actif" ? "member_reactivated" : "member_updated"
+    await logActivity(db, { memberId: id, studioId, actorId, actorRole, action, details: { from: member?.status, to: updates.status } })
+  }
+  // Log gel / dégel
+  if (studioId && updates.frozen_until !== undefined && updates.frozen_until !== member?.frozen_until) {
+    await logActivity(db, { memberId: id, studioId, actorId, actorRole, action: updates.frozen_until ? "member_frozen" : "member_unfrozen", details: { from: member?.frozen_until, to: updates.frozen_until } })
+  }
+
   // Enregistrer l'achat dans member_payments si un nouvel abonnement est assigné
-  if (isSubChange && updates.subscription_id && updates.subscription_id !== oldSubId && member?.studio_id) {
+  if (isSubChange && updates.subscription_id && member?.studio_id) {
     try {
       const { data: sub } = await db.from("subscriptions")
         .select("name, price, period, credits")
         .eq("id", updates.subscription_id).single()
 
       if (sub) {
+        await logActivity(db, { memberId: id, studioId: member.studio_id, actorId, actorRole, action: "subscription_change", details: { from: oldSubId, to: updates.subscription_id, name: sub.name, price: sub.price } })
         // Ajouter les crédits au membre si c'est un carnet/séance
         const CREDIT_PERIODS = ["séance", "carnet", "once"]
         if (CREDIT_PERIODS.includes(sub.period) && sub.credits && sub.credits > 0) {
@@ -139,6 +162,7 @@ export async function PATCH(request: NextRequest) {
               credits: (currentMember.credits || 0) + sub.credits,
               credits_total: (currentMember.credits_total || 0) + sub.credits,
             }).eq("id", id)
+            await logActivity(db, { memberId: id, studioId: member.studio_id, actorId, actorRole, action: "credit_add", details: { amount: sub.credits, source: "admin_subscription", label: sub.name } })
           }
         }
 
@@ -154,6 +178,7 @@ export async function PATCH(request: NextRequest) {
           notes: sub.name || "Abonnement",
         })
         console.log("[members PATCH] member_payments créé pour", id, "—", sub.name)
+        await logActivity(db, { memberId: id, studioId: member.studio_id, actorId, actorRole, action: "payment", details: { amount: sub.price || 0, type: "Manuel", source: "admin_subscription", notes: sub.name } })
       }
     } catch (err: any) {
       console.warn("[members PATCH] Erreur création member_payments:", err.message)
@@ -180,5 +205,6 @@ export async function DELETE(request: NextRequest) {
   const { error } = await db.from("members").update({ deleted_at: new Date().toISOString(), status: "suspendu" }).eq("id", id)
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  await logActivity(db, { memberId: id, studioId: member.studio_id, actorId: (auth as any).user?.id, actorRole: (auth as any).profile?.role || "admin", action: "member_deleted" })
   return NextResponse.json({ ok: true })
 }
