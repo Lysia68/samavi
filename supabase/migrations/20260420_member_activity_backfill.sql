@@ -181,7 +181,8 @@ WHERE m.joined_at = '2026-03-26'
       AND ma.details->>'source' = 'import_csv'
   );
 
--- 8) Création de membre (estimation à partir de joined_at)
+-- 8) Création de membre — on utilise created_at (timestamp réel) quand disponible,
+-- sinon joined_at (date seulement, heure 00:00)
 INSERT INTO member_activity (studio_id, member_id, actor_role, action, details, created_at)
 SELECT
   m.studio_id,
@@ -193,7 +194,7 @@ SELECT
     'name', TRIM(COALESCE(m.first_name, '') || ' ' || COALESCE(m.last_name, '')),
     'backfilled', true
   ),
-  COALESCE(m.joined_at::timestamptz, m.created_at, now())
+  COALESCE(m.created_at, m.joined_at::timestamptz, now())
 FROM members m
 WHERE NOT EXISTS (
   SELECT 1 FROM member_activity ma
