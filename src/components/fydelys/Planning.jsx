@@ -677,7 +677,7 @@ function Planning({ isMobile }) {
   const [sessions, setSessions]       = useState([]);
   const [dbLoading, setDbLoading]     = useState(true);
   const todayRef = useRef(null);
-  const today    = new Date().toISOString().slice(0, 10);
+  const today    = (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`; })();
   const [bookings, setBookings]       = useState({});
   const [expandedId, setExpandedId]   = useState(null);
   const [filterDiscs, setFilterDiscs] = useState([]); // multi-select
@@ -928,8 +928,9 @@ function Planning({ isMobile }) {
     const items = [];
     // Add all session days
     dates.forEach(d => items.push({ type:"day", date:d }));
-    // Add ALL closures (not filtered by session window — affiche même sans séances)
+    // Add closures en cours ou à venir uniquement (date_end >= today local)
     closures.forEach(c => {
+      if (c.date_end && c.date_end < today) return;
       items.push({ type:"closure", date:c.date_start, closure:c });
     });
     // Sort: closures appear before sessions of same date
