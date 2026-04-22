@@ -129,8 +129,22 @@ function MemberForm({ value, onChange, errors={}, isMobile }) {
   );
 }
 
+const VO_PLAN_LABEL = {
+  monthly: "Mensuel", quarterly: "Trimestriel", biannual: "Semestriel",
+  yearly: "Annuel", family: "Famille", one_shot: "Accès 1 mois",
+};
+
+function VideoIconSvg({ size = 13, color = "#A85030" }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill={color} aria-hidden="true" style={{verticalAlign:"middle"}}>
+      <path d="M4 4h12a2 2 0 0 1 2 2v2.5l3.5-2.5a1 1 0 0 1 1.5.9v10.2a1 1 0 0 1-1.5.9L18 15.5V18a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z"/>
+    </svg>
+  );
+}
+
 function Members({ isMobile, onImpersonate, openMemberId, onMemberOpened }) {
-  const { studioId } = useContext(AppCtx);
+  const { studioId, studioSlug } = useContext(AppCtx);
+  const [voSubs, setVoSubs] = useState(new Map());
   const [members, setMembers]       = useState([]);
   const [dbLoading, setDbLoading]   = useState(true);
   const [isDemoData, setIsDemoData] = useState(false);
@@ -158,6 +172,23 @@ function Members({ isMobile, onImpersonate, openMemberId, onMemberOpened }) {
     const m = members.find(x => x.id === openMemberId);
     if (m) { setSelected(m); onMemberOpened && onMemberOpened(); }
   }, [openMemberId, members]);
+
+  // Charger les abonnements VideosOnline uniquement pour yogalatestudio
+  useEffect(() => {
+    if (studioSlug !== "yogalatestudio") { setVoSubs(new Map()); return; }
+    const emails = members.map(m => m.email?.toLowerCase()).filter(Boolean);
+    if (emails.length === 0) return;
+    createClient().from("vo_members")
+      .select("email, subscription_plan, subscription_status")
+      .in("email", emails)
+      .then(({ data }) => {
+        const map = new Map();
+        (data || []).forEach(v => {
+          if (v.email) map.set(v.email.toLowerCase(), { plan: v.subscription_plan, status: v.subscription_status });
+        });
+        setVoSubs(map);
+      });
+  }, [studioSlug, members.length]);
 
   useEffect(() => {
     if (!studioId) return;
@@ -628,6 +659,25 @@ function Members({ isMobile, onImpersonate, openMemberId, onMemberOpened }) {
               ))}
             </div>
 
+            {/* Videos Online — uniquement yogalatestudio */}
+            {studioSlug === "yogalatestudio" && voSubs.has(m.email?.toLowerCase() || "") && (() => {
+              const vo = voSubs.get(m.email.toLowerCase());
+              return (
+                <div style={{ background:"linear-gradient(145deg,#F5EBE0,#EFDFCB)", border:`1.5px solid ${C.accent}40`, borderRadius:10, padding:"10px 14px", marginBottom:12, display:"flex", alignItems:"center", gap:12 }}>
+                  <div style={{ width:32, height:32, borderRadius:"50%", background:"#FFF", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                    <VideoIconSvg size={16} color="#8C5E38"/>
+                  </div>
+                  <div style={{ flex:1, minWidth:0 }}>
+                    <div style={{ fontSize:10, fontWeight:700, color:"#8C5E38", textTransform:"uppercase", letterSpacing:.8, marginBottom:2 }}>Videos Online</div>
+                    <div style={{ fontSize:13, fontWeight:600, color:C.text }}>
+                      {VO_PLAN_LABEL[vo.plan] || "Sans formule"}
+                      {vo.status && <span style={{ marginLeft:8, fontSize:11, fontWeight:500, color: vo.status === "active" ? C.ok : vo.status === "trialing" ? C.info : C.textSoft }}>· {vo.status}</span>}
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
+
             {/* Infos perso */}
             <div style={{marginBottom:14,background:C.bg,borderRadius:10,padding:"10px 14px",border:`1px solid ${C.borderSoft}`}}>
               {infoRow("🎂","Date de naissance",birthdayFmt)}
@@ -815,7 +865,11 @@ function Members({ isMobile, onImpersonate, openMemberId, onMemberOpened }) {
               </div>
             </div>
         ) : (
-          <Card noPad>{filtered.map(m=><MemberRow key={m.id} m={m} onSelect={m=>setSelected(selected?.id===m.id?null:m)} selected={selected?.id===m.id}/>)}</Card>
+          <Card noPad>{filtered.map(m=>{
+            const voKey = m.email?.toLowerCase() || "";
+            const voSub = voSubs.get(voKey);
+            return <MemberRow key={m.id} m={{...m, voSub}} onSelect={m=>setSelected(selected?.id===m.id?null:m)} selected={selected?.id===m.id}/>;
+          })}</Card>
         )}
       </div>
       {selected && !editMode && !modal && <MemberDetail/>}

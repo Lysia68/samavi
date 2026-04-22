@@ -138,7 +138,17 @@ function MemberRow({ m, onSelect, selected }) {
       onMouseLeave={e=>{if(!selected)e.currentTarget.style.background="transparent";}}>
       <div style={{ width:38, height:38, borderRadius:"50%", background:C.accentBg, border:`1.5px solid #DFC0A0`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:14, fontWeight:700, color:C.accent, flexShrink:0 }}>{m.avatar}</div>
       <div style={{ flex:1, minWidth:0 }}>
-        <div style={{ fontSize:16, fontWeight:700, color:C.text, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{m.firstName} {m.lastName}</div>
+        <div style={{ fontSize:16, fontWeight:700, color:C.text, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", display:"flex", alignItems:"center", gap:6 }}>
+          <span style={{ overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", minWidth:0 }}>{m.firstName} {m.lastName}</span>
+          {m.voSub && (
+            <span title={`Videos Online — ${m.voSub.plan ? (m.voSub.plan === "yearly" ? "Annuel" : m.voSub.plan === "quarterly" ? "Trimestriel" : m.voSub.plan === "biannual" ? "Semestriel" : m.voSub.plan === "monthly" ? "Mensuel" : m.voSub.plan) : "abonné"}`}
+              style={{ display:"inline-flex", alignItems:"center", flexShrink:0 }}>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="#A85030" aria-hidden="true">
+                <path d="M4 4h12a2 2 0 0 1 2 2v2.5l3.5-2.5a1 1 0 0 1 1.5.9v10.2a1 1 0 0 1-1.5.9L18 15.5V18a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z"/>
+              </svg>
+            </span>
+          )}
+        </div>
         <div style={{ fontSize:13, color:C.textSoft, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", display:"flex", alignItems:"center", gap:8, marginTop:1, minWidth:0 }}>
           {m.email && <span style={{display:"flex",alignItems:"center",gap:3,minWidth:0,overflow:"hidden"}}>
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m2 7 10 7 10-7"/></svg>
