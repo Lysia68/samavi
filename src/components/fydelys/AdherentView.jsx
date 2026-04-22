@@ -199,8 +199,10 @@ function AdherentView({ onSwitch, isMobile, studioName = "", impersonateUserId =
 
   const p = isMobile ? 16 : 28;
 
-  const { studioId, discs } = useContext(AppCtx);
+  const { studioId, discs, studioSlug } = useContext(AppCtx);
   const allDiscs = discs?.length ? discs : DISCIPLINES;
+  // Lien retour VideosOnline : uniquement pour le studio YogalateStudio
+  const isVideosOnlineStudio = studioSlug === "yogalatestudio";
 
   // ── Données membre chargées depuis Supabase ─────────────────────────────────
   const [me, setMe] = useState(null);           // fiche membre
@@ -216,6 +218,18 @@ function AdherentView({ onSwitch, isMobile, studioName = "", impersonateUserId =
   // Account states — hissés ici pour éviter le remontage à chaque render
   const [accountEditing, setAccountEditing] = React.useState(false);
   const [accountSaving, setAccountSaving] = React.useState(false);
+  const [hasVideosOnline, setHasVideosOnline] = useState(false);
+
+  // Vérifier si l'utilisateur a un compte VideosOnline (uniquement pour yogalatestudio)
+  useEffect(() => {
+    if (!isVideosOnlineStudio) return;
+    const sb = createClient();
+    sb.auth.getUser().then(({ data: { user } }) => {
+      if (!user) return;
+      sb.from("vo_members").select("id").eq("id", user.id).maybeSingle()
+        .then(({ data }) => { if (data) setHasVideosOnline(true); });
+    });
+  }, [isVideosOnlineStudio]);
   const [accountForm, setAccountForm] = React.useState(null);
 
   // Init form quand me est chargé
@@ -1124,6 +1138,14 @@ function AdherentView({ onSwitch, isMobile, studioName = "", impersonateUserId =
               );
             })}
           </nav>
+          {isVideosOnlineStudio && hasVideosOnline && (
+            <div style={{ padding:"10px 14px 14px", borderTop:`1px solid ${C.accentBg}` }}>
+              <a href="https://videosonline.yogalatestudio.fr/espace"
+                style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:8, padding:"10px 14px", background:"#FFF", border:`1.5px solid ${C.accentBg}`, borderRadius:10, textDecoration:"none", color:C.accent, fontSize:13, fontWeight:600 }}>
+                ← VideosOnline
+              </a>
+            </div>
+          )}
         </aside>
       )}
 
@@ -1161,6 +1183,13 @@ function AdherentView({ onSwitch, isMobile, studioName = "", impersonateUserId =
             <div style={{ fontSize:15, fontWeight:800, color:C.text, letterSpacing:-0.3 }}>{studioName || "Fydelys"}</div>
             {me && (
               <div style={{ display:"flex", alignItems:"center", gap:7 }}>
+                {isVideosOnlineStudio && hasVideosOnline && (
+                  <a href="https://videosonline.yogalatestudio.fr/espace"
+                    title="Retour VideosOnline"
+                    style={{ padding:"4px 10px", borderRadius:6, border:`1px solid ${C.accentBg}`, background:"#FFF", color:C.accent, fontSize:11, fontWeight:700, textDecoration:"none" }}>
+                    ← VO
+                  </a>
+                )}
                 {me.credits_total > 0 && (
                   <span style={{ fontSize:11, fontWeight:700, color:me.credits<=0?"#C43A3A":C.accent, background:me.credits<=0?"#FDE8E8":C.accentBg, padding:"2px 8px", borderRadius:12 }}>
                     {me.credits??0} cr.
