@@ -8,7 +8,14 @@ export default function AuthConfirmPage() {
   useEffect(() => {
     const hash      = window.location.hash
     const params    = new URLSearchParams(window.location.search)
-    const tenant    = params.get("tenant") || params.get("slug")
+    // Fallback : si pas de tenant en query, dériver du sous-domaine
+    // (ex: yogalatestudio.fydelys.fr → "yogalatestudio")
+    const subFromHost = (() => {
+      const parts = window.location.hostname.split(".")
+      if (parts.length >= 3 && parts[parts.length - 2] === "fydelys") return parts[0]
+      return null
+    })()
+    const tenant    = params.get("tenant") || params.get("slug") || subFromHost
     const isRegister = params.get("register") === "1"
     const code      = params.get("code")
     const tokenHash = params.get("token_hash")
